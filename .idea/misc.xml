@@ -5,6 +5,11 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/kingcent-campus-auth/pom.xml" />
+        <option value="$PROJECT_DIR$/kingcent-campus-common/pom.xml" />
+        <option value="$PROJECT_DIR$/kingcent-campus-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/kingcent-campus-mybatis-plus/pom.xml" />
+        <option value="$PROJECT_DIR$/kingcent-campus-shop/pom.xml" />
       </list>
     </option>
   </component>
