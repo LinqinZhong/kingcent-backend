@@ -1,0 +1,43 @@
+server:
+  port: 6633
+
+spring:
+  application:
+    name: kingcent-campus-shop
+  redis:
+    timeout: 300s
+    host: 43.142.61.230
+    port: 6380
+    password: 11223344
+    database: 0
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 500
+        min-idle: 0
+      lettuce:
+        shutdown-timeout: 0ms
+
+  datasource:
+    username: kc_campus
+    password: TstsraYwCWx3jWsT
+    url: jdbc:mysql://43.142.61.230:3306/kc_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      max-lifetime: 120000
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: auto

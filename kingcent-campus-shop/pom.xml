@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.kingcent.campus</groupId>
+    <artifactId>kingcent-campus-shop</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>kingcent-campus-shop</name>
+
+    <parent>
+        <artifactId>kingcent-campus</artifactId>
+        <groupId>com.kingcent</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.kingcent</groupId>
+            <artifactId>kingcent-campus-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.kingcent</groupId>
+            <artifactId>kingcent-campus-mybatis-plus</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+</project>
