@@ -1,0 +1,44 @@
+server:
+  port: 6631
+
+spring:
+  application:
+    name: kingcent-campus-auth
+  datasource:
+    username: kc_campus
+    password: TstsraYwCWx3jWsT
+    url: jdbc:mysql://43.142.61.230:3306/kc_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      max-lifetime: 120000
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+#        username: nacos
+#        password: nacos
+
+#  redis:
+#    open: false  # 是否开启redis缓存  true开启   false关闭
+#    database: 0
+#    host: localhost
+#    port: 6379
+#    password:    # 密码（默认为空）
+#    timeout: 6000ms  # 连接超时时长（毫秒）
+#    jedis:
+#      pool:
+#        max-active: 1000  # 连接池最大连接数（使用负值表示没有限制）
+#        max-wait: -1ms      # 连接池最大阻塞等待时间（使用负值表示没有限制）
+#        max-idle: 10      # 连接池中的最大空闲连接
+#        min-idle: 5       # 连接池中的最小空闲连接
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: auto

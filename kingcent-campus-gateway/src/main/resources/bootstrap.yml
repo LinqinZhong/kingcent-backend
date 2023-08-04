@@ -1,0 +1,48 @@
+server:
+  port: 6630
+
+spring:
+  application:
+    name: kingcent-campus-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+
+    # 静态路由
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:6630/"
+            allowedMethods:
+              - GET
+              - POST
+              - DELETE
+              - PUT
+      enabled: true
+      routes:
+
+      #商城服务
+      - id: shop
+        uri: http://localhost:6633
+        predicates:
+          - Path=/shop/**
+        filters:
+          - StripPrefix=1
+
+      #鉴权
+      - id: auth
+        uri: http://localhost:6631
+        predicates:
+          - Path=/auth/**
+        filters:
+          - StripPrefix=1
+# 鉴权配置
+auth:
+  # 鉴权时放行的路径
+  ignore-path:
+    - /auth/login/**  #登录
+    - /shop/goods/fetch/**  #商品列表
+    - /shop/goods/details/**  #商品详情
+    - /shop/goods_comment/preview/**  #评论预览
