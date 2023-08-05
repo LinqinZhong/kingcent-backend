@@ -39,14 +39,13 @@ public class GoodsController {
     private GoodsSpecValueService goodsSpecValueService;
 
     @Autowired
-    private GroupService groupService;
-
-    @Autowired
-    private ShopService shopService;
-
-    @Autowired
     private DeliveryGroupService deliveryGroupService;
 
+    @Autowired
+    private GoodsDiscountService goodsDiscountService;
+
+    @Autowired
+    private PurchaseService purchaseService;
 
     /**
      * 获取商城商品列表
@@ -55,36 +54,47 @@ public class GoodsController {
      * @param page 页
      * @param pageSize 页大小
      */
-    @GetMapping("/fetch/{groupId}/{key}/{page}/{pageSize}")
+    @GetMapping("/fetch/{key}/{page}/{pageSize}")
     @ResponseBody
     public Result<List<GoodsVo>> fetch(
-            @PathVariable Long groupId,
+            @RequestParam(required = false) Long groupId,
             @PathVariable String key,
             @PathVariable Integer page,
             @PathVariable Integer pageSize
     ){
         if(pageSize > 10 || pageSize < 1) pageSize = 1;
-        //获取能配送到该配送点的商铺
-        List<DeliveryGroup> deliveryGroups = deliveryGroupService.list(
-                new QueryWrapper<DeliveryGroup>()
-                        .eq("group_id", groupId)
-        );
+
+        //TODO redis做缓存
+        //获取商铺
+        QueryWrapper<DeliveryGroup> wrapper = new QueryWrapper<>();
+        //指定配送点
+        if (groupId != null) wrapper.eq("group_id", groupId);
+        //不指定配送点，按商铺id分组，以免出现多条相同商铺的
+        else wrapper.groupBy("shop_id");
+        List<DeliveryGroup> deliveryGroups = deliveryGroupService.list(wrapper);
         if(deliveryGroups.size() == 0){
             return Result.success(new ArrayList<>());
         }
-
-        //TODO redis做缓存
 
         //提取商铺编号和运费
         Map<Long, BigDecimal> deliveryGroupFreight = new HashMap<>();
         List<Long> shopIds = new ArrayList<>();
         for (DeliveryGroup deliveryGroup : deliveryGroups) {
             shopIds.add(deliveryGroup.getShopId());
-            deliveryGroupFreight.put(deliveryGroup.getShopId(), deliveryGroup.getDeliveryFee());
+
+            //设置了配送点才有运费信息
+            if(groupId != null)
+                deliveryGroupFreight.put(deliveryGroup.getShopId(), deliveryGroup.getDeliveryFee());
         }
-        List<GoodsVo> res = new ArrayList<>();
+
+        //获取商品列表
         Page<GoodsEntity> pager = new Page<>( (long) pageSize *(page-1),pageSize);
         goodsService.page(pager, new QueryWrapper<GoodsEntity>().in("shop_id", shopIds));
+
+        //整合数据，提取商品id
+        Map<Long, GoodsVo> goodsVoMap = new HashMap<>();
+        List<Long> goodsIds = new ArrayList<>();
+        List<GoodsVo> res = new ArrayList<>();
         for (GoodsEntity record : pager.getRecords()) {
             List<String> tags = new ArrayList<>();
             GoodsVo goodsVo = new GoodsVo();
@@ -94,15 +104,34 @@ public class GoodsController {
             goodsVo.setOriginalPrice(record.getOriginalPrice());
             goodsVo.setName(record.getName());
             goodsVo.setThumbnail(record.getThumbnail());
+            goodsIds.add(record.getId());
+            goodsVoMap.put(record.getId(), goodsVo);
 
             //【免费配送】标签
             if (deliveryGroupFreight.containsKey(record.getShopId()) && deliveryGroupFreight.get(record.getShopId()).doubleValue() == 0D){
                 tags.add("免费配送");
             }
-
-
             res.add(goodsVo);
         }
+
+        //TODO redis做缓存
+        //获取折扣信息
+        List<GoodsDiscountEntity> discounts = goodsDiscountService.list(new QueryWrapper<GoodsDiscountEntity>()
+                .in("goods_id", goodsIds)
+                .gt("deadline", LocalDateTime.now().plusHours(2))
+                .select("more_than, goods_id, num, type")
+                .groupBy("goods_id")
+                .orderByDesc("more_than")
+        );
+        for (GoodsDiscountEntity discount : discounts) {
+            if (discount.getType() == 1){
+                goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan()+"件减"+discount.getNum());
+            }else if (discount.getType() == 2){
+                goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan()+"件"+discount.getNum().doubleValue()*10+"折");
+            }
+        }
+
+
         return Result.success(res);
     }
 
@@ -124,22 +153,6 @@ public class GoodsController {
         return Result.success(vo);
     }
 
-    /**
-     * 获取购买商品信息
-     * @param goodsId 商品id
-     * @param count 购买数量
-     * @param sku 规格
-     */
-    @GetMapping("/get_purchase_info")
-    @ResponseBody
-    public Result<?> getPurchaseInfo(
-            HttpServletRequest request,
-            @RequestParam Long goodsId,
-            @RequestParam Integer count,
-            @RequestParam String sku
-    ){
-        return goodsService.getPurchaseInfo(RequestUtil.getUserId(request), goodsId, URLDecoder.decode(sku, StandardCharsets.UTF_8), count);
-    }
 
     //↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓管理端代码↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 

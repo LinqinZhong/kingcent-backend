@@ -46,3 +46,5 @@ auth:
     - /shop/goods/fetch/**  #商品列表
     - /shop/goods/details/**  #商品详情
     - /shop/goods_comment/preview/**  #评论预览
+    - /shop/address/nearby_group/** #获取附近配送点
+    - /shop/address/nearest_group/**  #获取最近配送点

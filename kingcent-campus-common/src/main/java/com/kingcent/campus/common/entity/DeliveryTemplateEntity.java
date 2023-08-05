@@ -17,7 +17,7 @@ public class DeliveryTemplateEntity {
     private Integer restWeek;
     private Integer activeDays;
     private Boolean isUsed;
-    private String allowedAddress;
+    private Integer reserveTime;
     private String name;
     @TableLogic
     private Boolean isDeleted;

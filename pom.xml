@@ -1,9 +1,120 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.example</groupId>
-  <artifactId>kingcent-campus-backen</artifactId>
+
+  <groupId>com.kingcent</groupId>
+  <artifactId>kingcent-campus</artifactId>
+  <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>Archetype - kingcent-campus-backen</name>
-  <url>http://maven.apache.org</url>
+  <name>kingcent-campus</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>17</java.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-boot.version>3.0.0</spring-boot.version>
+    <spring-cloud-alibaba.version>2021.0.4.0</spring-cloud-alibaba.version>
+    <mybatis.version>3.5.13</mybatis.version>
+    <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
+    <mybatis-spring-boot.version>3.0.1</mybatis-spring-boot.version>
+  </properties>
+
+  <modules>
+    <module>kingcent-campus-shop</module>
+    <module>kingcent-campus-common</module>
+    <module>kingcent-campus-auth</module>
+    <module>kingcent-campus-gateway</module>
+    <module>kingcent-campus-mybatis-plus</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- SpringCloud -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>2022.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- SpringBoot -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>3.0.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- SpringCloudAlibaba -->
+      <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+        <version>2022.0.0.0-RC1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!--JSON-->
+    <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>fastjson</artifactId>
+      <version>1.2.51</version>
+    </dependency>
+    <!--LOGGER-->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>2.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.axet</groupId>
+      <artifactId>kaptcha</artifactId>
+      <version>0.0.9</version>
+    </dependency>
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+      <version>5.8.15</version>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>druid-spring-boot-starter</artifactId>
+      <version>1.1.9</version>
+    </dependency>
+  </dependencies>
+
+  <parent>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <groupId>org.springframework.boot</groupId>
+    <version>3.0.0</version>
+  </parent>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

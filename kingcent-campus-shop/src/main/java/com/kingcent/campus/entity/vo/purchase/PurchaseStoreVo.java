@@ -12,8 +12,8 @@ public class PurchaseStoreVo {
     private String name;
     private BigDecimal deliveryFee;
     private BigDecimal discountPrice;
-    private BigDecimal finalPrice;
+    private BigDecimal price;
     private List<PurchaseGoodsVo> goodsList;
-    private String allowedAddress;
+    private List<String> payTypes;
     private List<LocalDateTime> deliveryTimeOptions;
 }

@@ -1,5 +1,6 @@
 package com.kingcent.campus.entity.vo.purchase;
 
+import com.kingcent.campus.common.entity.PayTypeEntity;
 import com.kingcent.campus.entity.vo.AddressVo;
 import lombok.Data;
 
@@ -13,12 +14,9 @@ import java.util.List;
 @Data
 public class PurchaseInfoVo {
     private List<PurchaseStoreVo> storeList;
-    private BigDecimal totalPrice;
-    private BigDecimal discountPrice;
-    private BigDecimal finalPrice;
+    private List<AddressVo> addressList;
 
     //当前时间，用于给前端计算时间（避免前后端时间不同出现的时间错误）
     private LocalDateTime time;
-
-    private List<AddressVo> addressList;
+    private BigDecimal discountPrice;
 }
