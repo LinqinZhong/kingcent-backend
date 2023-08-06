@@ -203,7 +203,7 @@ public class CartGoodsServiceImpl implements CartGoodsService {
         Map<String, GoodsSkuEntity> skuMap = new HashMap<>();
         List<GoodsSkuEntity> skus = goodsSkuService.list(new QueryWrapper<GoodsSkuEntity>().in("spec_info", skuSet));
         for (GoodsSkuEntity goodsSkuEntity : skus) {
-            skuMap.put(goodsSkuEntity.getSpecInfo(), goodsSkuEntity);
+            skuMap.put(goodsSkuEntity.getGoodsId()+"-"+goodsSkuEntity.getSpecInfo(), goodsSkuEntity);
         }
 
 
@@ -228,6 +228,8 @@ public class CartGoodsServiceImpl implements CartGoodsService {
         Map<Long, List<CartGoodsVo>> storeGoodsListMap = new HashMap<>();
 
         for (CartGoodsEntity cartGoodsEntity : cartGoodsEntityList) {
+            //sku
+            GoodsSkuEntity sku = skuMap.get(cartGoodsEntity.getGoodsId()+"-"+cartGoodsEntity.getSku());
             CartGoodsVo cartGoods = new CartGoodsVo();
             //购物车商品信息
             cartGoods.setSku(cartGoodsEntity.getSku());
@@ -236,8 +238,7 @@ public class CartGoodsServiceImpl implements CartGoodsService {
             //商品信息
             GoodsEntity goods = goodsMap.get(cartGoodsEntity.getGoodsId());
             cartGoods.setTitle(goods.getName());
-            cartGoods.setUnitPrice(goods.getPrice());
-            cartGoods.setThumb(goods.getThumbnail());
+            cartGoods.setDefaultThumb(goods.getThumbnail());
             cartGoods.setGoodsId(goods.getId());
             //折扣信息
             if(discountEntityMap.containsKey(goods.getId())){
@@ -254,8 +255,8 @@ public class CartGoodsServiceImpl implements CartGoodsService {
                 cartGoods.setDiscount(discountVos);
             }
             //规格信息
-            if(skuMap.containsKey(cartGoods.getSku())){
-                GoodsSkuEntity sku = skuMap.get(cartGoods.getSku());
+            if(sku != null){
+                cartGoods.setUnitPrice(sku.getPrice());
                 cartGoods.setThumb(sku.getImage());
                 cartGoods.setSkuInfo(sku.getDescription());
             }

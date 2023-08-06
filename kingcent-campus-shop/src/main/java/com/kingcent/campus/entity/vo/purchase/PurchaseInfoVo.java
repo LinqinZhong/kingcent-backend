@@ -15,6 +15,7 @@ import java.util.List;
 public class PurchaseInfoVo {
     private List<PurchaseStoreVo> storeList;
     private List<AddressVo> addressList;
+    private Long addressId;
 
     //当前时间，用于给前端计算时间（避免前后端时间不同出现的时间错误）
     private LocalDateTime time;

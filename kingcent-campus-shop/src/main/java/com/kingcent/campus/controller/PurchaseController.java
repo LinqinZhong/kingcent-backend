@@ -8,9 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-
 @RestController
 @RequestMapping("/purchase")
 public class PurchaseController {
@@ -26,6 +23,6 @@ public class PurchaseController {
     public Result<?> getPurchaseInfo(
             HttpServletRequest request, @RequestBody CheckPurchaseVo vo
             ){
-        return purchaseService.getPurchaseInfo(RequestUtil.getUserId(request), vo.getList());
+        return purchaseService.getPurchaseInfo(RequestUtil.getUserId(request), vo);
     }
 }

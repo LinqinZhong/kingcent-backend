@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.*;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.entity.vo.AddressVo;
-import com.kingcent.campus.entity.vo.purchase.PurchaseGoodsVo;
-import com.kingcent.campus.entity.vo.purchase.PurchaseInfoVo;
-import com.kingcent.campus.entity.vo.purchase.PurchaseStoreVo;
-import com.kingcent.campus.entity.vo.purchase.QueryPurchaseVo;
+import com.kingcent.campus.entity.vo.purchase.*;
 import com.kingcent.campus.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,12 +40,12 @@ public class PurchaseServiceImpl implements PurchaseService {
     private DeliveryGroupService deliveryGroupService;
 
     @Override
-    public Result<PurchaseInfoVo> getPurchaseInfo(Long userId, List<QueryPurchaseVo> queries){
+    public Result<PurchaseInfoVo> getPurchaseInfo(Long userId, CheckPurchaseVo check){
 
         //收集goodsId，count
         Set<Long> goodsIds = new HashSet<>();
         Map<String, Integer> countMap = new HashMap<>();
-        for (QueryPurchaseVo query : queries) {
+        for (QueryPurchaseVo query : check.getList()) {
             goodsIds.add(query.getGoodsId());
             countMap.put(query.getGoodsId()+"-"+query.getSpecInfo(), query.getCount());
         }
@@ -74,7 +71,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         //3.获取商品规格列表
         QueryWrapper<GoodsSkuEntity> skuWrapper = new QueryWrapper<>();
         //添加条件
-        for (QueryPurchaseVo query : queries) {
+        for (QueryPurchaseVo query : check.getList()) {
             skuWrapper.or(w->{
                 w.eq("goods_id", query.getGoodsId());
                 w.eq("spec_info", query.getSpecInfo());
@@ -84,7 +81,7 @@ public class PurchaseServiceImpl implements PurchaseService {
 
         //4.获取商品折扣信息
         QueryWrapper<GoodsDiscountEntity> discountWrapper = new QueryWrapper<>();
-        for (QueryPurchaseVo query : queries) {
+        for (QueryPurchaseVo query : check.getList()) {
             discountWrapper.or(w->{
                 w.eq("goods_id", query.getGoodsId());
                 w.le("more_than", query.getCount());
@@ -120,13 +117,23 @@ public class PurchaseServiceImpl implements PurchaseService {
         //8.配送范围信息
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //用户有设置地址才能查询配送范围信息
+        AddressVo defaultAddress = null;
         if(userAddress.size() > 0){
-            //从收货地址中找默认地址
-            AddressVo defaultAddress = null;
-            for (AddressVo address : userAddress) {
-                if (address.getIsDefault()){
-                    defaultAddress = address;
-                    break;
+            if(check.getAddressId() != null){
+                //用户指定了地址，使用指定地址
+                for (AddressVo address : userAddress) {
+                    if (Objects.equals(address.getId(), check.getAddressId())) {
+                        defaultAddress = address;
+                        break;
+                    }
+                }
+            }else {
+                //用户没有指定地址，从收货地址中找默认地址
+                for (AddressVo address : userAddress) {
+                    if (address.getIsDefault()) {
+                        defaultAddress = address;
+                        break;
+                    }
                 }
             }
             //没有默认地址，使用第一个地址
@@ -148,6 +155,8 @@ public class PurchaseServiceImpl implements PurchaseService {
         purchaseInfoVo.setTime(LocalDateTime.now());
         //用户收货地址
         purchaseInfoVo.setAddressList(userAddress);
+        //当前使用的地址id
+        if(defaultAddress != null) purchaseInfoVo.setAddressId(defaultAddress.getId());
         purchaseInfoVo.setStoreList(new ArrayList<>());
         purchaseInfoVo.setDiscountPrice(BigDecimal.valueOf(0));
         Map<Long, PurchaseStoreVo> storeMap = new HashMap<>();

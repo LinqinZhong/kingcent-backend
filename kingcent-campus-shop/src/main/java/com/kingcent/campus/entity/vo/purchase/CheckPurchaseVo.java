@@ -7,4 +7,5 @@ import java.util.List;
 @Data
 public class CheckPurchaseVo {
     private List<QueryPurchaseVo> list;
+    private Long addressId;
 }

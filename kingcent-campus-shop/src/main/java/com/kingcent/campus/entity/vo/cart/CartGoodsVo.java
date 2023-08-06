@@ -10,6 +10,7 @@ public class CartGoodsVo {
     private Long goodsId;
     private Boolean checked;
     private String thumb;
+    private String defaultThumb;
     private String title;
     private String skuInfo;
     private String sku;
