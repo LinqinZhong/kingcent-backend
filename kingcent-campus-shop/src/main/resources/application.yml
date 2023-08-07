@@ -4,20 +4,18 @@ server:
 spring:
   application:
     name: kingcent-campus-shop
-  redis:
-    timeout: 300s
-    host: 43.142.61.230
-    port: 6380
-    password: 11223344
-    database: 0
-    jedis:
-      pool:
-        max-active: 8
-        max-wait: -1ms
-        max-idle: 500
-        min-idle: 0
-      lettuce:
-        shutdown-timeout: 0ms
+  data:
+    redis:
+      timeout: 300s
+      host: 43.142.61.230
+      port: 6379
+      database: 0
+      jedis:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 500
+          min-idle: 0
 
   datasource:
     username: kc_campus

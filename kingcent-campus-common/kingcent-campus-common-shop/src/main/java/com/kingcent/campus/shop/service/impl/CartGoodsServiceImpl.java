@@ -15,6 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 @Service
 public class CartGoodsServiceImpl implements CartGoodsService {
 
@@ -22,10 +26,6 @@ public class CartGoodsServiceImpl implements CartGoodsService {
     private GoodsService goodsService;
     @Autowired
     private ShopService shopService;
-    @Autowired
-    private GoodsSpecService goodsSpecService;
-    @Autowired
-    private GoodsSpecValueService goodsSpecValueService;
     @Autowired
     private GoodsDiscountService goodsDiscountService;
     @Autowired

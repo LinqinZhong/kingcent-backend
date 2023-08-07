@@ -60,7 +60,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupEntity> impl
      * 当redis没有数据的时候，初始化数据
      */
     private void initIfNoneData(){
-        if(!Boolean.FALSE.equals(redisTemplate.hasKey(KEY_OF_GROUP_POINTS))){
+        if(Boolean.FALSE.equals(redisTemplate.hasKey(KEY_OF_GROUP_POINTS))){
             initPointLocations();
         }
     }
@@ -68,7 +68,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupEntity> impl
     @Override
     public Result<List<GroupLocationVo>> fetchNearbyGroups(Double longitude, Double latitude){
 
-        initPointLocations();
+        initIfNoneData();
 
         BoundGeoOperations<String, String> ops = redisTemplate.boundGeoOps(KEY_OF_GROUP_POINTS);
 
@@ -118,7 +118,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupEntity> impl
     @Override
     public Result<GroupLocationVo> fetchNearestGroup(Double longitude, Double latitude){
 
-        initPointLocations();
+        initIfNoneData();
 
         BoundGeoOperations<String, String> ops = redisTemplate.boundGeoOps(KEY_OF_GROUP_POINTS);
 

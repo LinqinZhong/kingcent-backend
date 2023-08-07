@@ -17,6 +17,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 @Service
 @Slf4j
 public class SiteServiceImpl extends ServiceImpl<SiteMapper, SiteEntity> implements SiteService {

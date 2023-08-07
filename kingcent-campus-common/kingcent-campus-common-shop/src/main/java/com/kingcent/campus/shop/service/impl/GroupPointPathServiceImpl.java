@@ -6,9 +6,7 @@ import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.GroupPointPathEntity;
 import com.kingcent.campus.shop.mapper.GroupPointPathMapper;
 import com.kingcent.campus.shop.service.GroupPointPathService;
-import com.kingcent.campus.shop.service.GroupPointService;
 import com.kingcent.campus.shop.util.GroupPointUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,13 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 @Service
 public class GroupPointPathServiceImpl extends ServiceImpl<GroupPointPathMapper, GroupPointPathEntity> implements GroupPointPathService {
-
-    @Autowired
-    private GroupPointService pointService;
-
-
 
     @Override
     public Result<?> getPath(){
@@ -56,11 +53,7 @@ public class GroupPointPathServiceImpl extends ServiceImpl<GroupPointPathMapper,
             p2Paths.put(point1Id, new GroupPointUtil.PathInfo(GroupPointUtil.reversePath(path.getPassPoints()), path.getCost()));
         }
 
-        pathInfo.forEach((p1, map) -> {
-            map.forEach((p2, path) -> {
-                System.out.println(p1+"->"+p2+"="+path.cost+"...."+path.crossPoints);
-            });
-        });
+        pathInfo.forEach((p1, map) -> map.forEach((p2, path) -> System.out.println(p1+"->"+p2+"="+path.cost+"...."+path.crossPoints)));
 
         return null;
     }

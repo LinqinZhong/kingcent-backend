@@ -25,7 +25,7 @@ spring:
 
       #商城服务
       - id: shop
-        uri: http://localhost:6633
+        uri: lb://kingcent-campus-shop
         predicates:
           - Path=/shop/**
         filters:
@@ -33,14 +33,24 @@ spring:
 
       #鉴权
       - id: auth
-        uri: http://localhost:6631
+        uri: lb://kingcent-campus-auth
         predicates:
           - Path=/auth/**
         filters:
           - StripPrefix=1
+
+        #后台
+      - id: auth
+        uri: lb://kingcent-campus-admin
+        predicates:
+          - Path=/admin/**
+        filters:
+          - StripPrefix=1
+
+
 # 鉴权配置
 auth:
-  # 鉴权时放行的路径
+  # 鉴权时放行的路径（白名单）
   ignore-path:
     - /auth/login/**  #登录
     - /shop/goods/fetch/**  #商品列表
@@ -48,3 +58,4 @@ auth:
     - /shop/goods_comment/preview/**  #评论预览
     - /shop/address/nearby_group/** #获取附近配送点
     - /shop/address/nearest_group/**  #获取最近配送点
+    - /admin/goods/test #测试接口

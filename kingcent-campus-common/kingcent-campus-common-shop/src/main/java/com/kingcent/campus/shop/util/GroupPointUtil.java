@@ -9,6 +9,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 public class GroupPointUtil {
 
     /**
@@ -186,12 +190,10 @@ public class GroupPointUtil {
 
         //初始化信息集
         Map<Long,Map<Long, RoadMsgInfo>> messages = new HashMap<>();
-        paths.forEach((origin,desInfo)->{
-            desInfo.forEach((destination,pathInfo)->{
-                Map<Long, RoadMsgInfo> messageMap = messages.computeIfAbsent(origin, k -> new HashMap<>());
-                messageMap.put(destination, new RoadMsgInfo(2, (double)1/pathInfo.cost));
-            });
-        });
+        paths.forEach((origin,desInfo)-> desInfo.forEach((destination, pathInfo)->{
+            Map<Long, RoadMsgInfo> messageMap = messages.computeIfAbsent(origin, k -> new HashMap<>());
+            messageMap.put(destination, new RoadMsgInfo(2, (double)1/pathInfo.cost));
+        }));
 
         //
         for(int t = 0; t < 10; t++){

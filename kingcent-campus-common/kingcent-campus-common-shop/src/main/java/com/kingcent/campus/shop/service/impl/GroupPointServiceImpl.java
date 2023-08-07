@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 @Service
 public class GroupPointServiceImpl extends ServiceImpl<GroupPointMapper, GroupPointEntity> implements GroupPointService {
 

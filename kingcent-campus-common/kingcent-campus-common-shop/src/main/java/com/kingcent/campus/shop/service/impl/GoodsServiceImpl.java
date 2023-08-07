@@ -6,6 +6,10 @@ import com.kingcent.campus.shop.mapper.GoodsMapper;
 import com.kingcent.campus.shop.service.GoodsService;
 import org.springframework.stereotype.Service;
 
+/**
+ * @author rainkyzhong
+ * @date 2023/8/8 1:12
+ */
 @Service
 public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, GoodsEntity> implements GoodsService {
 }
