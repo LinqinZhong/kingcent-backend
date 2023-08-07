@@ -3,10 +3,10 @@ package com.kingcent.campus.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kingcent.campus.common.entity.CategoryEntity;
+import com.kingcent.campus.shop.entity.CategoryEntity;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.entity.vo.CategoryVo;
-import com.kingcent.campus.service.CategoryService;
+import com.kingcent.campus.shop.entity.vo.CategoryVo;
+import com.kingcent.campus.shop.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

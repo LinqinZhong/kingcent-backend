@@ -1,18 +1,18 @@
 package com.kingcent.campus.controller;
 
-import com.kingcent.campus.common.entity.CartGoodsEntity;
+import com.kingcent.campus.shop.entity.CartGoodsEntity;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.entity.vo.cart.CartCheckVo;
-import com.kingcent.campus.entity.vo.cart.CartVo;
-import com.kingcent.campus.entity.vo.purchase.PutCartGoodsVo;
-import com.kingcent.campus.service.*;
+import com.kingcent.campus.shop.entity.vo.cart.CartCheckVo;
+import com.kingcent.campus.shop.entity.vo.cart.CartVo;
+import com.kingcent.campus.shop.entity.vo.purchase.PutCartGoodsVo;
+import com.kingcent.campus.shop.service.CartGoodsService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.kingcent.campus.util.RequestUtil.getUserId;
+import static com.kingcent.campus.shop.util.RequestUtil.getUserId;
 
 
 @RestController

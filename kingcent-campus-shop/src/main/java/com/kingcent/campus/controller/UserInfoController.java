@@ -1,7 +1,7 @@
 package com.kingcent.campus.controller;
 
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.entity.vo.UserInfoVo;
+import com.kingcent.campus.shop.entity.vo.UserInfoVo;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;

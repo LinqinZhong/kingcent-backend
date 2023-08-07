@@ -42,7 +42,7 @@
         <!--common-->
         <dependency>
             <groupId>com.kingcent</groupId>
-            <artifactId>kingcent-campus-common</artifactId>
+            <artifactId>kingcent-campus-commom-framework</artifactId>
             <version>1.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>

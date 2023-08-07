@@ -2,20 +2,16 @@ package com.kingcent.campus.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kingcent.campus.common.entity.*;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.entity.vo.goods.GoodsDetailsVo;
-import com.kingcent.campus.entity.vo.goods.GoodsPageVo;
-import com.kingcent.campus.entity.vo.goods.GoodsVo;
-import com.kingcent.campus.service.*;
-import com.kingcent.campus.util.RequestUtil;
-import jakarta.servlet.http.HttpServletRequest;
+import com.kingcent.campus.shop.entity.*;
+import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsVo;
+import com.kingcent.campus.shop.entity.vo.goods.GoodsPageVo;
+import com.kingcent.campus.shop.entity.vo.goods.GoodsVo;
+import com.kingcent.campus.shop.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
