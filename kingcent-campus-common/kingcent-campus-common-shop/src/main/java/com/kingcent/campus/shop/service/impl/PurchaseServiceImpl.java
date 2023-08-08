@@ -83,42 +83,24 @@ public class PurchaseServiceImpl implements PurchaseService {
         }
         List<GoodsSkuEntity> skus = skuService.list(skuWrapper);
 
-        //4.获取商品折扣信息
-        QueryWrapper<GoodsDiscountEntity> discountWrapper = new QueryWrapper<>();
-        for (QueryPurchaseVo query : check.getList()) {
-            discountWrapper.or(w->{
-                w.eq("goods_id", query.getGoodsId());
-                w.le("more_than", query.getCount());
-            });
-        }
-        discountWrapper
-                .select("MIN(more_than) AS more_than, goods_id, type, num")
-                .groupBy("goods_id");
-        List<GoodsDiscountEntity> discounts = goodsDiscountService.list(discountWrapper);
-        //提取数据
-        Map<Long, GoodsDiscountEntity> discountMap = new HashMap<>();
-        for (GoodsDiscountEntity discount : discounts) {
-            discountMap.put(discount.getGoodsId(), discount);
-        }
-
-        //5.获取配送信息
+        //4.获取配送信息
         List<DeliveryTemplateEntity> deliveries = deliveryTemplateService.list(
                 new QueryWrapper<DeliveryTemplateEntity>()
                         .in("shop_id", shopIds)
                         .eq("is_used", 1)
         );
 
-        //6.获取地址信息
+        //5.获取地址信息
         List<AddressVo> userAddress = addressService.getUserAddress(userId);
 
-        //7.获取支持的支付方式
+        //6.获取支持的支付方式
         List<PayTypeEntity> payTypes = payTypeService.list(
                 new QueryWrapper<PayTypeEntity>()
                         .in("shop_id", shopIds)
                         .eq("enabled", true)
         );
 
-        //8.配送范围信息
+        //7.配送范围信息
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //用户有设置地址才能查询配送范围信息
         AddressVo defaultAddress = null;
@@ -208,19 +190,29 @@ public class PurchaseServiceImpl implements PurchaseService {
             store.setDiscountPrice(BigDecimal.valueOf(0));
             //获取商品数量
             Integer count = countMap.get(sku.getGoodsId()+"-"+sku.getSpecInfo());
-            //折扣信息
-            GoodsDiscountEntity discount = discountMap.get(goods.getId());
+
+            if (sku.getSafeStockQuantity() == 0){
+                //TODO 灰度
+                continue;   //库存为0时，跳过该商品
+            }
+            if(sku.getSafeStockQuantity() < count){
+                //TODO 要提示用户数量变动了
+                count = sku.getSafeStockQuantity(); //库存不足数量时，将数量设置为最大值
+            }
 
             if (count == null) continue;
 
             PurchaseGoodsVo vo = new PurchaseGoodsVo();
             vo.setCount(count);
+            vo.setSku(sku.getSpecInfo());
             vo.setSkuDesc(sku.getDescription());
             vo.setPrice(sku.getPrice());
             vo.setThumbnail(sku.getImage());
             vo.setId(goods.getId());
             vo.setTitle(goods.getName());
 
+            //折扣信息
+            GoodsDiscountEntity discount = goodsDiscountService.getBestDiscount(sku.getGoodsId(), count);
             //价格和优惠金额
             BigDecimal price = sku.getPrice().multiply(BigDecimal.valueOf(count));
             if(discount != null){

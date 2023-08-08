@@ -8,6 +8,14 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 public class RequestUtil {
     /**
+     * 获取登录id
+     */
+    public static Long getLoginId(HttpServletRequest request){
+        String userId = request.getHeader("lid");
+        if(userId == null) throw new RuntimeException("用户身份缺失");
+        return Long.valueOf(userId);
+    }
+    /**
      * 获取用户id
      */
     public static Long getUserId(HttpServletRequest request){
