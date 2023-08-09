@@ -18,7 +18,7 @@ import java.util.*;
 
 @Service
 @Slf4j
-public class GroupService extends GroupServiceImpl {
+public class AppGroupService extends GroupServiceImpl {
     private static final String KEY_OF_GROUP_POINTS = "group_points";
     private static final String KEY_OF_GROUP_NAMES = "group_names";
 

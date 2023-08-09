@@ -8,5 +8,5 @@ import org.springframework.stereotype.Service;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GoodsCommentCountService extends GoodsCommentCountServiceImpl {
+public class AppShopGoodsCommentCountService extends GoodsCommentCountServiceImpl {
 }

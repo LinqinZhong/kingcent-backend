@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.purchase.*;
 import com.kingcent.campus.shop.service.*;
 import com.kingcent.campus.shop.service.impl.PurchaseServiceImpl;
@@ -21,32 +22,45 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class PurchaseService extends PurchaseServiceImpl {
-    @Autowired
-    private GoodsSkuService skuService;
-    @Autowired
-    private ShopService shopService;
+public class AppPurchaseService extends PurchaseServiceImpl {
 
     @Autowired
-    private DeliveryTemplateService deliveryTemplateService;
+    private OrderGoodsService orderGoodsService;
+    @Autowired
+    private AppGoodsSkuService skuService;
+    @Autowired
+    private AppShopService shopService;
 
     @Autowired
-    private GoodsDiscountService goodsDiscountService;
-    
+    private AppShopDeliveryTemplateService deliveryTemplateService;
+
     @Autowired
-    private GoodsService goodsService;
+    private AppShopGoodsDiscountService goodsDiscountService;
+
+    @Autowired
+    private AppGoodsService goodsService;
 
     @Autowired
     private AddressService addressService;
-    
-    @Autowired
-    private PayTypeService payTypeService;
 
     @Autowired
-    private DeliveryGroupService deliveryGroupService;
+    private AppPayTypeService payTypeService;
+
+    @Autowired
+    private AppShopDeliveryGroupService deliveryGroupService;
+
+
+    @Autowired
+    private AppOrderService orderService;
 
     @Override
     public Result<PurchaseInfoVo> getPurchaseInfo(Long userId, CheckPurchaseVo check){
+
+
+        //检查是否存在订单异常
+        Result<PurchaseInfoVo> checkResult = orderService.checkOrder(userId, check.getList().size(), PurchaseInfoVo.class);
+        if (checkResult != null) return checkResult;
+
 
         //收集goodsId，count
         Set<Long> goodsIds = new HashSet<>();
@@ -84,6 +98,12 @@ public class PurchaseService extends PurchaseServiceImpl {
             });
         }
         List<GoodsSkuEntity> skus = skuService.list(skuWrapper);
+
+        //提取skuIds
+        List<Long> skuIds = new ArrayList<>();
+        for (GoodsSkuEntity sku : skus) {
+            skuIds.add(sku.getId());
+        }
 
         //4.获取配送信息
         List<DeliveryTemplateEntity> deliveries = deliveryTemplateService.list(
@@ -134,6 +154,10 @@ public class PurchaseService extends PurchaseServiceImpl {
                 deliveryGroupMap.put(deliveryGroup.getShopId(), deliveryGroup);
             }
         }
+
+        //查询用户对sku购买次数
+        Map<Long, Integer> skuBuyCount = orderGoodsService.countUserBuyCountOfSku(userId,skuIds);
+
 
 
         //整合数据
@@ -186,12 +210,24 @@ public class PurchaseService extends PurchaseServiceImpl {
         for (GoodsSkuEntity sku : skus) {
             //获取商品对象
             GoodsEntity goods = goodsMap.get(sku.getGoodsId());
+            //获取商品数量
+            Integer count = countMap.get(sku.getGoodsId()+"-"+sku.getSpecInfo());
+            //商品限购
+            if(
+                    (sku.getLimitMinCount() != null && count < sku.getLimitMinCount())   //最低限制
+                            ||
+                            sku.getLimitMaxCount() != null && count + (
+                                    skuBuyCount.getOrDefault(sku.getId(), 0)            //最高限制
+                            ) > sku.getLimitMaxCount()
+            ){
+                //限制最低购买
+                return Result.fail("数量不符合购买要求，请重试", PurchaseInfoVo.class);
+            }
             //获取商铺对象
             PurchaseStoreVo store = storeMap.get(goods.getShopId());
             store.setPrice(BigDecimal.valueOf(0));
             store.setDiscountPrice(BigDecimal.valueOf(0));
-            //获取商品数量
-            Integer count = countMap.get(sku.getGoodsId()+"-"+sku.getSpecInfo());
+
 
             if (sku.getSafeStockQuantity() == 0){
                 //TODO 灰度

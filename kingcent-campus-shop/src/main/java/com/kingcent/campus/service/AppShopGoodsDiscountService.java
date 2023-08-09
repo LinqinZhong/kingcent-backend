@@ -13,7 +13,7 @@ import java.util.Map;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GoodsDiscountService extends GoodsDiscountServiceImpl {
+public class AppShopGoodsDiscountService extends GoodsDiscountServiceImpl {
 
     @Override
     public GoodsDiscountEntity getBestDiscount(Long goodsId, Integer count){

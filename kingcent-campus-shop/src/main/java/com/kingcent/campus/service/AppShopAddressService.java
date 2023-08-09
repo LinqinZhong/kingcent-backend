@@ -16,7 +16,7 @@ import java.util.*;
  * @date 2023/8/9 10:41
  */
 @Service
-public class ShopAddressService extends AddressServiceImpl {
+public class AppShopAddressService extends AddressServiceImpl {
     @Autowired
     private GroupPointService groupPointService;
 

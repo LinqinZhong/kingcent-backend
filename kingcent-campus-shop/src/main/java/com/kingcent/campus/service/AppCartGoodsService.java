@@ -24,7 +24,7 @@ import java.util.*;
  * @date 2023/8/9 10:46
  */
 @Service
-public class ShopGoodsService extends CartGoodsServiceImpl {
+public class AppCartGoodsService extends CartGoodsServiceImpl {
     @Autowired
     private GoodsService goodsService;
     @Autowired

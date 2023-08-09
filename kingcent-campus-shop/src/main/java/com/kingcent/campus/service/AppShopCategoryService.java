@@ -8,5 +8,5 @@ import org.springframework.stereotype.Service;
  * @date 2023/8/9 10:48
  */
 @Service
-public class CategoryService extends CategoryServiceImpl {
+public class AppShopCategoryService extends CategoryServiceImpl {
 }

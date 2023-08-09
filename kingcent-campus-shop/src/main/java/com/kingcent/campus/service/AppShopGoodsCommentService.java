@@ -19,7 +19,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GoodsCommentService extends GoodsCommentServiceImpl {
+public class AppShopGoodsCommentService extends GoodsCommentServiceImpl {
 
 
     @Autowired

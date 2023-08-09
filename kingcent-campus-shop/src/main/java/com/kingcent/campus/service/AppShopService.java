@@ -15,7 +15,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class ShopService extends ShopServiceImpl {
+public class AppShopService extends ShopServiceImpl {
 
     @Autowired
     private StringRedisTemplate redisTemplate;

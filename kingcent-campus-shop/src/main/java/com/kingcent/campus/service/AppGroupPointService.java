@@ -15,7 +15,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GroupPointService extends GroupPointServiceImpl {
+public class AppGroupPointService extends GroupPointServiceImpl {
 
     private static final String KEY_OF_POINT_NAMES = "point_names";
 

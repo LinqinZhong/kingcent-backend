@@ -15,7 +15,7 @@ import java.util.Set;
  * @date 2023/8/8 1:12
  */
 @Service
-public class UserInfoService extends UserInfoServiceImpl {
+public class AppUserInfoService extends UserInfoServiceImpl {
 
     @Override
     public Map<Long, UserInfoEntity> userInfoMap(Set<Long> userIds){

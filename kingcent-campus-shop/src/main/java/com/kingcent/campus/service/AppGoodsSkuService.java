@@ -1,6 +1,6 @@
 package com.kingcent.campus.service;
 
-import com.kingcent.campus.shop.service.impl.GoodsServiceImpl;
+import com.kingcent.campus.shop.service.impl.GoodsSkuServiceImpl;
 import org.springframework.stereotype.Service;
 
 /**
@@ -8,5 +8,6 @@ import org.springframework.stereotype.Service;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GoodsService extends GoodsServiceImpl {
+public class AppGoodsSkuService extends GoodsSkuServiceImpl {
+
 }

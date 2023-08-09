@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Service
 @Slf4j
-public class SiteService extends SiteServiceImpl {
+public class AppSiteService extends SiteServiceImpl {
 
     private static final String KEY_OF_GROUP_SITES = "group_sites";
     @Autowired

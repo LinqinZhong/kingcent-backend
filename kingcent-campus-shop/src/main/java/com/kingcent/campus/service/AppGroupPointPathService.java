@@ -17,7 +17,7 @@ import java.util.Map;
  * @date 2023/8/8 1:12
  */
 @Service
-public class GroupPointPathService extends GroupPointPathServiceImpl {
+public class AppGroupPointPathService extends GroupPointPathServiceImpl {
 
     @Override
     public Result<?> getPath(){

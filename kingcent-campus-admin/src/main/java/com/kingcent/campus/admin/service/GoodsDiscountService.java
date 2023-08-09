@@ -15,5 +15,4 @@ import java.util.Map;
 @Service
 public class GoodsDiscountService extends GoodsDiscountServiceImpl {
 
-
 }

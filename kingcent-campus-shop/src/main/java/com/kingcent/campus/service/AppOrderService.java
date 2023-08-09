@@ -2,14 +2,15 @@ package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
+import com.kingcent.campus.shop.mapper.OrderMapper;
 import com.kingcent.campus.shop.service.*;
-import com.kingcent.campus.shop.service.impl.OrderServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,36 +27,70 @@ import java.util.Map;
  * @author rainkyzhong
  * @date 2023/8/8 1:12
  */
-@Service public class OrderService extends OrderServiceImpl {
+@Service
+public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> implements OrderService {
 
     @Autowired
     private AddressService addressService;
 
     @Autowired
-    private DeliveryGroupService deliveryGroupService;
+    private AppShopDeliveryGroupService deliveryGroupService;
 
     @Autowired
-    private GoodsSkuService goodsSkuService;
+    private AppGoodsSkuService goodsSkuService;
 
     @Autowired
-    private DeliveryTemplateService deliveryTemplateService;
+    private AppShopDeliveryTemplateService deliveryTemplateService;
 
     @Autowired
-    private GoodsDiscountService goodsDiscountService;
+    private AppShopGoodsDiscountService goodsDiscountService;
 
     @Autowired
-    private OrderGoodsService orderGoodsService;
+    private AppOrderGoodsService orderGoodsService;
 
     @Autowired
-    private PayTypeService payTypeService;
+    private AppPayTypeService payTypeService;
+
+    /**
+     * 检查用户操作是否存在订单异常，存在则返回错误，不存在则返回null
+     * @param userId 用户id
+     * @param orderNum 请求订单的数量
+     */
+    @Override
+    public <T> Result<T> checkOrder(Long userId, Integer orderNum, Class<T> tClass){
+        //查询用户是否存在未支付的线上支付订单，有则拦截
+        if(count(
+                new QueryWrapper<OrderEntity>()
+                        .eq("user_id", userId)
+                        .ne("pay_type", "offline")
+                        .eq("status",0)
+                        .last("limit 1")
+        ) > 0){
+            return Result.fail("您当前有待支付的订单，请完成订单后再下单", tClass);
+        }
+
+        //累计未完成的到付订单数量不能超过15个
+        if(count(
+                new QueryWrapper<OrderEntity>()
+                        .eq("user_id", userId)
+                        .eq("pay_type", "offline")
+                        .eq("status",0)
+        ) + orderNum > 15){
+            return Result.fail("到付订单数量过多，请勿超过15个", tClass);
+        }
+        return null;
+    }
 
     /**
      * 创建订单
      */
-
     @Override
     @Transactional
     public Result<CreateOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase){
+
+        //检查是否存在订单异常
+        Result<CreateOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size(), CreateOrderResultVo.class);
+        if (checkResult != null) return checkResult;
 
         CreateOrderResultVo result = new CreateOrderResultVo();
 
@@ -74,6 +109,8 @@ import java.util.Map;
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //支付方式
         Map<Long, String> payTypeMaps = new HashMap<>();
+        //skuIds
+        List<Long> skuIds = new ArrayList<>();
 
         //---------------------------------------------------------------------
         //提取数据
@@ -107,8 +144,14 @@ import java.util.Map;
         if(skus.size() == 0) return Result.fail("商品不存在", CreateOrderResultVo.class);
         for (GoodsSkuEntity goodsSkuEntity : skus) {
             skuMap.put(goodsSkuEntity.getGoodsId()+"-"+goodsSkuEntity.getSpecInfo(), goodsSkuEntity);
+            skuIds.add(goodsSkuEntity.getId());
         }
         //--------------------------------------------------------------------
+
+
+        //查询用户对sku购买次数
+        Map<Long, Integer> skuBuyCount = orderGoodsService.countUserBuyCountOfSku(userId,skuIds);
+
 
         //--------------------------------------------------------------------
         //查询配送模板
@@ -187,12 +230,25 @@ import java.util.Map;
                     return Result.fail("商品不存在", CreateOrderResultVo.class);
                 }
 
+                //商品限购
+                if(
+                        (sku.getLimitMinCount() != null && goods.getCount() < sku.getLimitMinCount())   //最低限制
+                                ||
+                                sku.getLimitMaxCount() != null && goods.getCount() + (
+                                        skuBuyCount.getOrDefault(sku.getId(), 0)            //最高限制
+                                ) > sku.getLimitMaxCount()
+                ){
+                    //限制最低购买
+                    return Result.fail("数量不符合购买要求，请重试", CreateOrderResultVo.class);
+                }
+
                 OrderGoodsEntity orderGoods = new OrderGoodsEntity();
                 orderGoods.setCount(goods.getCount());
                 orderGoods.setSkuId(sku.getId());
                 orderGoods.setUnitPrice(sku.getPrice());
                 orderGoods.setPrice(BigDecimal.valueOf(0));
                 orderGoods.setDiscount(BigDecimal.valueOf(0));
+                orderGoods.setUserId(userId);
 
                 //更新库存
                 if (goodsSkuService.update(

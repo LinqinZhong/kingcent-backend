@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 public class OrderGoodsEntity {
     private Long id;
     private Long orderId;
+    private Long userId;
     private Long skuId;
     private Integer count;
     private BigDecimal unitPrice;
