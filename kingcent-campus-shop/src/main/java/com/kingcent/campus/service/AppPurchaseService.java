@@ -8,6 +8,7 @@ import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.purchase.*;
 import com.kingcent.campus.shop.service.*;
 import com.kingcent.campus.shop.service.impl.PurchaseServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
+@Slf4j
 public class AppPurchaseService extends PurchaseServiceImpl {
 
     @Autowired
@@ -221,6 +223,7 @@ public class AppPurchaseService extends PurchaseServiceImpl {
                             ) > sku.getLimitMaxCount()
             ){
                 //限制最低购买
+                log.info("购买数量：{}，限购区间{}-{}",count, sku.getLimitMinCount(),sku.getLimitMaxCount()+skuBuyCount.getOrDefault(sku.getId(), 0));
                 return Result.fail("数量不符合购买要求，请重试", PurchaseInfoVo.class);
             }
             //获取商铺对象
@@ -234,6 +237,10 @@ public class AppPurchaseService extends PurchaseServiceImpl {
                 continue;   //库存为0时，跳过该商品
             }
             if(sku.getSafeStockQuantity() < count){
+                if(sku.getSafeStockQuantity() < sku.getLimitMinCount()){
+                    //剩余库存少于起购件数，判断为库存不足
+                    return Result.fail("商品库存不足", PurchaseInfoVo.class);
+                }
                 //TODO 要提示用户数量变动了
                 count = sku.getSafeStockQuantity(); //库存不足数量时，将数量设置为最大值
             }
