@@ -45,14 +45,12 @@ public class Result<T> {
         return success("成功", data);
     }
 
-    public static Result<?> fail(String message){
-        return new Result<>().message(message).success(false);
-    }
-    public static <T> Result<T> fail(Integer code, String message, Class<T> className){
+
+    public static <T> Result<T> fail(Integer code, String message){
         return new Result<T>().success(false).code(code).message(message);
     }
 
-    public static <T> Result<T> fail(String message, Class<T> className){
-        return fail(null, message, className);
+    public static <T> Result<T> fail(String message){
+        return fail(null, message);
     }
 }

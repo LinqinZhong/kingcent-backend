@@ -1,8 +1,5 @@
 package com.kingcent.campus.shop.config;
 
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.springframework.context.annotation.Bean;
 
 /**
  * @author rainkyzhong
@@ -10,10 +7,4 @@ import org.springframework.context.annotation.Bean;
  */
 //@Configuration
 public class RedissonConfig {
-
-
-    @Bean
-    public RedissonClient redisson(){
-        return Redisson.create();
-    }
 }

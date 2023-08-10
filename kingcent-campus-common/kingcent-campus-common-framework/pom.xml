@@ -7,8 +7,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>kingcent-campus-commom-framework</artifactId>
-    <name>Archetype - kingcent-campus-commom-framework</name>
+    <artifactId>kingcent-campus-common-framework</artifactId>
+    <name>Archetype - kingcent-campus-common-framework</name>
     <url>http://maven.apache.org</url>
 
     <dependencies>

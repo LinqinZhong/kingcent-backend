@@ -56,7 +56,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      * @param orderNum 请求订单的数量
      */
     @Override
-    public <T> Result<T> checkOrder(Long userId, Integer orderNum, Class<T> tClass){
+    public <T> Result<T> checkOrder(Long userId, Integer orderNum){
         //查询用户是否存在未支付的线上支付订单，有则拦截
         if(count(
                 new QueryWrapper<OrderEntity>()
@@ -65,7 +65,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                         .eq("status",0)
                         .last("limit 1")
         ) > 0){
-            return Result.fail("您当前有待支付的订单，请完成订单后再下单", tClass);
+            return Result.fail("您当前有待支付的订单，请完成订单后再下单");
         }
 
         //累计未完成的到付订单数量不能超过15个
@@ -75,7 +75,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                         .eq("pay_type", "offline")
                         .eq("status",0)
         ) + orderNum > 15){
-            return Result.fail("到付订单数量过多，请勿超过15个", tClass);
+            return Result.fail("到付订单数量过多，请勿超过15个");
         }
         return null;
     }
@@ -88,14 +88,14 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     public Result<CreateOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase){
 
         //检查是否存在订单异常
-        Result<CreateOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size(), CreateOrderResultVo.class);
+        Result<CreateOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
         if (checkResult != null) return checkResult;
 
         CreateOrderResultVo result = new CreateOrderResultVo();
 
         //查询用户收货地址
         AddressEntity address = addressService.getById(purchase.getAddressId());
-        if (address == null || !address.getUserId().equals(userId)) return Result.fail("收货地址不存在", CreateOrderResultVo.class);
+        if (address == null || !address.getUserId().equals(userId)) return Result.fail("收货地址不存在");
 
         //所有在线支付的金额
         BigDecimal onlinePayPrice = new BigDecimal(0);
@@ -140,7 +140,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //---------------------------------------------------------------------
         //查询sku
         List<GoodsSkuEntity> skus = goodsSkuService.list(skuWrapper);
-        if(skus.size() == 0) return Result.fail("商品不存在", CreateOrderResultVo.class);
+        if(skus.size() == 0) return Result.fail("商品不存在");
         for (GoodsSkuEntity goodsSkuEntity : skus) {
             skuMap.put(goodsSkuEntity.getGoodsId()+"-"+goodsSkuEntity.getSpecInfo(), goodsSkuEntity);
             skuIds.add(goodsSkuEntity.getId());
@@ -165,16 +165,16 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //检查是否能够配送
         for (Long shopId : shopIds) {
             if(!deliveryTmpMap.containsKey(shopId)){
-                return Result.fail("商家已暂停营业", CreateOrderResultVo.class);
+                return Result.fail("商家已暂停营业");
             }
             DeliveryTemplateEntity delivery = deliveryTmpMap.get(shopId);
             LocalDateTime deliveryTime = deliveryTimes.get(shopId);
             LocalDate deliveryDate = deliveryTime.toLocalDate();
             if(deliveryTime.toLocalDate().equals(LocalDate.now()) && LocalDateTime.now().isAfter(deliveryTime.minusMinutes(delivery.getReserveTime()))){
-                return Result.fail("配送时间在商家的预留时间内，请更换配送时间", CreateOrderResultVo.class);
+                return Result.fail("配送时间在商家的预留时间内，请更换配送时间");
             }
             if (!isNotRestDate(deliveryDate, delivery.getRestMonth(), delivery.getRestDay(), delivery.getRestWeek())) {
-                return Result.fail("商家当天休息，请更换配送时间", CreateOrderResultVo.class);
+                return Result.fail("商家当天休息，请更换配送时间");
             }
         }
 
@@ -192,7 +192,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         for (Long shopId : shopIds) {
             if(!deliveryGroupMap.containsKey(shopId)){
-                return Result.fail("当前地址超出配送范围", CreateOrderResultVo.class);
+                return Result.fail("当前地址超出配送范围");
             }
         }
         //--------------------------------------------------------------------
@@ -205,7 +205,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         for (Long shopId : shopIds) {
             if (!payTypeMaps.containsKey(shopId)){
-                return Result.fail("不支持该支付方式，请稍后重试", CreateOrderResultVo.class);
+                return Result.fail("不支持该支付方式，请稍后重试");
             }
         }
         //--------------------------------------------------------------------
@@ -226,7 +226,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 //获取sku
                 GoodsSkuEntity sku = skuMap.get(goods.getId()+"-"+goods.getSku());
                 if(sku == null){
-                    return Result.fail("商品不存在", CreateOrderResultVo.class);
+                    return Result.fail("商品不存在");
                 }
 
                 //商品限购
@@ -238,7 +238,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                                 ) > sku.getLimitMaxCount()
                 ){
                     //限制最低购买
-                    return Result.fail("数量不符合购买要求，请重试", CreateOrderResultVo.class);
+                    return Result.fail("数量不符合购买要求，请重试");
                 }
 
                 OrderGoodsEntity orderGoods = new OrderGoodsEntity();
@@ -280,7 +280,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                     orderGoods.setPrice(price);
                     orderPrice = orderPrice.add(price);
                 }else{
-                    return Result.fail("商品库存不足，请重试",CreateOrderResultVo.class);
+                    return Result.fail("商品库存不足，请重试");
                 }
                 orderGoodsList.add(orderGoods);
             }

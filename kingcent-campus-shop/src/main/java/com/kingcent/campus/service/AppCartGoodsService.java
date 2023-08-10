@@ -68,7 +68,7 @@ public class AppCartGoodsService implements CartGoodsService {
 
         //获取购物车记录
         if(cartGoods == null){
-            return Result.fail("购物车中不存在该商品",CartGoodsEntity.class);
+            return Result.fail("购物车中不存在该商品");
         }
 
         //获取新sku
@@ -78,7 +78,7 @@ public class AppCartGoodsService implements CartGoodsService {
                 .select("id")
                 .last("limit 1"));
         if (sku.size() == 0){
-            return Result.fail("该规格的商品已售罄", CartGoodsEntity.class);
+            return Result.fail("该规格的商品已售罄");
         }
         //删除旧sku的商品
         ops.delete(key, cartGoodsCode);
@@ -290,7 +290,7 @@ public class AppCartGoodsService implements CartGoodsService {
         //获取购物车记录
         CartGoodsEntity cartGoods = ops.get(key, cartGoodsCode);
         if(cartGoods == null){
-            return Result.fail("购物车中不存在该商品",String.class);
+            return Result.fail("购物车中不存在该商品");
         }
 
         //更新

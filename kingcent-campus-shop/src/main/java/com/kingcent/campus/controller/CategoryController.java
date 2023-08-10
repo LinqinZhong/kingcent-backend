@@ -76,7 +76,7 @@ public class CategoryController {
     public Result<CategoryEntity> getById(@PathVariable Long id) {
         CategoryEntity category = categoryService.getById(id);
         if (category == null) {
-            return Result.fail("未找到该商品分类", CategoryEntity.class);
+            return Result.fail("未找到该商品分类");
         }
         return Result.success(category);
     }
@@ -93,7 +93,7 @@ public class CategoryController {
         if (saveResult) {
             return Result.success("添加商品分类成功");
         }
-        return Result.fail("添加商品分类失败", CategoryEntity.class);
+        return Result.fail("添加商品分类失败");
     }
 
     /**
@@ -111,6 +111,6 @@ public class CategoryController {
         if (updateResult) {
             return Result.success("更新商品分类成功");
         }
-        return Result.fail("更新商品分类失败", CategoryEntity.class);
+        return Result.fail("更新商品分类失败");
     }
 }

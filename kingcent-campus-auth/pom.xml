@@ -13,7 +13,7 @@
     <dependencies>
         <dependency>
             <groupId>com.kingcent</groupId>
-            <artifactId>kingcent-campus-commom-framework</artifactId>
+            <artifactId>kingcent-campus-common-framework</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

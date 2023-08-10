@@ -58,7 +58,7 @@ public class AppPurchaseService implements PurchaseService {
         long start = System.currentTimeMillis();
 
         //检查是否存在订单异常
-        Result<PurchaseInfoVo> checkResult = orderService.checkOrder(userId, check.getList().size(), PurchaseInfoVo.class);
+        Result<PurchaseInfoVo> checkResult = orderService.checkOrder(userId, check.getList().size());
         if (checkResult != null) return checkResult;
 
 
@@ -76,7 +76,7 @@ public class AppPurchaseService implements PurchaseService {
         //1.获取商品列表
         start = System.currentTimeMillis();
         List<GoodsEntity> goodsEntityList = goodsService.listByIds(goodsIds);
-        if(goodsEntityList.size() == 0) return Result.fail("商品不存在", PurchaseInfoVo.class);
+        if(goodsEntityList.size() == 0) return Result.fail("商品不存在");
         //提取数据
         Map<Long, GoodsEntity> goodsMap = new HashMap<>();
         for (GoodsEntity goods : goodsEntityList) {
@@ -257,13 +257,13 @@ public class AppPurchaseService implements PurchaseService {
                 //商品限购
                 if(sku.getLimitMinCount() != null && count < sku.getLimitMinCount()) {
                     //最低限制
-                    return Result.fail("数量不能少于起购数量，请重试", PurchaseInfoVo.class);
+                    return Result.fail("数量不能少于起购数量，请重试");
                 }else if(sku.getLimitMaxCount() != null){
                     //最高限制
                     if(count > sku.getLimitMaxCount()){
-                        return Result.fail("数量不能超过限购数量", PurchaseInfoVo.class);
+                        return Result.fail("数量不能超过限购数量");
                     }else if(count + skuBuyCount.getOrDefault(sku.getId(), 0) > sku.getLimitMaxCount()){
-                        return Result.fail("您此前已经买过此商品，请确保累计购买没有超过限购数量", PurchaseInfoVo.class);
+                        return Result.fail("您此前已经买过此商品，请确保累计购买没有超过限购数量");
                     }
                 }
 
@@ -271,7 +271,7 @@ public class AppPurchaseService implements PurchaseService {
                 if(sku.getSafeStockQuantity() < count){
                     if(sku.getLimitMinCount()  != null && sku.getSafeStockQuantity() < sku.getLimitMinCount()){
                         //剩余库存少于起购件数，判断为库存不足
-                        return Result.fail("商品库存不足", PurchaseInfoVo.class);
+                        return Result.fail("商品库存不足");
                     }
                     //库存不足数量时，将数量设置为最大值
                     count = sku.getSafeStockQuantity();

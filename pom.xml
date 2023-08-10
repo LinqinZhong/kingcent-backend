@@ -29,9 +29,9 @@
     <module>kingcent-campus-auth</module>
     <module>kingcent-campus-gateway</module>
     <module>kingcent-campus-mybatis-plus</module>
-      <module>kingcent-campus-admin</module>
+    <module>kingcent-campus-admin</module>
     <module>kingcent-campus-common/kingcent-campus-common-shop</module>
-    <module>kingcent-campus-common/kingcent-campus-commom-framework</module>
+    <module>kingcent-campus-common/kingcent-campus-common-framework</module>
   </modules>
 
   <dependencyManagement>

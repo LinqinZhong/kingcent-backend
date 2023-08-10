@@ -7,7 +7,8 @@ import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface OrderService extends IService<OrderEntity> {
-    <T> Result<T> checkOrder(Long userId, Integer orderNum, Class<T> tClass);
+
+    <T> Result<T> checkOrder(Long userId, Integer orderNum);
 
     @Transactional
     Result<?> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase);

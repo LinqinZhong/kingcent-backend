@@ -95,6 +95,7 @@ public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implem
         //提取内容
         for (GeoResult<RedisGeoCommands.GeoLocation<String>> result : radius) {
             try {
+                System.out.println(result);
                 String[] info = result.getContent().getName().split(",");
                 GroupLocationVo vo = new GroupLocationVo();
                 vo.setGroupId(Long.valueOf(info[0]));
@@ -138,7 +139,7 @@ public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implem
                         args
                 );
         if(radius == null || radius.getContent().size() == 0){
-            return Result.fail("附近没有配送点",GroupLocationVo.class);
+            return Result.fail("附近没有配送点");
         }
         String[] info = radius.getContent().get(0).getContent().getName().split(",");
         GroupLocationVo vo = new GroupLocationVo();

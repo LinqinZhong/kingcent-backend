@@ -58,7 +58,7 @@ public class AddressController {
                 .last("limit 1")
         );
         if(res == null || !res.containsKey("floor"))
-            return Result.fail("该配送点没有可选的楼层，请联系管理员", Integer.class);
+            return Result.fail("该配送点没有可选的楼层，请联系管理员");
         return Result.success((Integer)(res.get("floor")));
     }
 
@@ -72,7 +72,7 @@ public class AddressController {
                         .select("id, name")
         );
         if(pointEntities.size() == 0)
-            return (Result<List<FloorConsumePointVo>>) Result.fail("该配送点没有可选的楼层，请联系管理员");
+            return Result.fail("该配送点没有可选的楼层，请联系管理员");
         List<FloorConsumePointVo> points = new ArrayList<>();
         for (GroupPointEntity pointEntity : pointEntities) {
             FloorConsumePointVo point = new FloorConsumePointVo();
