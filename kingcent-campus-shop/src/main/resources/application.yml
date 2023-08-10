@@ -7,6 +7,7 @@ spring:
   data:
     redis:
       timeout: 300s
+#      host: localhost
       host: 43.142.61.230
       port: 6379
       database: 0
@@ -18,6 +19,9 @@ spring:
           min-idle: 0
 
   datasource:
+#    username: root
+#    password: 11223344aaa
+#    url: jdbc:mysql://localhost:3306/kingcent_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
     username: kc_campus
     password: TstsraYwCWx3jWsT
     url: jdbc:mysql://43.142.61.230:3306/kc_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull

@@ -1,9 +1,11 @@
 package com.kingcent.campus.service;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.SiteEntity;
 import com.kingcent.campus.shop.entity.vo.site.SiteLocationVo;
-import com.kingcent.campus.shop.service.impl.SiteServiceImpl;
+import com.kingcent.campus.shop.mapper.SiteMapper;
+import com.kingcent.campus.shop.service.SiteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.*;
@@ -11,7 +13,6 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.BoundGeoOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Service
 @Slf4j
-public class AppSiteService extends SiteServiceImpl {
+public class AppSiteService extends ServiceImpl<SiteMapper, SiteEntity> implements SiteService {
 
     private static final String KEY_OF_GROUP_SITES = "group_sites";
     @Autowired

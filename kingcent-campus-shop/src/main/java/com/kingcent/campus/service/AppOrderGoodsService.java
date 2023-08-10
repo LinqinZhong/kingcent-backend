@@ -6,7 +6,6 @@ import com.kingcent.campus.shop.entity.OrderGoodsEntity;
 import com.kingcent.campus.shop.mapper.OrderGoodsMapper;
 import com.kingcent.campus.shop.service.OrderGoodsService;
 import org.springframework.stereotype.Service;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;

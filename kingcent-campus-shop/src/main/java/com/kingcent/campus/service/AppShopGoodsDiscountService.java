@@ -1,10 +1,11 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.GoodsDiscountEntity;
-import com.kingcent.campus.shop.service.impl.GoodsDiscountServiceImpl;
+import com.kingcent.campus.shop.mapper.GoodsDiscountMapper;
+import com.kingcent.campus.shop.service.GoodsDiscountService;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -13,7 +14,7 @@ import java.util.Map;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppShopGoodsDiscountService extends GoodsDiscountServiceImpl {
+public class AppShopGoodsDiscountService extends ServiceImpl<GoodsDiscountMapper, GoodsDiscountEntity> implements GoodsDiscountService {
 
     @Override
     public GoodsDiscountEntity getBestDiscount(Long goodsId, Integer count){

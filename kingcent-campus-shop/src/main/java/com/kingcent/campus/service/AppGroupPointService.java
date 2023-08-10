@@ -1,13 +1,14 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.GroupPointEntity;
-import com.kingcent.campus.shop.service.impl.GroupPointServiceImpl;
+import com.kingcent.campus.shop.mapper.GroupPointMapper;
+import com.kingcent.campus.shop.service.GroupPointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 /**
@@ -15,7 +16,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppGroupPointService extends GroupPointServiceImpl {
+public class AppGroupPointService extends ServiceImpl<GroupPointMapper, GroupPointEntity> implements GroupPointService {
 
     private static final String KEY_OF_POINT_NAMES = "point_names";
 

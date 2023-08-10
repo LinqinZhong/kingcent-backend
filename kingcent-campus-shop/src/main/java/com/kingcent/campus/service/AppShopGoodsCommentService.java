@@ -1,17 +1,18 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.GoodsCommentCountEntity;
 import com.kingcent.campus.shop.entity.GoodsCommentEntity;
 import com.kingcent.campus.shop.entity.UserInfoEntity;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsCommentVo;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsCommentsPreviewVo;
+import com.kingcent.campus.shop.mapper.GoodsCommentMapper;
 import com.kingcent.campus.shop.service.GoodsCommentCountService;
+import com.kingcent.campus.shop.service.GoodsCommentService;
 import com.kingcent.campus.shop.service.UserInfoService;
-import com.kingcent.campus.shop.service.impl.GoodsCommentServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 /**
@@ -19,7 +20,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppShopGoodsCommentService extends GoodsCommentServiceImpl {
+public class AppShopGoodsCommentService extends ServiceImpl<GoodsCommentMapper, GoodsCommentEntity> implements GoodsCommentService {
 
 
     @Autowired

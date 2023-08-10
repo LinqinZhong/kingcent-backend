@@ -1,10 +1,11 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.UserInfoEntity;
-import com.kingcent.campus.shop.service.impl.UserInfoServiceImpl;
+import com.kingcent.campus.shop.mapper.UserInfoMapper;
+import com.kingcent.campus.shop.service.UserInfoService;
 import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.Set;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppUserInfoService extends UserInfoServiceImpl {
+public class AppUserInfoService extends ServiceImpl<UserInfoMapper, UserInfoEntity> implements UserInfoService {
 
     @Override
     public Map<Long, UserInfoEntity> userInfoMap(Set<Long> userIds){

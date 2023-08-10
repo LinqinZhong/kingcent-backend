@@ -1,13 +1,14 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.ShopEntity;
-import com.kingcent.campus.shop.service.impl.ShopServiceImpl;
+import com.kingcent.campus.shop.mapper.ShopMapper;
+import com.kingcent.campus.shop.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 /**
@@ -15,7 +16,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppShopService extends ShopServiceImpl {
+public class AppShopService extends ServiceImpl<ShopMapper, ShopEntity> implements ShopService {
 
     @Autowired
     private StringRedisTemplate redisTemplate;

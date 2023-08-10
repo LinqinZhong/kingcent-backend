@@ -40,9 +40,6 @@ public class GoodsController {
     @Autowired
     private GoodsDiscountService goodsDiscountService;
 
-    @Autowired
-    private PurchaseService purchaseService;
-
     /**
      * 获取商城商品列表
      * @param groupId 配送点
@@ -63,6 +60,7 @@ public class GoodsController {
         //TODO redis做缓存
         //获取商铺
         QueryWrapper<DeliveryGroup> wrapper = new QueryWrapper<>();
+        wrapper.select("any_value(shop_id) as shop_id, any_value(group_id) as_group_id, any_value(delivery_fee) as delivery_id");
         //指定配送点
         if (groupId != null) wrapper.eq("group_id", groupId);
         //不指定配送点，按商铺id分组，以免出现多条相同商铺的
@@ -79,7 +77,7 @@ public class GoodsController {
             shopIds.add(deliveryGroup.getShopId());
 
             //设置了配送点才有运费信息
-            if(groupId != null)
+            if(groupId != null && deliveryGroup.getDeliveryFee() != null)
                 deliveryGroupFreight.put(deliveryGroup.getShopId(), deliveryGroup.getDeliveryFee());
         }
 
@@ -104,7 +102,7 @@ public class GoodsController {
             goodsVoMap.put(record.getId(), goodsVo);
 
             //【免费配送】标签
-            if (deliveryGroupFreight.containsKey(record.getShopId()) && deliveryGroupFreight.get(record.getShopId()).doubleValue() == 0D){
+            if (deliveryGroupFreight.containsKey(record.getShopId())  && deliveryGroupFreight.get(record.getShopId()).doubleValue() == 0D){
                 tags.add("免费配送");
             }
             res.add(goodsVo);
@@ -115,7 +113,7 @@ public class GoodsController {
         List<GoodsDiscountEntity> discounts = goodsDiscountService.list(new QueryWrapper<GoodsDiscountEntity>()
                 .in("goods_id", goodsIds)
                 .gt("deadline", LocalDateTime.now().plusHours(2))
-                .select("more_than, goods_id, num, type")
+                .select("any_value(more_than) as more_than, any_value(goods_id) as goods_id, any_value(num) as num, any_value(type) as type")
                 .groupBy("goods_id")
                 .orderByDesc("more_than")
         );

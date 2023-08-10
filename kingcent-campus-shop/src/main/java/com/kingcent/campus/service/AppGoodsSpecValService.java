@@ -1,6 +1,9 @@
 package com.kingcent.campus.service;
 
-import com.kingcent.campus.shop.service.impl.GoodsSpecValServiceImpl;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.campus.shop.entity.GoodsSpecValueEntity;
+import com.kingcent.campus.shop.mapper.GoodsSpecValueMapper;
+import com.kingcent.campus.shop.service.GoodsSpecValueService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -8,5 +11,5 @@ import org.springframework.stereotype.Service;
  * @date 2023/8/8 1:12
  */
 @Service
-public class AppGoodsSpecValService extends GoodsSpecValServiceImpl {
+public class AppGoodsSpecValService extends ServiceImpl<GoodsSpecValueMapper, GoodsSpecValueEntity> implements GoodsSpecValueService {
 }

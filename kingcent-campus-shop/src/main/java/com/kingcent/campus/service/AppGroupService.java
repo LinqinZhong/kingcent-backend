@@ -1,10 +1,12 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.GroupEntity;
 import com.kingcent.campus.shop.entity.vo.group.GroupLocationVo;
-import com.kingcent.campus.shop.service.impl.GroupServiceImpl;
+import com.kingcent.campus.shop.mapper.GroupMapper;
+import com.kingcent.campus.shop.service.GroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.*;
@@ -13,12 +15,11 @@ import org.springframework.data.redis.core.BoundGeoOperations;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 @Service
 @Slf4j
-public class AppGroupService extends GroupServiceImpl {
+public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implements GroupService {
     private static final String KEY_OF_GROUP_POINTS = "group_points";
     private static final String KEY_OF_GROUP_NAMES = "group_names";
 

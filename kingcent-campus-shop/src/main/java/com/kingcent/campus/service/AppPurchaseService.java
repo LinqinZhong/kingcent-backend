@@ -4,14 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.AddressVo;
-import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.purchase.*;
 import com.kingcent.campus.shop.service.*;
-import com.kingcent.campus.shop.service.impl.PurchaseServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,7 +21,7 @@ import java.util.*;
  */
 @Service
 @Slf4j
-public class AppPurchaseService extends PurchaseServiceImpl {
+public class AppPurchaseService implements PurchaseService {
 
     @Autowired
     private OrderGoodsService orderGoodsService;
@@ -58,11 +55,14 @@ public class AppPurchaseService extends PurchaseServiceImpl {
     @Override
     public Result<PurchaseInfoVo> getPurchaseInfo(Long userId, CheckPurchaseVo check){
 
+        long start = System.currentTimeMillis();
 
         //检查是否存在订单异常
         Result<PurchaseInfoVo> checkResult = orderService.checkOrder(userId, check.getList().size(), PurchaseInfoVo.class);
         if (checkResult != null) return checkResult;
 
+
+        log.info("用时{}", System.currentTimeMillis() - start);
 
         //收集goodsId，count
         Set<Long> goodsIds = new HashSet<>();
@@ -72,7 +72,9 @@ public class AppPurchaseService extends PurchaseServiceImpl {
             countMap.put(query.getGoodsId()+"-"+query.getSpecInfo(), query.getCount());
         }
 
+
         //1.获取商品列表
+        start = System.currentTimeMillis();
         List<GoodsEntity> goodsEntityList = goodsService.listByIds(goodsIds);
         if(goodsEntityList.size() == 0) return Result.fail("商品不存在", PurchaseInfoVo.class);
         //提取数据
@@ -80,6 +82,8 @@ public class AppPurchaseService extends PurchaseServiceImpl {
         for (GoodsEntity goods : goodsEntityList) {
             goodsMap.put(goods.getId(), goods);
         }
+        log.info("用时{}", System.currentTimeMillis() - start);
+
 
         //收集shopId
         Set<Long> shopIds = new HashSet<>();
@@ -88,9 +92,13 @@ public class AppPurchaseService extends PurchaseServiceImpl {
         }
 
         //2.获取商铺名称
+        start = System.currentTimeMillis();
         Map<Long, String> shopNames = shopService.shopNamesMap(shopIds);
+        log.info("用时{}", System.currentTimeMillis() - start);
+
 
         //3.获取商品规格列表
+        start = System.currentTimeMillis();
         QueryWrapper<GoodsSkuEntity> skuWrapper = new QueryWrapper<>();
         //添加条件
         for (QueryPurchaseVo query : check.getList()) {
@@ -106,25 +114,33 @@ public class AppPurchaseService extends PurchaseServiceImpl {
         for (GoodsSkuEntity sku : skus) {
             skuIds.add(sku.getId());
         }
+        log.info("用时{}", System.currentTimeMillis() - start);
 
         //4.获取配送信息
+        start = System.currentTimeMillis();
         List<DeliveryTemplateEntity> deliveries = deliveryTemplateService.list(
                 new QueryWrapper<DeliveryTemplateEntity>()
                         .in("shop_id", shopIds)
                         .eq("is_used", 1)
         );
+        log.info("用时{}", System.currentTimeMillis() - start);
 
         //5.获取地址信息
+        start = System.currentTimeMillis();
         List<AddressVo> userAddress = addressService.getUserAddress(userId);
+        log.info("用时{}", System.currentTimeMillis() - start);
 
         //6.获取支持的支付方式
+        start = System.currentTimeMillis();
         List<PayTypeEntity> payTypes = payTypeService.list(
                 new QueryWrapper<PayTypeEntity>()
                         .in("shop_id", shopIds)
                         .eq("enabled", true)
         );
+        log.info("用时{}", System.currentTimeMillis() - start);
 
         //7.配送范围信息
+        start = System.currentTimeMillis();
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //用户有设置地址才能查询配送范围信息
         AddressVo defaultAddress = null;
@@ -157,11 +173,16 @@ public class AppPurchaseService extends PurchaseServiceImpl {
             }
         }
 
+        log.info("用时{}", System.currentTimeMillis() - start);
+        start = System.currentTimeMillis();
+
+
         //查询用户对sku购买次数
         Map<Long, Integer> skuBuyCount = orderGoodsService.countUserBuyCountOfSku(userId,skuIds);
+        log.info("用时{}", System.currentTimeMillis() - start);
 
 
-
+        start = System.currentTimeMillis();
         //整合数据
         //交易信息
         PurchaseInfoVo purchaseInfoVo = new PurchaseInfoVo();
@@ -212,78 +233,88 @@ public class AppPurchaseService extends PurchaseServiceImpl {
         for (GoodsSkuEntity sku : skus) {
             //获取商品对象
             GoodsEntity goods = goodsMap.get(sku.getGoodsId());
-            //获取商品数量
-            Integer count = countMap.get(sku.getGoodsId()+"-"+sku.getSpecInfo());
-            //商品限购
-            if(
-                    (sku.getLimitMinCount() != null && count < sku.getLimitMinCount())   //最低限制
-                            ||
-                            sku.getLimitMaxCount() != null && count + (
-                                    skuBuyCount.getOrDefault(sku.getId(), 0)            //最高限制
-                            ) > sku.getLimitMaxCount()
-            ){
-                //限制最低购买
-                log.info("购买数量：{}，限购区间{}-{}",count, sku.getLimitMinCount(),sku.getLimitMaxCount()+skuBuyCount.getOrDefault(sku.getId(), 0));
-                return Result.fail("数量不符合购买要求，请重试", PurchaseInfoVo.class);
-            }
-            //获取商铺对象
-            PurchaseStoreVo store = storeMap.get(goods.getShopId());
-            store.setPrice(BigDecimal.valueOf(0));
-            store.setDiscountPrice(BigDecimal.valueOf(0));
-
-
-            if (sku.getSafeStockQuantity() == 0){
-                //TODO 灰度
-                continue;   //库存为0时，跳过该商品
-            }
-            if(sku.getSafeStockQuantity() < count){
-                if(sku.getSafeStockQuantity() < sku.getLimitMinCount()){
-                    //剩余库存少于起购件数，判断为库存不足
-                    return Result.fail("商品库存不足", PurchaseInfoVo.class);
-                }
-                //TODO 要提示用户数量变动了
-                count = sku.getSafeStockQuantity(); //库存不足数量时，将数量设置为最大值
-            }
-
-            if (count == null) continue;
-
             PurchaseGoodsVo vo = new PurchaseGoodsVo();
-            vo.setCount(count);
+            vo.setStock(sku.getSafeStockQuantity());
+            vo.setCountBought(skuBuyCount.getOrDefault(sku.getId(), 0));
             vo.setSku(sku.getSpecInfo());
             vo.setSkuDesc(sku.getDescription());
             vo.setPrice(sku.getPrice());
             vo.setThumbnail(sku.getImage());
             vo.setId(goods.getId());
             vo.setTitle(goods.getName());
+            //获取商铺对象
+            PurchaseStoreVo store = storeMap.get(goods.getShopId());
+            store.setPrice(BigDecimal.valueOf(0));
+            store.setDiscountPrice(BigDecimal.valueOf(0));
+            //获取商品数量
+            Integer count = countMap.get(sku.getGoodsId()+"-"+sku.getSpecInfo());
+            if (count == null) continue;
 
-            //折扣信息
-            GoodsDiscountEntity discount = goodsDiscountService.getBestDiscount(sku.getGoodsId(), count);
-            //价格和优惠金额
-            BigDecimal price = sku.getPrice().multiply(BigDecimal.valueOf(count));
-            if(discount != null){
-                if (discount.getType() == 1){
-                    //满减
-                    price = price.subtract(discount.getNum());
-                    store.setDiscountPrice(store.getDiscountPrice().add(discount.getNum()));
-                }else{
-                    //满折
-                    BigDecimal p = price.multiply(discount.getNum());
-                    store.setDiscountPrice(store.getDiscountPrice().add(price.subtract(p)));
-                    price = p;
+            //商品库存大于0时才计算费用
+            if(sku.getSafeStockQuantity() > 0) {
+
+
+                //商品限购
+                if(sku.getLimitMinCount() != null && count < sku.getLimitMinCount()) {
+                    //最低限制
+                    return Result.fail("数量不能少于起购数量，请重试", PurchaseInfoVo.class);
+                }else if(sku.getLimitMaxCount() != null){
+                    //最高限制
+                    if(count > sku.getLimitMaxCount()){
+                        return Result.fail("数量不能超过限购数量", PurchaseInfoVo.class);
+                    }else if(count + skuBuyCount.getOrDefault(sku.getId(), 0) > sku.getLimitMaxCount()){
+                        return Result.fail("您此前已经买过此商品，请确保累计购买没有超过限购数量", PurchaseInfoVo.class);
+                    }
                 }
 
-                purchaseInfoVo.setDiscountPrice(store.getDiscountPrice());
-            }else{
-                purchaseInfoVo.setDiscountPrice(BigDecimal.valueOf(0));
-            }
-            store.setPrice(price);
+                //调整数量
+                if(sku.getSafeStockQuantity() < count){
+                    if(sku.getLimitMinCount()  != null && sku.getSafeStockQuantity() < sku.getLimitMinCount()){
+                        //剩余库存少于起购件数，判断为库存不足
+                        return Result.fail("商品库存不足", PurchaseInfoVo.class);
+                    }
+                    //库存不足数量时，将数量设置为最大值
+                    count = sku.getSafeStockQuantity();
+                    //提示用户数量变动了
+                    vo.setCountIsReset(true);
+                }else{
+                    vo.setCountIsReset(false);
+                }
 
-            //运费
-            if(deliveryGroupMap.containsKey(store.getId())){
-                BigDecimal deliveryFee = deliveryGroupMap.get(store.getId()).getDeliveryFee();
-                store.setPrice(store.getPrice().add(deliveryFee));
-                store.setDeliveryFee(deliveryFee);
+
+
+                //折扣信息
+                GoodsDiscountEntity discount = goodsDiscountService.getBestDiscount(sku.getGoodsId(), count);
+                //价格和优惠金额
+                BigDecimal price = sku.getPrice().multiply(BigDecimal.valueOf(count));
+                if (discount != null) {
+                    if (discount.getType() == 1) {
+                        //满减
+                        price = price.subtract(discount.getNum());
+                        store.setDiscountPrice(store.getDiscountPrice().add(discount.getNum()));
+                    } else {
+                        //满折
+                        BigDecimal p = price.multiply(discount.getNum());
+                        store.setDiscountPrice(store.getDiscountPrice().add(price.subtract(p)));
+                        price = p;
+                    }
+
+                    purchaseInfoVo.setDiscountPrice(store.getDiscountPrice());
+                } else {
+                    purchaseInfoVo.setDiscountPrice(BigDecimal.valueOf(0));
+                }
+                store.setPrice(price);
+
+                //运费
+                if (deliveryGroupMap.containsKey(store.getId())) {
+                    BigDecimal deliveryFee = deliveryGroupMap.get(store.getId()).getDeliveryFee();
+                    store.setPrice(store.getPrice().add(deliveryFee));
+                    store.setDeliveryFee(deliveryFee);
+                }
             }
+
+
+            vo.setCount(count);
             store.getGoodsList().add(vo);
         }
 
@@ -295,7 +326,7 @@ public class AppPurchaseService extends PurchaseServiceImpl {
                 store.getPayTypes().add(payType.getType());
             }
         }
-
+        log.info("用时{}", System.currentTimeMillis() - start);
         return Result.success(purchaseInfoVo);
     }
 

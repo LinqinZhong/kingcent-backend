@@ -1,14 +1,16 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.AddressEntity;
 import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.mapper.AddressMapper;
+import com.kingcent.campus.shop.service.AddressService;
 import com.kingcent.campus.shop.service.GroupPointService;
 import com.kingcent.campus.shop.service.GroupService;
-import com.kingcent.campus.shop.service.impl.AddressServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.*;
 
 /**
@@ -16,7 +18,8 @@ import java.util.*;
  * @date 2023/8/9 10:41
  */
 @Service
-public class AppShopAddressService extends AddressServiceImpl {
+@Slf4j
+public class AppShopAddressService extends ServiceImpl<AddressMapper, AddressEntity> implements AddressService {
     @Autowired
     private GroupPointService groupPointService;
 
@@ -26,11 +29,14 @@ public class AppShopAddressService extends AddressServiceImpl {
 
     @Override
     public List<AddressVo> getUserAddress(Long userId){
+
+        long start = System.currentTimeMillis();
         List<AddressEntity> addressEntities = list(
                 new QueryWrapper<AddressEntity>()
                         .eq("user_id", userId)
                         .orderByDesc("id")
         );
+        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
         List<AddressVo> res = new ArrayList<>();
 
 
@@ -42,9 +48,13 @@ public class AppShopAddressService extends AddressServiceImpl {
             pointIds.add(addressEntity.getPointId());
         }
         //获取配送点的名称
+        start = System.currentTimeMillis();
         Map<Long, String> groupNames = groupService.getGroupNames(groupIds);
+        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
         //获取门牌号的名称
+        start = System.currentTimeMillis();
         Map<Long, String> pointNames = groupPointService.getPointNames(pointIds);
+        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
 
         for (AddressEntity addressEntity : addressEntities) {
             AddressVo addressVo = new AddressVo();
