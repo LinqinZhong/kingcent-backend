@@ -3,6 +3,7 @@ package com.kingcent.campus.shop.entity.vo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -12,4 +13,7 @@ public class CategoryVo {
     private String name;
     private String thumbnail;
     private List<CategoryVo> children;
+    private String ref;
+    private BigDecimal price;
+    private Integer sales;
 }

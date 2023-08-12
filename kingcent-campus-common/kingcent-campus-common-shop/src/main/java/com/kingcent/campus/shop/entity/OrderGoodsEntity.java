@@ -12,6 +12,9 @@ public class OrderGoodsEntity {
     private Long orderId;
     private Long userId;
     private Long skuId;
+    private String title;
+    private String skuInfo;
+    private String thumbnail;
     private Integer count;
     private BigDecimal unitPrice;
     private BigDecimal price;

@@ -48,7 +48,12 @@ public class OrderEntity {
     private String tradeNo;
 
     /**
-     * 积分ID
+     * 配送点id
+     */
+    private Long groupId;
+
+    /**
+     * 点ID
      */
     private Long pointId;
 
@@ -56,6 +61,17 @@ public class OrderEntity {
      * 商店ID
      */
     private Long shopId;
+
+
+    /**
+     * 应付价格
+     */
+    private BigDecimal payPrice;
+
+    /**
+     * 商品总价
+     */
+    private BigDecimal goodsSumPrice;
 
     /**
      * 价格
@@ -125,5 +141,5 @@ public class OrderEntity {
     /**
      * 是否已删除
      */
-    private Boolean deleted;
+    private Boolean is_deleted;
 }

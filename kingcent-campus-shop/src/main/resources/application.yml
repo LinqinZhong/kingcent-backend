@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: kingcent-campus-shop
+  jackson:
+    default-property-inclusion: non_null #为空的json字段不返回
   data:
     redis:
       timeout: 300s

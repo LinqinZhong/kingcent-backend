@@ -25,6 +25,8 @@ public class GoodsEntity {
     private Date createTime;
     private Date updateTime;
 
+    private Integer isSale;
+
     @TableLogic
     private Integer isDeleted;
 }

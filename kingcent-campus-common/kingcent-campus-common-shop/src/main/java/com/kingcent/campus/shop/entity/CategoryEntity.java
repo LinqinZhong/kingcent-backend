@@ -40,6 +40,11 @@ public class CategoryEntity implements Serializable {
     private Long parentId;
 
     /**
+     * 链接
+     */
+    private String ref;
+
+    /**
      * 创建时间
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)

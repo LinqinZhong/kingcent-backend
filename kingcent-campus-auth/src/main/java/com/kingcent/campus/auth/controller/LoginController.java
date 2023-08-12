@@ -119,7 +119,7 @@ public class LoginController {
 
         System.out.println("登录");
         if (admin == null)
-            return Result.fail("用户不存在", AdminLoginVo.class);
+            return Result.fail("用户不存在");
         //验证密码
         if((MD5.create().digestHex("password="+password+ "&salt="+ admin.getSalt())).equals(admin.getPassword())){
             String code = MD5.create().digestHex(System.currentTimeMillis()+"");
@@ -147,7 +147,7 @@ public class LoginController {
                     )
             );
         }
-        return Result.fail("密码错误", AdminLoginVo.class);
+        return Result.fail("密码错误");
     }
 
     @PostMapping("/wx")
@@ -156,11 +156,11 @@ public class LoginController {
         String url = "https://api.weixin.qq.com/sns/jscode2session?appid="+ WX_APP_ID +"&secret="+ WX_SECRET +"&js_code="+code+"&grant_type=authorization_code";
         JSONObject result = restTemplate.getForObject(url, JSONObject.class);
         if(result == null){
-            return Result.fail("微信服务器无相应", WxLoginVo.class);
+            return Result.fail("微信服务器无相应");
         }
         if(result.containsKey("openid")){
             String openid = result.getString("openid");
-            if(openid == null) return Result.fail("获取信息为空", WxLoginVo.class);
+            if(openid == null) return Result.fail("获取信息为空");
             //获取用户
             UserEntity userEntity = userService.getOne(new QueryWrapper<UserEntity>().eq("wx_openid",openid));
             if(userEntity == null){
@@ -188,6 +188,6 @@ public class LoginController {
             }
             return Result.success(new WxLoginVo(login.getId(), userEntity.getId(), encryptedSecret));
         }
-        return Result.fail(result.containsKey("errmsg") ? result.getString("errmsg") : "未知错误", WxLoginVo.class);
+        return Result.fail(result.containsKey("errmsg") ? result.getString("errmsg") : "未知错误");
     }
 }
