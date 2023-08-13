@@ -16,6 +16,7 @@ import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.shop.mapper.OrderMapper;
 import com.kingcent.campus.shop.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -62,6 +63,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
     @Autowired
     private GroupService groupService;
+
+    @Autowired
+    private RedisTemplate<String,String> redisTemplate;
 
     @Override
     public VoList<OrderStoreVo> orderList(Long userId, Integer status, Integer page) {

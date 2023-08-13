@@ -39,7 +39,7 @@ public class CategoryController {
             if(parentIds.size() == 0) break;
             List<CategoryEntity> list = categoryService.list(new QueryWrapper<CategoryEntity>()
                     .in("parent_id", parentIds)
-                    .select("id,")
+                    .select("id,name,thumbnail,ref,parent_id")
             );
             parentIds.clear();
             for (CategoryEntity category : list){

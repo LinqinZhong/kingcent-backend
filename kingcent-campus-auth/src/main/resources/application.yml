@@ -11,6 +11,20 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       max-lifetime: 120000
+  data:
+    redis:
+      timeout: 300s
+      #      host: localhost
+      host: 43.142.61.230
+      port: 6379
+      database: 0
+      password: sfwr24667rfasrftrghsdfvz2D
+      jedis:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 500
+          min-idle: 0
 
   cloud:
     nacos:

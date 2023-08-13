@@ -13,6 +13,7 @@ spring:
       host: 43.142.61.230
       port: 6379
       database: 0
+      password: sfwr24667rfasrftrghsdfvz2D
       jedis:
         pool:
           max-active: 8

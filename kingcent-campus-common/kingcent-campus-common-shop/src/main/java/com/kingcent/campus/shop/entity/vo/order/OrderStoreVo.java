@@ -31,6 +31,7 @@ public class OrderStoreVo {
     private LocalDateTime payTime;
     private LocalDateTime deliveryTime;
     private LocalDateTime finishTime;
+    private LocalDateTime paymentDeadline;
     private String remark;
     private List<OrderGoodsVo> goodsList;
 }

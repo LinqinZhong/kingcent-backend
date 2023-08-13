@@ -16,7 +16,6 @@ import com.kingcent.campus.auth.entity.UserEntity;
 import com.kingcent.campus.auth.utils.IpUtil;
 import com.kingcent.campus.auth.utils.SecretEncryptUtil;
 import com.kingcent.campus.auth.utils.SecretUtil;
-import com.kingcent.campus.common.entity.constant.LoginType;
 import com.kingcent.campus.common.entity.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -62,47 +61,7 @@ public class LoginController {
      */
     @PostMapping("/check")
     public Long check(@RequestBody JSONObject object){
-
-        String sign = object.getString("sign");
-        String path = object.getString("path");
-        String data = object.getString("data");
-        LoginType loginType = object.getObject("login-type", LoginType.class);
-        Long lid = object.getLong("lid");
-
-        System.out.println(loginType);
-
-        if(loginType == null) return null;
-
-        switch (loginType){
-            case ADMIN -> {
-                AdminLoginEntity login = adminLoginService.getById(lid);
-                //TODO 鉴权
-                return login.getId();
-            }
-            case CUSTOMER -> {
-                UserLoginEntity userLoginEntity = userLoginService.getById(lid);
-                if (userLoginEntity == null){
-                    return null;
-                }
-                String secret = userLoginEntity.getSecret();
-                long timestamp = System.currentTimeMillis()/60000;
-                if (sign.equals(getSign(userLoginEntity.getUserId(),secret,path,timestamp,data)) || sign.equals(getSign(userLoginEntity.getUserId(),secret,path,timestamp - 1,data))) return userLoginEntity.getUserId();
-                return null;
-            }
-            default -> {
-                return null;
-            }
-        }
-    }
-
-    /**
-     * 计算签名
-     */
-    private String getSign(Long userId, String secret, String path, long timestamp, String data){
-        String value = "uid="+userId+"&secret="+secret+"&path="+path+"&timestamp="+timestamp+"/"+data;
-        String sign = MD5.create().digestHex(value.getBytes());
-        log.info("计算签名：\n{}-->{}", value,sign);
-        return sign;
+        return adminLoginService.check(object);
     }
 
 

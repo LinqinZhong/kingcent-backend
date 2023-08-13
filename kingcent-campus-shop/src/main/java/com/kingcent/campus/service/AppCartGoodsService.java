@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author rainkyzhong
@@ -58,8 +59,6 @@ public class AppCartGoodsService implements CartGoodsService {
     public Result<CartGoodsEntity> updateSku(Long userId, String cartGoodsCode, String specInfo){
 
         //修改sku，把当前sku的商品删了，创建新sku的商品
-
-
         String key = key(userId);
 
         //redis操作器
@@ -98,6 +97,8 @@ public class AppCartGoodsService implements CartGoodsService {
         newCartGoods.setCount(newCartGoods.getCount()+cartGoods.getCount());
         //写入新的数据
         ops.put(key, newCartGoodsCode, newCartGoods);
+        //设置缓存时间
+        redisTemplate.expire(key,30, TimeUnit.DAYS);
         return Result.success(cartGoods);
     }
 
@@ -107,7 +108,6 @@ public class AppCartGoodsService implements CartGoodsService {
      */
     @Override
     public Result<?> put(Long userId, PutCartGoodsVo vo){
-
 
         String strSku = JSON.toJSONString(vo.getSku());
         String key = key(userId);
@@ -148,6 +148,8 @@ public class AppCartGoodsService implements CartGoodsService {
         cartGoods.setCount(cartGoods.getCount()+vo.getCount());
         //保存数据
         ops.put(key, cartGoodsCode, cartGoods);
+        //设置缓存时间
+        redisTemplate.expire(key,30, TimeUnit.DAYS);
 
         return Result.success("添加成功");
     }
@@ -296,6 +298,8 @@ public class AppCartGoodsService implements CartGoodsService {
         //更新
         cartGoods.setCount(count);
         ops.put(key, cartGoodsCode, cartGoods);
+        //设置缓存时间
+        redisTemplate.expire(key,30, TimeUnit.DAYS);
 
         return Result.success();
     }
@@ -318,6 +322,9 @@ public class AppCartGoodsService implements CartGoodsService {
         }
         if(cartGoodsEntities.size() == 0) return Result.success();
         ops.putAll(key, cartGoodsEntityMap);
+        //设置缓存时间
+        redisTemplate.expire(key,30, TimeUnit.DAYS);
+
         return Result.success();
     }
 
@@ -329,6 +336,9 @@ public class AppCartGoodsService implements CartGoodsService {
         for (String code : cartGoodsCodes) {
             ops.delete(key, code);
         }
+        //设置缓存时间
+        redisTemplate.expire(key,30, TimeUnit.DAYS);
+
         return Result.success();
     }
 }
