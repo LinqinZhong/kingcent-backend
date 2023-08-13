@@ -119,6 +119,11 @@ public class OrderEntity {
     private String payType;
 
     /**
+     * 支付截至时间
+     */
+    private Long paymentDeadline;
+
+    /**
      * 备注
      */
     private String remark;

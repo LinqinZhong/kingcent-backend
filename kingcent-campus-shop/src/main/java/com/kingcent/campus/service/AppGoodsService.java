@@ -129,4 +129,9 @@ public class AppGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imple
         return vo;
     }
 
+    @Override
+    public void selectGoodsPage(Integer pageNum, Integer pageSize, GoodsEntity goodsEntity, CategoryEntity categoryEntity) {
+
+    }
+
 }

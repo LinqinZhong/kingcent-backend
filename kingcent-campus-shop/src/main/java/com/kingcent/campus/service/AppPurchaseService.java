@@ -215,7 +215,15 @@ public class AppPurchaseService implements PurchaseService {
             if(store == null) continue;
             //判断当前是否可以选择今天配送
             LocalDate date = LocalDate.now();
-            if(LocalTime.now().isBefore(delivery.getDeliveryTime().minusMinutes(delivery.getReserveTime())) //在今天配送预留时间前下单可以今天配送
+            if(LocalTime.now()
+                    //在今天配送预留时间前下单可以今天配送
+                    .isBefore(delivery.getDeliveryTime()
+                            .minusMinutes(
+                                    //预留时间是给用户备货的
+                                    // 加上30分钟，是预留出来给用户支付的
+                                    delivery.getReserveTime()+30
+                            )
+                    )
                     && isNotRestDate(date, delivery.getRestMonth(), delivery.getRestDay(), delivery.getRestWeek()) //今天不是休息日可以配送
             ){
                 store.getDeliveryTimeOptions().add(delivery.getDeliveryTime().atDate(date));

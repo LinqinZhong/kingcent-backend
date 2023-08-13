@@ -6,11 +6,17 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.OrderEntity;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
+import com.kingcent.campus.shop.listener.OrderListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 public interface OrderService extends IService<OrderEntity> {
+
+    void listenOrderDead(OrderListener orderListener);
+
+    @Transactional
+    boolean closeOrder(List<Long> orderIds);
 
     VoList<OrderStoreVo> orderList(Long userId, Integer status, Integer page);
 

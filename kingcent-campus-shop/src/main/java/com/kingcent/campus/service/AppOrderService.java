@@ -13,15 +13,19 @@ import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
+import com.kingcent.campus.shop.listener.OrderListener;
 import com.kingcent.campus.shop.mapper.OrderMapper;
 import com.kingcent.campus.shop.service.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 /**
@@ -29,6 +33,7 @@ import java.util.*;
  * @date 2023/8/8 1:12
  */
 @Service
+@Slf4j
 public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> implements OrderService {
 
     @Autowired
@@ -65,7 +70,103 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     private GroupService groupService;
 
     @Autowired
-    private RedisTemplate<String,String> redisTemplate;
+    private StringRedisTemplate redisTemplate;
+
+    private static final String MESSAGE_KEY = "message:queue:order:dead";
+
+
+
+    //订单超时自动关闭暂时使用redis作为消息队列，后期可能会使用其它mq中间件
+    //---------------------------------------------------------------------------
+    /**
+     * 监听超时订单
+     */
+    @Override
+    public void listenOrderDead(OrderListener orderListener) {
+        ZSetOperations<String, String> ops = redisTemplate.opsForZSet();
+
+        while (true){
+            long current = System.currentTimeMillis() + 1000;
+            //一次处理10条
+            Set<String> set = ops.rangeByScore(
+                            MESSAGE_KEY,
+                            0,
+                            current,
+                            0,
+                            10
+                    );
+            if(set != null) {
+                if (set.isEmpty()) {
+                    try {
+                        Thread.sleep(2000L);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }else{
+                    orderListener.onOverTime(set);
+                    //删除
+                    for (String s : set) {
+                        ops.remove(MESSAGE_KEY, s);
+                    }
+                }
+            }else {
+                try {
+                    Thread.sleep(5000L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
+    private boolean setOrderAutoCloseTask(Long orderId, long deadline){
+        return Boolean.TRUE.equals(redisTemplate.opsForZSet().add(
+                MESSAGE_KEY,
+                orderId+"",
+                deadline
+        ));
+    }
+
+    //---------------------------------------------------------------------------
+
+
+    /**
+     * 关闭订单
+     * @param orderIds 订单id
+     */
+    @Override
+    @Transactional
+    public boolean closeOrder(List<Long> orderIds){
+        boolean update = update(new UpdateWrapper<OrderEntity>()
+                .in("id", orderIds)
+                .set("status", -1)
+                .set("finish_time", LocalDateTime.now())
+        );
+        if(update){
+            //库存回滚
+            List<OrderGoodsEntity> goodsList = orderGoodsService.list(
+                    new QueryWrapper<OrderGoodsEntity>()
+                            .in("order_id", orderIds)
+                            .select("sku_id, count")
+            );
+            if (goodsList.size() == 0) return true; //商品为空？一般不会出现这种情况
+            for (OrderGoodsEntity goods : goodsList) {
+                if(!goodsSkuService.update(
+                        new UpdateWrapper<GoodsSkuEntity>()
+                                .eq("id", goods.getSkuId())
+                                .setSql("safe_stock_quantity = safe_stock_quantity + " + goods.getCount())
+                )) {
+                    //如果存在这个sku，则修改失败
+                    //如果sku不存在，修改失败归为正常情况
+                    if(goodsSkuService.getById(goods.getSkuId()) != null){
+                        log.error("库存回滚失败：{}", goods.getSkuId());
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
     @Override
     public VoList<OrderStoreVo> orderList(Long userId, Integer status, Integer page) {
@@ -108,6 +209,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             o.setPayType(order.getPayType());
             o.setOrderId(order.getId());
             o.setGoodsList(new ArrayList<>());
+            o.setPaymentDeadline(order.getPaymentDeadline());
             orders.add(o);
             map.put(order.getId(), o);
         }
@@ -270,7 +372,16 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             DeliveryTemplateEntity delivery = deliveryTmpMap.get(shopId);
             LocalDateTime deliveryTime = deliveryTimes.get(shopId);
             LocalDate deliveryDate = deliveryTime.toLocalDate();
-            if(deliveryTime.toLocalDate().equals(LocalDate.now()) && LocalDateTime.now().isAfter(deliveryTime.minusMinutes(delivery.getReserveTime()))){
+            if(deliveryTime.toLocalDate().equals(LocalDate.now())
+                    && LocalDateTime.now()
+                    .isAfter(
+                            deliveryTime.minusMinutes(
+                                    //预留时间是给用户备货的
+                                    //加上30分钟，是预留出来给用户支付的
+                                    delivery.getReserveTime()+30
+                            )
+                    )
+            ){
                 return Result.fail("配送时间在商家的预留时间内，请更换配送时间");
             }
             if (!isNotRestDate(deliveryDate, delivery.getRestMonth(), delivery.getRestDay(), delivery.getRestWeek())) {
@@ -419,11 +530,21 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             order.setPrice(orderPrice);
             order.setPayPrice(orderPrice.subtract(orderDiscount));  //实付金额在orderPrice计算优惠金额后计算得到
             order.setDiscount(orderDiscount);
-            orderGoodsListMap.put(order.getOrderNo(), orderGoodsList);
 
             if (!order.getPayType().equals("offline")) {
+                //非到货订单，需要计算价格和订单支付超时时间
                 onlinePayPrice = onlinePayPrice.add(orderPrice);
+                //订单支付超时时间 = 配送时间 - 准备时长 - 30分钟
+                //订单支付超时时长不超过8小时，如果超过就设为8小时
+                long deliveryTimestamp = order.getDeliveryTime().toEpochSecond(ZoneOffset.of("+8"));
+                long readTime = deliveryTmpMap.get(store.getId()).getReserveTime() * 60;
+                long paymentDeadline = deliveryTimestamp - readTime - 1800;
+                long lastDeadline = System.currentTimeMillis()/1000 + 28800;
+                order.setPaymentDeadline(Math.min(paymentDeadline, lastDeadline));
+
             }
+
+            orderGoodsListMap.put(order.getOrderNo(), orderGoodsList);
         }
 
         //创建订单
@@ -431,7 +552,15 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             List<Long> orderIds = new ArrayList<>();
             List<OrderGoodsEntity> orderGoodsEntities = new ArrayList<>();
             for (OrderEntity order : orders) {
+                //设置订单自动关闭任务
+                if(!order.getPayType().equals("offline")){
+                    if(!setOrderAutoCloseTask(order.getId(), order.getPaymentDeadline()*1000)){
+                        log.error("订单自动关闭任务设置失败，请维护人员立即检查");
+                        return Result.fail("服务器出现错误，请稍后重试");
+                    }
+                }
                 orderIds.add(order.getId());
+                //创建订单的商品数据
                 List<OrderGoodsEntity> orderGoods = orderGoodsListMap.get(order.getOrderNo());
                 for (OrderGoodsEntity orderGood : orderGoods) {
                     orderGood.setOrderId(order.getId());
@@ -512,6 +641,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             o.setRemark(order.getRemark());
             o.setStatus(order.getStatus());
             o.setFinishTime(order.getFinishTime());
+            o.setPaymentDeadline(order.getPaymentDeadline());
             o.setDeliveryTime(order.getDeliveryTime());
             o.setCreateTime(order.getCreateTime());
             o.setOrderNo(order.getOrderNo());
