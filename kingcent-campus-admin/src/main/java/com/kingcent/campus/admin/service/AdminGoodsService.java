@@ -18,7 +18,7 @@ import java.util.List;
  */
 @Service
 @Slf4j
-public class AdminGoodsServie extends ServiceImpl<GoodsMapper, GoodsEntity> implements GoodsService {
+public class AdminGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> implements GoodsService {
 
 
     @Override

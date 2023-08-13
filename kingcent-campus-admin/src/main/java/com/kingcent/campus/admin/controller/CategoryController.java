@@ -1,15 +1,16 @@
 package com.kingcent.campus.admin.controller;
 
-import com.kingcent.campus.admin.service.AdminCategoryService;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.shop.entity.vo.cart.CategoryVo;
+import com.kingcent.campus.shop.entity.CategoryEntity;
+import com.kingcent.campus.shop.entity.vo.CategoryVo;
+import com.kingcent.campus.shop.entity.vo.category.CreateCategoryVo;
 import com.kingcent.campus.shop.service.CategoryService;
+import com.kingcent.campus.shop.util.BeanCopyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * @author zzy
@@ -20,12 +21,55 @@ public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
-
-    @GetMapping("/listAllCategory")
-    public Result<?> listAllCategory(){
-        List<CategoryVo> list = categoryService.listAllCategory();
-        return Result.success(list);
+    /**
+     * 查询商品分类列表
+     * @param parentId  父节点id
+     */
+    @GetMapping("/list/{parentId}")
+    public Result<List<CategoryVo>> list(
+            @PathVariable Long parentId,
+            @RequestParam(required = false) Integer height,
+            @RequestParam(required = false) Boolean withPrice,
+            @RequestParam(required = false) Boolean withSales
+    ) {
+        List<CategoryVo> categoryVos = categoryService.get(parentId, height, withPrice, withSales);
+        return Result.success(categoryVos);
     }
 
+    @PostMapping("/create/{parentId}")
+    public Result<?> create(@PathVariable Long parentId, @RequestBody CreateCategoryVo vo){
+        if (vo.getName() == null || vo.getName().trim().equals("")) return Result.fail("name不能为空");
+        if(parentId != 0 && categoryService.getById(parentId) == null){
+            return Result.fail("父分类标题不存在");
+        }
+
+        CategoryEntity category = BeanCopyUtils.copyBean(vo, CategoryEntity.class);
+        category.setCreateTime(LocalDateTime.now());
+        category.setParentId(parentId);
+        categoryService.save(category);
+        return Result.success();
+    }
+
+    @PutMapping("/update/{id}")
+    public Result<?> update(@PathVariable Long id, @RequestBody CreateCategoryVo vo){
+        if(categoryService.getById(id) == null){
+            return Result.fail("分类标题不存在");
+        }
+        CategoryEntity category = BeanCopyUtils.copyBean(vo, CategoryEntity.class);
+        category.setId(id);
+        category.setCreateTime(null);
+        category.setUpdateTime(LocalDateTime.now());
+        categoryService.updateById(category);
+        return Result.success();
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Result<?> update(@PathVariable Long id){
+        if(categoryService.getById(id) == null){
+            return Result.fail("分类标题不存在");
+        }
+        categoryService.removeById(id);
+        return Result.success();
+    }
 
 }
