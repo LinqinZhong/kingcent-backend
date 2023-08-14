@@ -1,4 +1,4 @@
-package com.kingcent.campus.mybatis.plus.config;
+package com.kingcent.campus.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;

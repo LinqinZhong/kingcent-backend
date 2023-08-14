@@ -5,7 +5,7 @@ import com.kingcent.campus.shop.entity.AddressEntity;
 import com.kingcent.campus.shop.entity.GroupEntity;
 import com.kingcent.campus.shop.entity.GroupPointEntity;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.shop.entity.vo.CreateAddressVo;
+import com.kingcent.campus.shop.entity.vo.EditAddressVo;
 import com.kingcent.campus.shop.entity.vo.group.point.FloorConsumePointVo;
 import com.kingcent.campus.shop.service.AddressService;
 import com.kingcent.campus.shop.service.GroupPointService;
@@ -14,6 +14,7 @@ import com.kingcent.campus.shop.service.SiteService;
 import com.kingcent.campus.shop.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -84,7 +85,7 @@ public class AddressController {
     }
 
     @PostMapping("/create_address")
-    public Result<?> createAddress(HttpServletRequest request, @RequestBody CreateAddressVo vo){
+    public Result<?> createAddress(HttpServletRequest request, @RequestBody EditAddressVo vo){
         if (vo == null) return Result.fail("参数格式错误");
         AddressEntity addressEntity = new AddressEntity();
         if (vo.getName() == null || vo.getMobile() == null || vo.getGender() == null)
@@ -118,6 +119,61 @@ public class AddressController {
     @GetMapping("/get_address")
     public Result<?> createAddress(HttpServletRequest request){
         return Result.success(addressService.getUserAddress(RequestUtil.getUserId(request)));
+    }
+
+    @DeleteMapping("/delete/{addressId}")
+    public Result<?> deleteAddress(HttpServletRequest request, @PathVariable Long addressId){
+        if (addressService.remove(new QueryWrapper<AddressEntity>()
+                .eq("id", addressId)
+                .eq("user_id", RequestUtil.getUserId(request))
+        )) {
+            return Result.success();
+        }
+        return Result.fail("收货地址不存在");
+    }
+
+    @PutMapping("/set_as_default/{addressId}")
+    public Result<?> setAsDefault(HttpServletRequest request, @PathVariable Long addressId){
+        if(addressService.setAsDefault(RequestUtil.getUserId(request), addressId)){
+            return Result.success();
+        }
+        return Result.fail("收货地址不存在");
+    }
+
+    @PutMapping("/update/{addressId}")
+    @Transactional
+    public Result<?> updateAddress(HttpServletRequest request, @PathVariable Long addressId, @RequestBody EditAddressVo vo){
+        AddressEntity address = new AddressEntity();
+        address.setMobile(vo.getMobile());
+        address.setGender(vo.getGender());
+        address.setName(vo.getName());
+        if(vo.getPointId() != null){
+            //修改配送点
+            //获取门牌信息
+            GroupPointEntity point = groupPointService.getById(vo.getPointId());
+            if(point == null){
+                return Result.fail("门牌号不存在");
+            }
+
+            //获取配送点信息
+            GroupEntity group = groupService.getById(point.getGroupId());
+            if(group == null){
+                return Result.fail("配送点不存在，请联系管理员");
+            }
+            address.setPointId(point.getId());
+            address.setGroupId(point.getGroupId());
+        }
+
+
+        if (addressService.update(
+                address,
+                new QueryWrapper<AddressEntity>()
+                        .eq("user_id", RequestUtil.getUserId(request))
+                        .eq("id", addressId)
+        )) {
+            return Result.success();
+        }
+        return Result.fail("收货地址不存在");
     }
 
 }

@@ -1,8 +1,7 @@
 package com.kingcent.campus.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.kingcent.campus.shop.entity.CategoryEntity;
+import com.kingcent.campus.shop.constant.GoodsSortType;
 import com.kingcent.campus.shop.entity.GoodsEntity;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsVo;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsVo;
@@ -22,7 +21,12 @@ public class AdminGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imp
 
 
     @Override
-    public List<GoodsVo> getGoodsList(Long groupId, String key, Integer page, Integer pageSize) {
+    public List<GoodsVo> getGoodsList(Long groupId, Integer page, Integer pageSize) {
+        return null;
+    }
+
+    @Override
+    public List<GoodsVo> searchGoods(Long groupId, String key, Integer page, Integer pageSize, Long categoryId, GoodsSortType sortType, Boolean deliveryToday, Boolean freeForDelivery) {
         return null;
     }
 
@@ -31,9 +35,4 @@ public class AdminGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imp
         return null;
     }
 
-    @Override
-    public void selectGoodsPage(Integer pageNum, Integer pageSize, GoodsEntity goodsEntity, CategoryEntity categoryEntity) {
-        LambdaQueryWrapper<Object> queryWrapper = new LambdaQueryWrapper<>();
-
-    }
 }

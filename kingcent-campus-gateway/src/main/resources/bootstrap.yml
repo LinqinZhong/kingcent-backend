@@ -54,6 +54,7 @@ auth:
   ignore-path:
     - /auth/login/**  #登录
     - /shop/goods/fetch/**  #商品列表
+    - /shop/goods/search/**  #搜索商品
     - /shop/goods/details/**  #商品详情
     - /shop/category/list/**  #分类目录
     - /shop/goods_comment/preview/**  #评论预览

@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface AddressService extends IService<AddressEntity> {
     List<AddressVo> getUserAddress(Long userId);
+
+    boolean setAsDefault(Long userId, Long addressId);
 }

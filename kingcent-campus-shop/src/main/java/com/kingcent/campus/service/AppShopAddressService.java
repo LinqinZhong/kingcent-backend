@@ -1,6 +1,7 @@
 package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.AddressEntity;
 import com.kingcent.campus.shop.entity.vo.AddressVo;
@@ -11,6 +12,8 @@ import com.kingcent.campus.shop.service.GroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 
 /**
@@ -71,5 +74,25 @@ public class AppShopAddressService extends ServiceImpl<AddressMapper, AddressEnt
         }
 
         return res;
+    }
+
+    @Override
+    @Transactional
+    public boolean setAsDefault(Long userId, Long addressId) {
+        if (update(new UpdateWrapper<AddressEntity>()
+                .eq("user_id", userId)
+                .eq("id", addressId)
+                .set("is_default", 1)
+        )) {
+            //把其它地址设为非默认
+            update(new UpdateWrapper<AddressEntity>()
+                    .eq("user_id", userId)
+                    .ne("id", addressId)
+                    .eq("is_default", 1)
+                    .set("is_default", 0)
+            );
+            return true;
+        }
+        return false;
     }
 }

@@ -2,7 +2,9 @@ package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.ShopEntity;
+import com.kingcent.campus.shop.entity.vo.shop.ShopNameVo;
 import com.kingcent.campus.shop.mapper.ShopMapper;
 import com.kingcent.campus.shop.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,5 +58,15 @@ public class AppShopService extends ServiceImpl<ShopMapper, ShopEntity> implemen
             }
         }
         return names;
+    }
+
+    @Override
+    public VoList<ShopNameVo> getShopNames(String keywords, Integer page) {
+        return null;
+    }
+
+    @Override
+    public boolean exists(Long shopId) {
+        return count(new QueryWrapper<ShopEntity>().eq("id", shopId)) > 0;
     }
 }

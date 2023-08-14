@@ -1,14 +1,10 @@
 package com.kingcent.campus.shop.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 @Data
 @TableName("kc_shop_goods")
 public class GoodsEntity {
@@ -18,15 +14,14 @@ public class GoodsEntity {
     private Long shopId;
     private BigDecimal price;
     private BigDecimal originalPrice;
-    private Long skuId;
     private String thumbnail;
     private String images;
     private String description;
-    private Date createTime;
-    private Date updateTime;
-
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
     private Integer isSale;
-
+    @TableField(exist = false)
+    private Integer sales;
     @TableLogic
     private Integer isDeleted;
 }
