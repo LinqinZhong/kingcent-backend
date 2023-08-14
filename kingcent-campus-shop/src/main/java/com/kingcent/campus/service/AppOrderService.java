@@ -680,4 +680,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
         return res;
     }
+
+    @Override
+    public Result deleteOrder(Long id) {
+        return null;
+    }
 }

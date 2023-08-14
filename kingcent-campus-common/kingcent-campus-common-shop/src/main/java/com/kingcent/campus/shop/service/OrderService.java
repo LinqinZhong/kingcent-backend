@@ -26,4 +26,7 @@ public interface OrderService extends IService<OrderEntity> {
     Result<?> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase);
 
     List<OrderStoreVo> details(Long userId, List<Long> ids);
+
+    Result deleteOrder(Long id);
+
 }

@@ -2,6 +2,7 @@ package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.UserInfoEntity;
 import com.kingcent.campus.shop.mapper.UserInfoMapper;
 import com.kingcent.campus.shop.service.UserInfoService;
@@ -28,4 +29,11 @@ public class AppUserInfoService extends ServiceImpl<UserInfoMapper, UserInfoEnti
         }
         return map;
     }
+
+    @Override
+    public Result getUser(Long id) {
+        return null;
+    }
+
+
 }
