@@ -1,10 +1,10 @@
 package com.kingcent.campus.admin.controller;
 
+import com.kingcent.campus.admin.service.CategoryService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.CategoryEntity;
 import com.kingcent.campus.shop.entity.vo.CategoryVo;
 import com.kingcent.campus.shop.entity.vo.category.CreateCategoryVo;
-import com.kingcent.campus.shop.service.CategoryService;
 import com.kingcent.campus.shop.util.BeanCopyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -5,7 +5,7 @@ import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.vo.cart.CartCheckVo;
 import com.kingcent.campus.shop.entity.vo.cart.CartVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PutCartGoodsVo;
-import com.kingcent.campus.shop.service.CartGoodsService;
+import com.kingcent.campus.service.CartGoodsService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

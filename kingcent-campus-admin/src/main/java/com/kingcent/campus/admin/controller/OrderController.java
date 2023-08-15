@@ -1,10 +1,9 @@
 package com.kingcent.campus.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.OrderEntity;
-import com.kingcent.campus.shop.entity.UserInfoEntity;
-import com.kingcent.campus.shop.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +13,7 @@ import java.util.List;
  * @author zzy
  */
 @RestController
-@RequestMapping("/UserInfo")
+@RequestMapping("/order")
 public class OrderController {
 
     @Autowired
@@ -30,7 +29,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public Result deleteOrder(@PathVariable Long id){
+    public Result<?> deleteOrder(@PathVariable Long id){
         return orderService.deleteOrder(id);
     }
 

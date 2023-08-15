@@ -1,10 +1,10 @@
 package com.kingcent.campus.controller;
 
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.service.GoodsService;
 import com.kingcent.campus.shop.constant.GoodsSortType;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsVo;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsVo;
-import com.kingcent.campus.shop.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

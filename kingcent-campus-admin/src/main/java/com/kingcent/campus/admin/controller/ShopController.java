@@ -1,9 +1,9 @@
 package com.kingcent.campus.admin.controller;
 
+import com.kingcent.campus.admin.service.ShopService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.vo.shop.ShopNameVo;
-import com.kingcent.campus.shop.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

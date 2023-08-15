@@ -1,0 +1,8 @@
+package com.kingcent.campus.admin.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.kingcent.campus.shop.entity.GoodsSkuEntity;
+import com.kingcent.campus.shop.entity.vo.goods.GoodsSkuInfoVo;
+
+public interface GoodsSkuService extends IService<GoodsSkuEntity> {
+}

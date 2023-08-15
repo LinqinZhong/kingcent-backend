@@ -1,6 +1,6 @@
 package com.kingcent.campus;
 
-import com.kingcent.campus.shop.service.OrderService;
+import com.kingcent.campus.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;

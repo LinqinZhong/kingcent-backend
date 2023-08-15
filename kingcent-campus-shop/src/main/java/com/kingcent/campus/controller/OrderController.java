@@ -5,7 +5,7 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
-import com.kingcent.campus.shop.service.OrderService;
+import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.shop.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

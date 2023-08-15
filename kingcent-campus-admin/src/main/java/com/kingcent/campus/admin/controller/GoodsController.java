@@ -2,12 +2,12 @@ package com.kingcent.campus.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kingcent.campus.admin.service.GoodsService;
+import com.kingcent.campus.admin.service.ShopService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.GoodsEntity;
 import com.kingcent.campus.shop.entity.vo.goods.EditGoodsVo;
-import com.kingcent.campus.shop.service.GoodsService;
-import com.kingcent.campus.shop.service.ShopService;
 import com.kingcent.campus.shop.util.BeanCopyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
