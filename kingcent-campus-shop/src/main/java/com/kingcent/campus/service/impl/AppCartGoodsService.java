@@ -180,12 +180,15 @@ public class AppCartGoodsService implements CartGoodsService {
             goodsIds.add(cartGoodsEntity.getGoodsId());
             skuSet.add(cartGoodsEntity.getSku());
         }
+
         //提取商品
         List<GoodsEntity> goodsList = goodsService.list(new QueryWrapper<GoodsEntity>().in("id",goodsIds));
         HashMap<Long, GoodsEntity> goodsMap = new HashMap<>();
         for (GoodsEntity goods : goodsList) {
             goodsMap.put(goods.getId(), goods);
         }
+
+        if(goodsList.size() == 0) return new CartVo();
 
         //提取商铺ID
         Set<Long> shopIds = new HashSet<>();
