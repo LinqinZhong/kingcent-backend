@@ -36,8 +36,10 @@ public class UserInfoController {
                         .last("limit 1")
         );
         UserCenterVo center = new UserCenterVo();
-        center.setNickname(user.getNickname());
-        center.setAvatarUrl(user.getAvatarUrl());
+        if (user != null) {
+            center.setNickname(user.getNickname());
+            center.setAvatarUrl(user.getAvatarUrl());
+        }
         long countToPay = orderService.count(
                 new QueryWrapper<OrderEntity>()
                         .eq("user_id", userId)
