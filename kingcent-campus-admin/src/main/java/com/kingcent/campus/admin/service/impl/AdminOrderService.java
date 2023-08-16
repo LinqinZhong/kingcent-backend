@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
+import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.entity.OrderEntity;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
@@ -32,21 +33,29 @@ public class AdminOrderService extends ServiceImpl<OrderMapper, OrderEntity> imp
         }
         LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(OrderEntity::getId, id);
-        //queryWrapper.in(OrderEntity::getStatus, -1, -4, -5);
         OrderEntity orderEntity = orderMapper.selectOne(queryWrapper);
-        if (Objects.isNull(orderEntity)){
+        if (orderEntity == null){
             return Result.fail("删除订单不存在");
         }
-        if (orderEntity.getStatus().equals(1)){
-            return Result.fail("待配送，无法删除该订单");
-        }if (orderEntity.getStatus().equals(2)){
-            return Result.fail("配送中，无法删除该订单");
-        }if (orderEntity.getStatus().equals(3)){
-            return Result.fail("已收货，无法删除该订单");
-        }if (orderEntity.getStatus().equals(-2)){
-            return Result.fail("已发送退款，无法删除该订单");
-        }if (orderEntity.getStatus().equals(-3)){
-            return Result.fail("商家同意退款，无法删除该订单");
+        switch (orderEntity.getStatus()){
+            case OrderStatus.READY -> {
+                return Result.fail("订单交易未结束，无法删除");
+            }
+            case OrderStatus.DELIVERING -> {
+                return Result.fail("订单配送，无法删除");
+            }
+            case OrderStatus.RECEIVED -> {
+                return Result.fail("订单售后保障中，无法删除");
+            }
+            case OrderStatus.REQUEST_TO_REFUND -> {
+                return Result.fail("买家已发起退款，无法删除该订单");
+            }
+            case OrderStatus.AGREE_TO_REFUND -> {
+                return Result.fail("等待买家退货，无法删除该订单");
+            }
+            case OrderStatus.BACKED -> {
+                return Result.fail("等待卖家退款，无法删除该订单");
+            }
         }
         remove(queryWrapper);
         return Result.success();
