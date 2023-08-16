@@ -59,20 +59,23 @@ public class GoodsController {
     }
 
     @PostMapping("/create/{shopId}")
-    public Result<?> create(@PathVariable Long shopId, @PathVariable Long goodsId, EditGoodsVo vo){
-        if(!shopService.exists(goodsId)) return Result.fail("店铺不存在");
+    public Result<?> create(@PathVariable Long shopId, @RequestBody EditGoodsVo vo){
+        if(!shopService.exists(shopId)) return Result.fail("店铺不存在");
+        if(vo.getName() == null) return Result.fail("商品名称不能为空");
+        if(vo.getThumbnail() == null) return Result.fail("商品缩略图不能为空");
         GoodsEntity goods = BeanCopyUtils.copyBean(vo, GoodsEntity.class);
         goods.setCreateTime(LocalDateTime.now());
         goods.setPrice(BigDecimal.valueOf(0));
+        goods.setName(vo.getName());
+        goods.setImages(String.join(",",vo.getImages()));
         goods.setOriginalPrice(BigDecimal.valueOf(0));
         goods.setShopId(shopId);
         goods.setIsSale(0);
         goodsService.save(goods);
         return Result.success();
     }
-
-    @PutMapping("/create/{goodsId}")
-    public Result<?> update(@PathVariable Long goodsId, EditGoodsVo vo){
+    @PutMapping("/update/{goodsId}")
+    public Result<?> update(@PathVariable Long goodsId,@RequestBody EditGoodsVo vo){
         GoodsEntity goods = BeanCopyUtils.copyBean(vo, GoodsEntity.class);
         goods.setId(goodsId);
         if (goodsService.updateById(goods)) {

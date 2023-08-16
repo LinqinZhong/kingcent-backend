@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
+import com.kingcent.campus.shop.constant.OrderStatus;
+import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
@@ -245,7 +247,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         if(count(
                 new QueryWrapper<OrderEntity>()
                         .eq("user_id", userId)
-                        .ne("pay_type", "offline")
+                        .ne("pay_type", PayType.OFFLINE)
                         .eq("status",0)
                         .last("limit 1")
         ) > 0){
@@ -256,7 +258,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         if(count(
                 new QueryWrapper<OrderEntity>()
                         .eq("user_id", userId)
-                        .eq("pay_type", "offline")
+                        .eq("pay_type", PayType.OFFLINE)
                         .eq("status",0)
         ) + orderNum > 15){
             return Result.fail("到付订单数量过多，请勿超过15个");
@@ -521,7 +523,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             order.setReceiverGender(address.getGender());
             order.setPointId(address.getPointId());
             order.setUserId(userId);
-            order.setStatus(payType.equals("offline") ? 1 : 0);
+            order.setStatus(PayType.OFFLINE.equals(payType) ? 1 : 0);
             order.setGroupId(address.getGroupId());
             order.setShopId(store.getId());
             order.setPayType(payType);
@@ -531,7 +533,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             order.setPayPrice(orderPrice.subtract(orderDiscount));  //实付金额在orderPrice计算优惠金额后计算得到
             order.setDiscount(orderDiscount);
 
-            if (!order.getPayType().equals("offline")) {
+            if (!PayType.OFFLINE.equals(order.getPayType())) {
                 //非到货订单，需要计算价格和订单支付超时时间
                 onlinePayPrice = onlinePayPrice.add(orderPrice);
                 //订单支付超时时间 = 配送时间 - 准备时长 - 30分钟
@@ -553,7 +555,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             List<OrderGoodsEntity> orderGoodsEntities = new ArrayList<>();
             for (OrderEntity order : orders) {
                 //设置订单自动关闭任务
-                if(!order.getPayType().equals("offline")){
+                if(!PayType.OFFLINE.equals(order.getPayType())){
                     if(!setOrderAutoCloseTask(order.getId(), order.getPaymentDeadline()*1000)){
                         log.error("订单自动关闭任务设置失败，请维护人员立即检查");
                         return Result.fail("服务器出现错误，请稍后重试");

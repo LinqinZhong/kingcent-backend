@@ -25,25 +25,29 @@ public class AuthService {
 
     public Long check(Long lid, String sign, String path, String data, LoginType loginType){
         Long[] success = {null};
-        //开启新线程，防止阻塞
-        Thread t = new Thread(()->{
-            ServiceInstance instance = loadBalancerClient.choose("kingcent-campus-auth");
-            String url = String.format("http://%s:%s/login/check", instance.getHost(), instance.getPort());
-            JSONObject info = new JSONObject();
-            info.put("lid", lid);
-            info.put("sign", sign);
-            info.put("path",path);
-            info.put("data", data);
-            info.put("login-type", loginType);
-            success[0] = restTemplate.postForObject(url, info, Long.class);
-            System.out.println(success[0]);
-        });
-        t.start();
         try {
+            //开启新线程，防止阻塞
+            Thread t = new Thread(()->{
+                ServiceInstance instance = loadBalancerClient.choose("kingcent-campus-auth");
+                if(instance == null){
+                    return;
+                }
+                String url = String.format("http://%s:%s/login/check", instance.getHost(), instance.getPort());
+                JSONObject info = new JSONObject();
+                info.put("lid", lid);
+                info.put("sign", sign);
+                info.put("path",path);
+                info.put("data", data);
+                info.put("login-type", loginType);
+                success[0] = restTemplate.postForObject(url, info, Long.class);
+            });
+            t.start();
             t.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if(success[0] == null)
+            throw new RuntimeException("无法连接到鉴权服务器");
         return success[0];
     }
 }

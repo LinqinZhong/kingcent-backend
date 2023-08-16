@@ -68,7 +68,7 @@ public class AuthenticationFilter implements WebFilter, Ordered {
         return serverRequest.formData().flatMap(
                 body -> {
                     Long userId = authService.check(Long.valueOf(lid), sign, path, getKeyValue(body), loginType);
-                    if(userId == null){
+                    if(userId == -1L){
                         return unAuthentication(exchange);
                     }
                     //创建BodyInserter修改请求体
@@ -119,7 +119,7 @@ public class AuthenticationFilter implements WebFilter, Ordered {
                 .flatMap(bodyBytes -> {
                     String requestBody = new String(bodyBytes);
                     Long userId = authService.check(Long.valueOf(lid), sign, path, requestBody, loginType);
-                    if(userId == null) return exchange.getResponse().setComplete();
+                    if(userId == -1L) return exchange.getResponse().setComplete();
 
                     ServerHttpRequestDecorator decorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
                         @Override
@@ -158,7 +158,7 @@ public class AuthenticationFilter implements WebFilter, Ordered {
      */
     private Mono<Void> handleQuery(ServerWebExchange exchange, WebFilterChain chain, String lid, String sign, String path, LoginType loginType) {
         Long userId = authService.check(Long.valueOf(lid), sign, path, getKeyValue(exchange.getRequest().getQueryParams()), loginType);
-        if(userId != null){
+        if(userId != -1){
             exchange.getRequest().mutate().headers(httpHeaders -> {
                 //禁止前端自主传入uid，如果有把它清空
                 while (httpHeaders.containsKey("uid")){

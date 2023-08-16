@@ -40,10 +40,10 @@ public class LoginController {
     @Autowired
     private UserLoginService userLoginService;
 
-    @Value("wx57b0af44083c56ef")
+    @Value("wx78ac22e61f72cba5")
     private String WX_APP_ID;
 
-    @Value("d016b48827dadcf1836bdcd64cea0687")
+    @Value("759674b8d91f7c213483fcc1282b002f")
     private String WX_SECRET;
 
     @Autowired
