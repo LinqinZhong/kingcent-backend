@@ -2,6 +2,7 @@ package com.kingcent.campus.controller;
 
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
+import com.kingcent.campus.service.WxPayService;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.OrderEntity;
@@ -12,11 +13,14 @@ import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.shop.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/order")
@@ -24,10 +28,19 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private WxPayService wxPayService;
+
+    @PostMapping(value = "/wx_payment_notify_2023_8", produces = MediaType.APPLICATION_XML_VALUE)
+    @ResponseBody
+    public String paymentNotify(@RequestBody String xmlData){
+        return wxPayService.notify(xmlData);
+    }
+
     @PostMapping("/confirm")
     @ResponseBody
     public Result<?> confirmOrder(HttpServletRequest request, @RequestBody PurchaseConfirmVo confirmVo){
-        return orderService.createOrders(RequestUtil.getUserId(request), RequestUtil.getLoginId(request), confirmVo);
+        return orderService.createOrders(RequestUtil.getUserId(request), RequestUtil.getLoginId(request), confirmVo, RequestUtil.getIpAddress(request));
     }
 
     @GetMapping("/list/{page}")
@@ -39,6 +52,7 @@ public class OrderController {
 
     @GetMapping("/close/{orderId}")
     @ResponseBody
+    @Transactional
     public Result<?> closeOrder(HttpServletRequest request, @PathVariable Long orderId){
         OrderEntity order = orderService.getById(orderId);
         if (order == null) return Result.fail("订单不存在");
@@ -56,7 +70,7 @@ public class OrderController {
         ).contains(order.getStatus())){
             return Result.fail("交易未结束，暂时无法取消");
         }
-        if (orderService.closeOrder(List.of(orderId))){
+        if (orderService.removeCloseOrderTask(Set.of(orderId+"")) && orderService.closeOrder(List.of(orderId))){
             return Result.success();
         }
         return Result.fail("取消失败");

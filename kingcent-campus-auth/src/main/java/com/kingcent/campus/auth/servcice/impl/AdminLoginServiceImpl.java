@@ -70,7 +70,7 @@ public class AdminLoginServiceImpl extends ServiceImpl<AdminLoginMapper, AdminLo
                 }
 
                 long timestamp = System.currentTimeMillis()/60000;
-                for (int i = 0; i < 5; i++){
+                for (int i = -1; i < 1; i++){
                     if (sign.equals(getSign(uid,secret,path,timestamp+i,data)))
                         return uid;
                 }

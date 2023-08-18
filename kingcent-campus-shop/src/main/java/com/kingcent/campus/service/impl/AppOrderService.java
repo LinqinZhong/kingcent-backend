@@ -7,12 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
-import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
+import com.kingcent.campus.shop.entity.vo.payment.WxPaymentInfo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
@@ -74,7 +74,15 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+
+    @Autowired
+    private WxPayService wxPayService;
+
+    @Autowired
+    private AppUserService userService;
+
     private static final String MESSAGE_KEY = "message:queue:order:dead";
+
 
 
 
@@ -129,6 +137,20 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         ));
     }
 
+    /**
+     * 移除自动关闭订单任务
+     * @param orderIds 订单id
+     */
+    @Override
+    public boolean removeCloseOrderTask(Set<String> orderIds){
+        ZSetOperations<String, String> ops = redisTemplate.opsForZSet();
+        String[] ids = orderIds.toArray(new String[0]);
+        ops.remove(
+                MESSAGE_KEY,
+                ids
+        );
+        return true;
+    }
     //---------------------------------------------------------------------------
 
 
@@ -139,6 +161,19 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Override
     @Transactional
     public boolean closeOrder(List<Long> orderIds){
+        //过滤出未关闭的订单
+        List<OrderEntity> orderUnclose = list(
+                new QueryWrapper<OrderEntity>()
+                        .eq("status", 0)
+                        .in("id", orderIds)
+                        .select("id")
+        );
+        orderIds = new ArrayList<>();
+        for (OrderEntity order : orderUnclose) {
+            orderIds.add(order.getId());
+        }
+
+        //关闭订单
         boolean update = update(new UpdateWrapper<OrderEntity>()
                 .in("id", orderIds)
                 .set("status", -1)
@@ -271,7 +306,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      */
     @Override
     @Transactional
-    public Result<CreateOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase){
+    public Result<CreateOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress) {
 
         //检查是否存在订单异常
         Result<CreateOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
@@ -283,8 +318,8 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         AddressEntity address = addressService.getById(purchase.getAddressId());
         if (address == null || !address.getUserId().equals(userId)) return Result.fail("收货地址不存在");
 
-        //所有在线支付的金额
-        BigDecimal onlinePayPrice = new BigDecimal(0);
+        //所有微信支付的金额
+        BigDecimal wxPayPrice = new BigDecimal(0);
 
         //SKU
         Map<String,GoodsSkuEntity> skuMap = new HashMap<>();
@@ -423,11 +458,18 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         //--------------------------------------------------------------------
 
+
+        //生成统一的outTradeNo
+        String outTradeNo = createOutTradeNo(userId, loginId);
+        //统一订单创建时间
+        LocalDateTime createTime = LocalDateTime.now();
+
         //按商铺生成订单
         List<OrderEntity> orders = new ArrayList<>();
+        int length = purchase.getStoreList().size();
         Map<String, List<OrderGoodsEntity>> orderGoodsListMap = new HashMap<>();
-        for (PurchaseConfirmStoreVo store : purchase.getStoreList()) {
-
+        for (int index = 0; index < length; index++) {
+            PurchaseConfirmStoreVo store = purchase.getStoreList().get(index);
             OrderEntity order = new OrderEntity();
             BigDecimal orderPrice = new BigDecimal(0);
             BigDecimal orderDiscount = new BigDecimal(0);
@@ -513,8 +555,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
 
             orders.add(order);
-            order.setOrderNo(createOrderNo(userId, loginId));
-            order.setCreateTime(LocalDateTime.now());
+            order.setOrderNo(outTradeNo+""+String.format("%02d",index));
+            order.setOutTradeNo(outTradeNo);
+            order.setCreateTime(createTime);
             order.setDeliveryTime(deliveryTimes.get(store.getId()));
             order.setDeliveryFee(deliveryGroupMap.get(store.getId()).getDeliveryFee());
             orderPrice = orderPrice.add(order.getDeliveryFee());
@@ -535,7 +578,14 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
             if (!PayType.OFFLINE.equals(order.getPayType())) {
                 //非到货订单，需要计算价格和订单支付超时时间
-                onlinePayPrice = onlinePayPrice.add(orderPrice);
+
+                //微信支付订单
+                if(PayType.WX_PAY.equals(order.getPayType()))
+                    wxPayPrice = wxPayPrice.add(orderPrice);
+
+                //未知的支付方式，退出（应该不会出现，上面做了判断）
+                else return Result.fail("不支持该支付方式,"+order.getPayType());
+
                 //订单支付超时时间 = 配送时间 - 准备时长 - 30分钟
                 //订单支付超时时长不超过8小时，如果超过就设为8小时
                 long deliveryTimestamp = order.getDeliveryTime().toEpochSecond(ZoneOffset.of("+8"));
@@ -574,8 +624,25 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
 
 
-        //是否需要线上支付
-        result.setNeedPay(onlinePayPrice.doubleValue() > 0);
+        //需要线上支付
+        if(wxPayPrice.doubleValue() > 0){
+            //获取用户信息
+            String wxOpenid = userService.getWxOpenid(userId);
+            if(wxOpenid.equals("")){
+                return Result.fail("微信用户不存在");
+            }
+            //获取微信支付请求信息
+            WxPaymentInfo wxPaymentInfo = wxPayService.requestToPay(
+                    wxOpenid,
+                    outTradeNo,
+                    "仲达校园送商品下单",
+                    wxPayPrice.multiply(new BigDecimal(100)).longValue(),
+                    ipAddress,
+                    createTime
+            );
+            result.setWxPaymentInfo(wxPaymentInfo);
+        }
+
 
         return Result.success(result);
     }
@@ -583,9 +650,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     /**
      * 生成订单号
      */
-    private String createOrderNo(Long userId, Long loginId){
-        Long localDate = System.currentTimeMillis()+1708579437885L;
-        return String.format("%7d%04d%04d",localDate, userId, loginId);
+    private String createOutTradeNo(Long userId, Long loginId){
+        Long localDate = System.currentTimeMillis();
+        return String.format("%10d%04d%04d",localDate, userId, loginId);
     }
 
     /**
@@ -681,5 +748,47 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
 
         return res;
+    }
+
+    @Override
+    @Transactional
+    public Result<?> onPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime, String payType) {
+        List<OrderEntity> list = list(new QueryWrapper<OrderEntity>()
+                .eq("user_id", userId)
+                .eq("out_trade_no", outTradeNo)
+                .eq("pay_type", payType)
+        );
+        Set<String> orderIds = new HashSet<>();
+        BigDecimal totalPrice = new BigDecimal(0);
+        for (OrderEntity order : list) {
+            orderIds.add(order.getId()+"");
+            order.setTradeNo(tradeNo);
+            order.setPayTime(payTime);
+            order.setStatus(1);
+            totalPrice = totalPrice.add(order.getPrice());
+        }
+        if(totalPrice.multiply(BigDecimal.valueOf(100)).longValue() != totalFee){
+            return Result.fail("订单金额不一致");
+        }
+        //更新订单状态
+        BigDecimal refundPrice = new BigDecimal(0); //未处理成功的订单计入退款
+        for (OrderEntity order : list) {
+            //逐条更新，取出异常订单
+            if(!update(order, new QueryWrapper<OrderEntity>()
+                    .eq("id", order.getId())
+                    .eq("status", 0)    //订单待支付时才能支付
+            )){
+                refundPrice = refundPrice.add(order.getPayPrice());
+            }
+        }
+        //移除订单自动关闭任务
+        if(!removeCloseOrderTask(orderIds)){
+            log.warn("移除自动关闭订单任务失败 --> 订单ID:{}", orderIds);
+        }
+
+        //TODO 退款
+        log.info("订单处理成功 -> 订单ID:{}，总金额:{}，退款金额:{}", orderIds,totalPrice,refundPrice);
+
+        return Result.success();
     }
 }

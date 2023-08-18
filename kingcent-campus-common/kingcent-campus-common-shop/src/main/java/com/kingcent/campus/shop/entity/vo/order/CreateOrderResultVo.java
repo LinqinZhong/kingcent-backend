@@ -1,8 +1,10 @@
 package com.kingcent.campus.shop.entity.vo.order;
 
+import com.kingcent.campus.shop.entity.vo.payment.WxPaymentInfo;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author rainkyzhong
@@ -11,5 +13,5 @@ import java.util.List;
 @Data
 public class CreateOrderResultVo {
     private List<Long> orderIds;
-    private Boolean needPay;
+    private WxPaymentInfo wxPaymentInfo;
 }

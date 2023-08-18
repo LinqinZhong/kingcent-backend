@@ -13,5 +13,5 @@ public class EditGoodsVo {
     private String name;
     private String thumbnail;
     private List<String> images;
-    private String description;
+    private List<String> description;
 }

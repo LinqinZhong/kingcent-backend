@@ -69,6 +69,7 @@ public class GoodsController {
         goods.setName(vo.getName());
         goods.setImages(String.join(",",vo.getImages()));
         goods.setOriginalPrice(BigDecimal.valueOf(0));
+        goods.setDescription(String.join(",",vo.getDescription()));
         goods.setShopId(shopId);
         goods.setIsSale(0);
         goodsService.save(goods);
@@ -78,6 +79,8 @@ public class GoodsController {
     public Result<?> update(@PathVariable Long goodsId,@RequestBody EditGoodsVo vo){
         GoodsEntity goods = BeanCopyUtils.copyBean(vo, GoodsEntity.class);
         goods.setId(goodsId);
+        goods.setImages(String.join(",",vo.getImages()));
+        goods.setDescription(String.join(",",vo.getDescription()));
         if (goodsService.updateById(goods)) {
             return Result.success();
         }

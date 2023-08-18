@@ -9,7 +9,7 @@ spring:
       discovery:
         server-addr: localhost:8848
 
-    # 静态路由
+  # 静态路由
     gateway:
       globalcors:
         corsConfigurations:
@@ -60,4 +60,7 @@ auth:
     - /shop/goods_comment/preview/**  #评论预览
     - /shop/address/nearby_group/** #获取附近配送点
     - /shop/address/nearest_group/**  #获取最近配送点
+    - /shop/want/keywords #获取”想要“关键词
     - /admin/goods/test #测试接口
+    - /admin/file/upload/** #上传文件
+    - /shop/order/wx_payment_notify_2023_8/**  #微信支付回调

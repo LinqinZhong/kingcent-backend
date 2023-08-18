@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.Part;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -57,6 +58,10 @@ public class AuthenticationFilter implements WebFilter, Ordered {
     @Autowired
     private RestTemplate restTemplate;
 
+
+    private Mono<Void> handleFile(ServerWebExchange exchange, WebFilterChain chain, String lid, String sign, String path, LoginType loginType) {
+        return chain.filter(exchange);
+    }
 
     /**
      * 处理form数据
@@ -186,8 +191,7 @@ public class AuthenticationFilter implements WebFilter, Ordered {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)
-    {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
 
         //设置跨域
         ServerHttpRequest request = exchange.getRequest();
@@ -201,13 +205,13 @@ public class AuthenticationFilter implements WebFilter, Ordered {
         //放行公共路径
         String path = exchange.getRequest().getPath().value();
         for (String p : authenticationConfig.getIgnorePath()) {
-            if(pathMatcher.match(p, path)){
+            if (pathMatcher.match(p, path)) {
                 return chain.filter(exchange);
             }
         }
 
         //处理预检
-        if(request.getMethod().equals(HttpMethod.OPTIONS)){
+        if (request.getMethod().equals(HttpMethod.OPTIONS)) {
             return exchange.getResponse().setComplete();
         }
 
@@ -218,14 +222,17 @@ public class AuthenticationFilter implements WebFilter, Ordered {
         //获取登录类型
         String loginType = request.getHeaders().getFirst("login-type");
 
-        if(!StringUtils.isBlank(lid) || !StringUtils.isBlank(sign)) {
-            //JSON数据
-            if(MediaType.APPLICATION_JSON.equals(request.getHeaders().getContentType()))
-                return handleJson(exchange, chain, lid, sign, path , LoginType.valueOf(loginType));
-            //form数据
+        if (!StringUtils.isBlank(lid) || !StringUtils.isBlank(sign)) {
+            //文件数据
+            if (request.getHeaders().getContentType() != null && request.getHeaders().getContentType().includes(MediaType.MULTIPART_FORM_DATA))
+                return handleFile(exchange, chain, lid, sign, path, LoginType.valueOf(loginType));
+                //JSON数据
+            else if (MediaType.APPLICATION_JSON.equals(request.getHeaders().getContentType()))
+                return handleJson(exchange, chain, lid, sign, path, LoginType.valueOf(loginType));
+                //form数据
             else if (MediaType.APPLICATION_FORM_URLENCODED.equals(request.getHeaders().getContentType()))
                 return handleForm(exchange, chain, lid, sign, path, LoginType.valueOf(loginType));
-            //query数据
+                //query数据
             else return handleQuery(exchange, chain, lid, sign, path, LoginType.valueOf(loginType));
         }
         return unAuthentication(exchange);
