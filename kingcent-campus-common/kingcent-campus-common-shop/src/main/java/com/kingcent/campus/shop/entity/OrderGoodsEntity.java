@@ -1,11 +1,15 @@
 package com.kingcent.campus.shop.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @TableName("kc_shop_order_goods")
 public class OrderGoodsEntity {
     private Long id;

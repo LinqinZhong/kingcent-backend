@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
+import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
+import com.kingcent.campus.shop.constant.RefundOrderStatus;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
@@ -81,6 +83,12 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Autowired
     private AppUserService userService;
 
+    @Autowired
+    private RefundOrderService refundService;
+
+    @Autowired
+    private RefundOrderMapService refundMapService;
+
     private static final String MESSAGE_KEY = "message:queue:order:dead";
 
 
@@ -88,6 +96,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
     //订单超时自动关闭暂时使用redis作为消息队列，后期可能会使用其它mq中间件
     //---------------------------------------------------------------------------
+    //TODO 改成定时任务
     /**
      * 监听超时订单
      */
@@ -145,10 +154,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     public boolean removeCloseOrderTask(Set<String> orderIds){
         ZSetOperations<String, String> ops = redisTemplate.opsForZSet();
         String[] ids = orderIds.toArray(new String[0]);
-        ops.remove(
-                MESSAGE_KEY,
-                ids
-        );
+        ops.remove(MESSAGE_KEY, ids);
         return true;
     }
     //---------------------------------------------------------------------------
@@ -789,6 +795,52 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //TODO 退款
         log.info("订单处理成功 -> 订单ID:{}，总金额:{}，退款金额:{}", orderIds,totalPrice,refundPrice);
 
+        return Result.success();
+    }
+
+    /**
+     * 用户退款
+     */
+    @Transactional
+    @Override
+    public Result<?> requireRefund(Long userId, Long orderId, BigDecimal refundPrice){
+        //获取订单
+        OrderEntity order = getOne(new QueryWrapper<OrderEntity>()
+                .eq("user_id", userId)
+                .eq("id", orderId)
+                .in("status",
+                        //支持退款的订单
+                        List.of(
+                                OrderStatus.READY,  //已支付的订单
+                                OrderStatus.DELIVERING,  //配送中的订单
+                                OrderStatus.RECEIVED,    //已收货的订单
+                                OrderStatus.REVIEWED    //已评论的订单
+                        )
+                )
+                .last("limit 1")
+        );
+        if(order == null)
+            return Result.fail("该订单当前无法退款");
+        if(refundPrice.compareTo(BigDecimal.ZERO) <= 0)
+            return Result.fail("退款金额必须为正数");
+        if(refundPrice.compareTo(order.getPayPrice()) > 0)
+            return Result.fail("退款金额不能超过支付金额");
+
+        //生成退款订单编号
+        String outRefundNo = UUID.randomUUID().toString();
+        //创建退款订单
+        RefundOrderEntity refund = new RefundOrderEntity();
+        refund.setOutRefundNo(outRefundNo);
+        refund.setUserId(userId);
+        refund.setStatus(RefundOrderStatus.WAIT);
+        refund.setCreateTime(LocalDateTime.now());
+        refund.setPrice(refundPrice);
+        if(!refundService.save(refund)) return Result.fail("退款订单创建失败");
+        //创建映射表
+        RefundOrderMapEntity refundOrderMap = new RefundOrderMapEntity();
+        refundOrderMap.setOrderId(orderId);
+        refundOrderMap.setRefundOrderId(refund.getId());
+        if(!refundMapService.save(refundOrderMap)) return Result.fail("退款订单映射失败");
         return Result.success();
     }
 }

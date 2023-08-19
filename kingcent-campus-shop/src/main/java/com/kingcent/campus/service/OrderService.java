@@ -9,6 +9,7 @@ import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.shop.listener.OrderListener;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -33,4 +34,7 @@ public interface OrderService extends IService<OrderEntity> {
 
     @Transactional
     Result<?> onPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime, String payType);
+
+    @Transactional
+    Result<?> requireRefund(Long userId, Long orderId, BigDecimal refundPrice);
 }
