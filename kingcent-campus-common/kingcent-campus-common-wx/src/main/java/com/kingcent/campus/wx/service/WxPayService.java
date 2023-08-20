@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,7 +23,6 @@ import java.util.*;
  * @date 2023/8/18 13:11
  */
 @Slf4j
-@Service
 public class WxPayService {
 
     /**
@@ -85,7 +83,7 @@ public class WxPayService {
         data.put("trade_type", "JSAPI");    //支付类型（JSAPI小程序支付）
         data.put("openid", openId);     //微信小程序用户openId
         //计算签名
-        String sign = WxPayUtil.getSignByMd5(data, WxConfig.MINI_KEY);
+        String sign = WxPayUtil.getSignByMd5(data, WxConfig.API_V2_KEY);
         data.put("sign", sign);
         //转为XML格式
         String xmlData = XmlUtil.mapToXmlStr(data, true);
@@ -103,7 +101,7 @@ public class WxPayService {
                 String nonceStr2 = WxPayUtil.createNonce();
                 String packageStr = "prepay_id="+map.get("prepay_id");
                 long timestamp = System.currentTimeMillis()/1000;
-                String resign = WxPayUtil.paymentResign((String) map.get("appid"),nonceStr2,packageStr,timestamp,WxConfig.MINI_KEY);
+                String resign = WxPayUtil.paymentResign((String) map.get("appid"),nonceStr2,packageStr,timestamp,WxConfig.API_V2_KEY);
                 return new WxPaymentInfoVo(
                         (String) map.get("app_id"),
                         timestamp+"",
@@ -151,7 +149,7 @@ public class WxPayService {
         String sign = (String) data.get("sign");
         String signType = (String) data.getOrDefault("signType","MD5");
         data.remove("sign");    //移除sign
-        String realSign = signType.equals("MD5") ? WxPayUtil.getSignByMd5(new TreeMap<>(data), WxConfig.MINI_KEY) : WxPayUtil.getSignBySha256(new TreeMap<>(data), WxConfig.MINI_KEY);
+        String realSign = signType.equals("MD5") ? WxPayUtil.getSignByMd5(new TreeMap<>(data), WxConfig.API_V2_KEY) : WxPayUtil.getSignBySha256(new TreeMap<>(data), WxConfig.API_V2_KEY);
         if(!realSign.equals(sign)){
             log.info("签名错误，已拦截");
             res.put("return_code", "FAIL");

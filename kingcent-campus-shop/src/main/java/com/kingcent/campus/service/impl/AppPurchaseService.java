@@ -57,14 +57,11 @@ public class AppPurchaseService implements PurchaseService {
     @Override
     public Result<PurchaseInfoVo> getPurchaseInfo(Long userId, CheckPurchaseVo check){
 
-        long start = System.currentTimeMillis();
 
         //检查是否存在订单异常
         Result<PurchaseInfoVo> checkResult = orderService.checkOrder(userId, check.getList().size());
         if (checkResult != null) return checkResult;
 
-
-        log.info("用时{}", System.currentTimeMillis() - start);
 
         //收集goodsId，count
         Set<Long> goodsIds = new HashSet<>();
@@ -76,7 +73,6 @@ public class AppPurchaseService implements PurchaseService {
 
 
         //1.获取商品列表
-        start = System.currentTimeMillis();
         List<GoodsEntity> goodsEntityList = goodsService.listByIds(goodsIds);
         if(goodsEntityList.size() == 0) return Result.fail("商品不存在");
         //提取数据
@@ -84,7 +80,6 @@ public class AppPurchaseService implements PurchaseService {
         for (GoodsEntity goods : goodsEntityList) {
             goodsMap.put(goods.getId(), goods);
         }
-        log.info("用时{}", System.currentTimeMillis() - start);
 
 
         //收集shopId
@@ -94,13 +89,10 @@ public class AppPurchaseService implements PurchaseService {
         }
 
         //2.获取商铺名称
-        start = System.currentTimeMillis();
         Map<Long, String> shopNames = shopService.shopNamesMap(shopIds);
-        log.info("用时{}", System.currentTimeMillis() - start);
 
 
         //3.获取商品规格列表
-        start = System.currentTimeMillis();
         QueryWrapper<GoodsSkuEntity> skuWrapper = new QueryWrapper<>();
         //添加条件
         for (QueryPurchaseVo query : check.getList()) {
@@ -116,33 +108,24 @@ public class AppPurchaseService implements PurchaseService {
         for (GoodsSkuEntity sku : skus) {
             skuIds.add(sku.getId());
         }
-        log.info("用时{}", System.currentTimeMillis() - start);
 
         //4.获取配送信息
-        start = System.currentTimeMillis();
         List<DeliveryTemplateEntity> deliveries = deliveryTemplateService.list(
                 new QueryWrapper<DeliveryTemplateEntity>()
                         .in("shop_id", shopIds)
                         .eq("is_used", 1)
         );
-        log.info("用时{}", System.currentTimeMillis() - start);
 
         //5.获取地址信息
-        start = System.currentTimeMillis();
         List<AddressVo> userAddress = addressService.getUserAddress(userId);
-        log.info("用时{}", System.currentTimeMillis() - start);
 
         //6.获取支持的支付方式
-        start = System.currentTimeMillis();
         List<PayTypeEntity> payTypes = payTypeService.list(
                 new QueryWrapper<PayTypeEntity>()
                         .in("shop_id", shopIds)
                         .eq("enabled", true)
         );
-        log.info("用时{}", System.currentTimeMillis() - start);
-
         //7.配送范围信息
-        start = System.currentTimeMillis();
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //用户有设置地址才能查询配送范围信息
         AddressVo defaultAddress = null;
@@ -175,16 +158,10 @@ public class AppPurchaseService implements PurchaseService {
             }
         }
 
-        log.info("用时{}", System.currentTimeMillis() - start);
-        start = System.currentTimeMillis();
-
 
         //查询用户对sku购买次数
         Map<Long, Integer> skuBuyCount = orderGoodsService.countUserBuyCountOfSku(userId,skuIds);
-        log.info("用时{}", System.currentTimeMillis() - start);
 
-
-        start = System.currentTimeMillis();
         //整合数据
         //交易信息
         PurchaseInfoVo purchaseInfoVo = new PurchaseInfoVo();
@@ -336,7 +313,6 @@ public class AppPurchaseService implements PurchaseService {
                 store.getPayTypes().add(payType.getType());
             }
         }
-        log.info("用时{}", System.currentTimeMillis() - start);
         return Result.success(purchaseInfoVo);
     }
 

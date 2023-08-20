@@ -1,6 +1,7 @@
 package com.kingcent.campus;
 
 import com.kingcent.campus.service.OrderService;
+import com.kingcent.campus.wx.EnableWxService;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableWxService
 @MapperScan("com.kingcent.campus.shop.mapper")
 @Slf4j
 public class ShopApplication{

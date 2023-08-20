@@ -1,7 +1,9 @@
 package com.kingcent.campus.wx.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.kingcent.campus.common.entity.result.Result;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -12,4 +14,8 @@ import java.time.LocalDateTime;
  */
 public interface WxOrderService {
     Result<?> onWxPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime);
+
+    JSONObject onWxRefundSuccess(String outRefundNo, String refundNo, LocalDateTime refundTime, BigDecimal total, BigDecimal refund);
+
+    JSONObject onWxRefundFail(String outRefundNo, String message, LocalDateTime time);
 }

@@ -13,24 +13,25 @@ import java.security.cert.CertificateException;
  * @date 2023/8/19 1:14
  */
 @Slf4j
-@Service
 public class WxCertificateService {
 
     /**
      * 获取私钥
      */
-    public PrivateKey getPrivateKey() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableEntryException {
+    public PrivateKey getPrivateKey(){
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        InputStream inputStream = classLoader.getResourceAsStream(WxConfig.CERTIFICATE_PATH);
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try {
+        try(InputStream inputStream = classLoader.getResourceAsStream(WxConfig.CERTIFICATE_PATH)) {
+            if (inputStream == null){
+                throw new RuntimeException("证书文件不存在，请将证书放到"+WxConfig.CERTIFICATE_PATH+"资源路径下");
+            }
+            KeyStore keyStore;
+            keyStore = KeyStore.getInstance("PKCS12");
             //装载证书资源文件
             keyStore.load(inputStream, WxConfig.MCH_ID.toCharArray());
-        } finally {
-            assert inputStream != null;
-            inputStream.close();
+            return (PrivateKey) keyStore.getKey(WxConfig.CERTIFICATE_KEY_ALIAS, WxConfig.MCH_ID.toCharArray());
+        } catch (CertificateException | IOException | NoSuchAlgorithmException | KeyStoreException |
+                 UnrecoverableKeyException e) {
+            throw new RuntimeException(e);
         }
-        return (PrivateKey) keyStore.getKey(WxConfig.CERTIFICATE_KEY_ALIAS, WxConfig.MCH_ID.toCharArray());
     }
-
 }

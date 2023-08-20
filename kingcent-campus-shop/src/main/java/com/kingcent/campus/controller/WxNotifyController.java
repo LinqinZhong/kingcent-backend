@@ -1,6 +1,8 @@
 package com.kingcent.campus.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.kingcent.campus.wx.service.WxPayService;
+import com.kingcent.campus.wx.service.WxRefundService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,9 @@ public class WxNotifyController {
     @Autowired
     private WxPayService wxPayService;
 
+    @Autowired
+    private WxRefundService refundService;
+
     /**
      * 接收微信支付回传的支付通知
      */
@@ -24,5 +29,14 @@ public class WxNotifyController {
     @ResponseBody
     public String paymentNotify(@RequestBody String xmlData){
         return wxPayService.notify(xmlData);
+    }
+
+    /**
+     * 接收微信支付回传的退款处理通知
+     */
+    @PostMapping(value = "/refund")
+    @ResponseBody
+    public JSONObject refundNotify(@RequestBody JSONObject data){
+        return refundService.notify(data);
     }
 }

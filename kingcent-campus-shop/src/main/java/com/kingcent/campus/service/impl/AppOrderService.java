@@ -1,7 +1,9 @@
 package com.kingcent.campus.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
@@ -9,6 +11,7 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
+import com.kingcent.campus.shop.constant.RefundStatus;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.wx.entity.vo.CreateWxOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
@@ -85,6 +88,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
     @Autowired
     private OrderRefundService refundService;
+
+    @Autowired
+    private OrderRefundMapService refundMapService;
 
     private static final String MESSAGE_KEY = "message:queue:order:dead";
 
@@ -804,6 +810,63 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     }
 
     /**
+     * 微信退款成功
+     */
+    @Override
+    public JSONObject onWxRefundSuccess(String outRefundNo, String refundNo, LocalDateTime refundTime, BigDecimal total, BigDecimal refund) {
+        OrderRefundEntity refundEntity = refundService.getOne(
+                new QueryWrapper<OrderRefundEntity>()
+                        .eq("out_refund_no", outRefundNo)
+                        .last("limit 1")
+        );
+        if(refund == null) {
+            JSONObject res = new JSONObject();
+            res.put("code", "SUCCESS");
+            res.put("message", "退款订单不存在");
+            return res;
+        }
+        //查找订单列表
+        List<Long> orderIds = new ArrayList<>();
+        List<OrderRefundMapEntity> binds = refundMapService.list(new QueryWrapper<OrderRefundMapEntity>()
+                .eq("refund_id", refundEntity.getId())
+        );
+        for (OrderRefundMapEntity bind : binds) {
+            orderIds.add(bind.getOrderId());
+        }
+        //更新订单状态
+        if (!update(new UpdateWrapper<OrderEntity>()
+                .in("id", orderIds)
+                .set("status", OrderStatus.REFUNDED)
+        )) {
+            JSONObject res = new JSONObject();
+            res.put("code", "SUCCESS");
+            res.put("message", "订单状态更新失败");
+            return res;
+        }
+        //更新退款单状态
+        if (!refundService.update(
+                new UpdateWrapper<OrderRefundEntity>()
+                        .eq("id", refundEntity.getId())
+                        .set("status", RefundStatus.SUCCESS)
+        )) {
+            JSONObject res = new JSONObject();
+            res.put("code", "SUCCESS");
+            res.put("message", "退款订单状态更新失败");
+            return res;
+        }
+        return null;
+    }
+
+    /**
+     * 微信退款失败
+     */
+    @Override
+    public JSONObject onWxRefundFail(String outRefundNo, String message, LocalDateTime time) {
+        log.error("退款失败"+outRefundNo+","+message+","+time);
+        return null;
+    }
+
+    /**
      * 用户退款
      */
     @Transactional
@@ -827,21 +890,38 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         if(order == null)
             return Result.fail("该订单当前无法退款");
 
+        //获取同批次支付的订单总金额
+        BigDecimal total = (BigDecimal) getMap(
+                new QueryWrapper<OrderEntity>()
+                        .eq("trade_no", order.getTradeNo())
+                        .select("SUM(pay_price) AS total")
+        ).get("total");
+
         //创建退款订单
+        String outRefundNo = createNo(userId, loginId);
         OrderRefundEntity refund = new OrderRefundEntity();
-        refund.setOrderId(orderId);
+        refund.setOutRefundNo(outRefundNo);
+        refund.setTradeNo(order.getTradeNo());
+        refund.setRefund(total);
+        refund.setOriginTotal(total);
+        refund.setPayType(order.getPayType());
         refund.setCreateTime(LocalDateTime.now());
         refund.setReason(reason);
+        refund.setStatus(RefundStatus.SUBMITTED);
         refund.setMessage(message);
-        if(!refundService.save(refund)) {
+        if(!refundService.save(refund) || refund.getId() == null) {
             log.error("退款订单创建失败");
             return Result.fail("退款订单创建失败");
         }
+
+        //创建订单退款单映射
+        refundMapService.save(new OrderRefundMapEntity(refund.getId(), orderId));
+
         //修改订单状态
         if (!update(new UpdateWrapper<OrderEntity>()
                 .eq("id", orderId)
                 .eq("status",order.getStatus())
-                .set("status", OrderStatus.REQUEST_TO_REFUND)
+                .set("status", OrderStatus.REFUNDING)
         )) {
             return Result.busy();
         }

@@ -19,14 +19,8 @@ public class OrderStatus {
     public static final int REVIEWED = 4;
     //已取消
     public static final int CLOSED = -1;
-    //买家发起退款
-    public static final int REQUEST_TO_REFUND = -2;
-    //卖家同意退款
-    public static final int AGREE_TO_REFUND = -3;
-    //已退货
-    public static final int BACKED = -4;
+    //退款中
+    public static final int REFUNDING = -2;
     //已退款
-    public static final int REFUNDED = -5;
-    //退款失败
-    public static final int FAIL_TO_REFUND = -6;
+    public static final int REFUNDED = -3;
 }

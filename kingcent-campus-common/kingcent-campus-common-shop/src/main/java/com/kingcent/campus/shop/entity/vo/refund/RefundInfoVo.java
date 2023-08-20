@@ -12,13 +12,12 @@ import java.util.List;
  */
 @Data
 public class RefundInfoVo {
-    private String orderNo;
-    private String tradeNo;
+    private String outRefundNo;
+    private String refundNo;
     private BigDecimal price;
     private String payType;
     private Integer status;
     private LocalDateTime createTime;
-    private LocalDateTime payTime;
     private LocalDateTime refundTime;
     private Integer reason;
     private String message;

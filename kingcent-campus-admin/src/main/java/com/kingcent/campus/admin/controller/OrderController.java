@@ -1,13 +1,16 @@
 package com.kingcent.campus.admin.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.kingcent.campus.admin.service.OrderRefundService;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.shop.entity.OrderEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 /**
  * @author zzy
@@ -19,13 +22,12 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    @GetMapping
-    public Result<List<OrderEntity>> list(){
-        LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<>();
-        //后续需要啥条件在加
+    @Autowired
+    private OrderRefundService orderRefundService;
 
-        List<OrderEntity> list = orderService.list(queryWrapper);
-        return Result.success(list);
+    @PostMapping("/confirm_refund")
+    public Result<?> confirmRefund(Long shopId, Long orderId, BigDecimal price) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+        return orderRefundService.confirmRefund(shopId, orderId,price);
     }
 
     @DeleteMapping("/{id}")
