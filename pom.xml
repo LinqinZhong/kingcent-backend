@@ -32,6 +32,7 @@
     <module>kingcent-campus-admin</module>
     <module>kingcent-campus-common/kingcent-campus-common-shop</module>
     <module>kingcent-campus-common/kingcent-campus-common-framework</module>
+      <module>kingcent-campus-common/kingcent-campus-common-wx</module>
   </modules>
 
   <dependencyManagement>

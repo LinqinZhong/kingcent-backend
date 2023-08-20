@@ -1,5 +1,6 @@
 package com.kingcent.campus.service.impl;
 
+import com.kingcent.campus.wx.service.WxUserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
@@ -13,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
  * @date 2023/06/15
  */
 @Service
-public class AppUserService {
+public class AppUserService implements WxUserService {
 
     @Resource
     private LoadBalancerClient loadBalancerClient;
@@ -22,7 +23,8 @@ public class AppUserService {
     private RestTemplate restTemplate;
 
 
-    public Long getIdByOpenid(String openid){
+    @Override
+    public Long getIdByWxOpenid(String openid){
         Long[] success = {null};
         try {
             //开启新线程，防止阻塞
@@ -46,6 +48,7 @@ public class AppUserService {
 
 
 
+    @Override
     public String getWxOpenid(Long userId){
         String[] success = {null};
         try {

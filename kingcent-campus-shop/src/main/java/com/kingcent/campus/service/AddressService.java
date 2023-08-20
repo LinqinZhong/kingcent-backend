@@ -2,7 +2,7 @@ package com.kingcent.campus.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kingcent.campus.shop.entity.AddressEntity;
-import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.entity.vo.address.AddressVo;
 
 import java.util.List;
 

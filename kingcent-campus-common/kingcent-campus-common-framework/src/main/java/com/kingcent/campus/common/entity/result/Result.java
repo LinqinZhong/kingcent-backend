@@ -24,6 +24,10 @@ public class Result<T> {
         return this;
     }
 
+    public static Result<?> busy(){
+        return fail("系统繁忙，请稍后重试");
+    }
+
     public Result<T> message(String message){
         this.message = message;
         return this;

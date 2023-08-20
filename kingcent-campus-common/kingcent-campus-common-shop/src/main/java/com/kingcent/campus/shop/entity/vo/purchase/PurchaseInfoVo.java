@@ -1,6 +1,6 @@
 package com.kingcent.campus.shop.entity.vo.purchase;
 
-import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.entity.vo.address.AddressVo;
 import lombok.Data;
 
 import java.math.BigDecimal;

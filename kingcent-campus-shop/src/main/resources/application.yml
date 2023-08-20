@@ -47,10 +47,3 @@ mybatis-plus:
       logic-not-delete-value: 0
       id-type: auto
 
-third:
-  wechat:
-    appid: wx78ac22e61f72cba5
-    mchid: 1650981448
-    key: 9620129cf275252ec9b3e9cd42e5bf56
-    certificate-serial-no: 127E0622D57770C440C9F4D7ADE7F6E3E2F9DDE6
-

@@ -6,7 +6,7 @@ import com.kingcent.campus.service.AddressService;
 import com.kingcent.campus.service.OrderGoodsService;
 import com.kingcent.campus.service.PurchaseService;
 import com.kingcent.campus.shop.entity.*;
-import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.entity.vo.address.AddressVo;
 import com.kingcent.campus.shop.entity.vo.purchase.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -9,17 +9,18 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
-import com.kingcent.campus.shop.constant.RefundOrderStatus;
 import com.kingcent.campus.shop.entity.*;
-import com.kingcent.campus.shop.entity.vo.order.CreateOrderResultVo;
+import com.kingcent.campus.wx.entity.vo.CreateWxOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
-import com.kingcent.campus.shop.entity.vo.payment.WxPaymentInfo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.shop.listener.OrderListener;
 import com.kingcent.campus.shop.mapper.OrderMapper;
+import com.kingcent.campus.wx.entity.vo.WxPaymentInfoVo;
+import com.kingcent.campus.wx.service.WxOrderService;
+import com.kingcent.campus.wx.service.WxPayService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -38,7 +39,7 @@ import java.util.*;
  */
 @Service
 @Slf4j
-public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> implements OrderService {
+public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> implements OrderService, WxOrderService {
 
     @Autowired
     private GoodsService goodsService;
@@ -71,23 +72,19 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     private GroupPointService pointService;
 
     @Autowired
+    private WxPayService wxPayService;
+
+    @Autowired
     private GroupService groupService;
 
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-
-    @Autowired
-    private WxPayService wxPayService;
-
     @Autowired
     private AppUserService userService;
 
     @Autowired
-    private RefundOrderService refundService;
-
-    @Autowired
-    private RefundOrderMapService refundMapService;
+    private OrderRefundService refundService;
 
     private static final String MESSAGE_KEY = "message:queue:order:dead";
 
@@ -167,16 +164,24 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Override
     @Transactional
     public boolean closeOrder(List<Long> orderIds){
-        //过滤出未关闭的订单
+        //过滤出可以关闭的订单
         List<OrderEntity> orderUnclose = list(
                 new QueryWrapper<OrderEntity>()
-                        .eq("status", 0)
+                        .or(w->w.eq("status", OrderStatus.NOT_PAY))
+                        .or(w->{
+                            w.eq("pay_type", PayType.OFFLINE);
+                            w.eq("status", OrderStatus.READY);
+                        })
                         .in("id", orderIds)
                         .select("id")
         );
         orderIds = new ArrayList<>();
         for (OrderEntity order : orderUnclose) {
             orderIds.add(order.getId());
+        }
+
+        if(orderIds.size() == 0){
+            return false;
         }
 
         //关闭订单
@@ -312,13 +317,13 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      */
     @Override
     @Transactional
-    public Result<CreateOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress) {
+    public Result<CreateWxOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress) {
 
         //检查是否存在订单异常
-        Result<CreateOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
+        Result<CreateWxOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
         if (checkResult != null) return checkResult;
 
-        CreateOrderResultVo result = new CreateOrderResultVo();
+        CreateWxOrderResultVo result = new CreateWxOrderResultVo();
 
         //查询用户收货地址
         AddressEntity address = addressService.getById(purchase.getAddressId());
@@ -466,7 +471,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
 
         //生成统一的outTradeNo
-        String outTradeNo = createOutTradeNo(userId, loginId);
+        String outTradeNo = createNo(userId, loginId);
         //统一订单创建时间
         LocalDateTime createTime = LocalDateTime.now();
 
@@ -638,7 +643,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 return Result.fail("微信用户不存在");
             }
             //获取微信支付请求信息
-            WxPaymentInfo wxPaymentInfo = wxPayService.requestToPay(
+            WxPaymentInfoVo wxPaymentInfo = wxPayService.requestToPay(
                     wxOpenid,
                     outTradeNo,
                     "仲达校园送商品下单",
@@ -654,9 +659,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     }
 
     /**
-     * 生成订单号
+     * 生成编号
      */
-    private String createOutTradeNo(Long userId, Long loginId){
+    private String createNo(Long userId, Long loginId){
         Long localDate = System.currentTimeMillis();
         return String.format("%10d%04d%04d",localDate, userId, loginId);
     }
@@ -758,11 +763,11 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
     @Override
     @Transactional
-    public Result<?> onPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime, String payType) {
+    public Result<?> onWxPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime) {
         List<OrderEntity> list = list(new QueryWrapper<OrderEntity>()
                 .eq("user_id", userId)
                 .eq("out_trade_no", outTradeNo)
-                .eq("pay_type", payType)
+                .eq("pay_type", PayType.WX_PAY)
         );
         Set<String> orderIds = new HashSet<>();
         BigDecimal totalPrice = new BigDecimal(0);
@@ -803,7 +808,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      */
     @Transactional
     @Override
-    public Result<?> requireRefund(Long userId, Long orderId, BigDecimal refundPrice){
+    public Result<?> requireRefund(Long userId, Long loginId, Long orderId, Integer reason, String message){
         //获取订单
         OrderEntity order = getOne(new QueryWrapper<OrderEntity>()
                 .eq("user_id", userId)
@@ -821,26 +826,25 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         );
         if(order == null)
             return Result.fail("该订单当前无法退款");
-        if(refundPrice.compareTo(BigDecimal.ZERO) <= 0)
-            return Result.fail("退款金额必须为正数");
-        if(refundPrice.compareTo(order.getPayPrice()) > 0)
-            return Result.fail("退款金额不能超过支付金额");
 
-        //生成退款订单编号
-        String outRefundNo = UUID.randomUUID().toString();
         //创建退款订单
-        RefundOrderEntity refund = new RefundOrderEntity();
-        refund.setOutRefundNo(outRefundNo);
-        refund.setUserId(userId);
-        refund.setStatus(RefundOrderStatus.WAIT);
+        OrderRefundEntity refund = new OrderRefundEntity();
+        refund.setOrderId(orderId);
         refund.setCreateTime(LocalDateTime.now());
-        refund.setPrice(refundPrice);
-        if(!refundService.save(refund)) return Result.fail("退款订单创建失败");
-        //创建映射表
-        RefundOrderMapEntity refundOrderMap = new RefundOrderMapEntity();
-        refundOrderMap.setOrderId(orderId);
-        refundOrderMap.setRefundOrderId(refund.getId());
-        if(!refundMapService.save(refundOrderMap)) return Result.fail("退款订单映射失败");
+        refund.setReason(reason);
+        refund.setMessage(message);
+        if(!refundService.save(refund)) {
+            log.error("退款订单创建失败");
+            return Result.fail("退款订单创建失败");
+        }
+        //修改订单状态
+        if (!update(new UpdateWrapper<OrderEntity>()
+                .eq("id", orderId)
+                .eq("status",order.getStatus())
+                .set("status", OrderStatus.REQUEST_TO_REFUND)
+        )) {
+            return Result.busy();
+        }
         return Result.success();
     }
 }

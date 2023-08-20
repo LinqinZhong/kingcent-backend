@@ -2,7 +2,7 @@ package com.kingcent.campus.controller;
 
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
-import com.kingcent.campus.service.WxPayService;
+import com.kingcent.campus.service.OrderRefundService;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.OrderEntity;
@@ -10,10 +10,10 @@ import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.service.OrderService;
+import com.kingcent.campus.shop.entity.vo.refund.RefundInfoVo;
 import com.kingcent.campus.shop.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,13 +29,7 @@ public class OrderController {
     private OrderService orderService;
 
     @Autowired
-    private WxPayService wxPayService;
-
-    @PostMapping(value = "/wx_payment_notify_2023_8", produces = MediaType.APPLICATION_XML_VALUE)
-    @ResponseBody
-    public String paymentNotify(@RequestBody String xmlData){
-        return wxPayService.notify(xmlData);
-    }
+    private OrderRefundService refundOrderService;
 
     @PostMapping("/confirm")
     @ResponseBody
@@ -87,6 +81,33 @@ public class OrderController {
                 ))
         );
         return Result.fail("获取失败");
+    }
+
+    /**
+     * 用户申请退货
+     */
+    @PostMapping("/refund")
+    public Result<?> requireRefund(
+            HttpServletRequest request,
+            @RequestParam Long orderId,
+            @RequestParam Integer reason,
+            @RequestParam String message
+    ){
+        return orderService.requireRefund(
+                RequestUtil.getUserId(request),
+                RequestUtil.getLoginId(request),
+                orderId,
+                reason,
+                message
+        );
+    }
+
+    /**
+     * 获取订单退货信息
+     */
+    @GetMapping("/refund_info")
+    public Result<RefundInfoVo> getRefundInfo(HttpServletRequest request, @RequestParam Long orderId){
+        return refundOrderService.getRefundInfo(RequestUtil.getUserId(request), orderId);
     }
 
 }

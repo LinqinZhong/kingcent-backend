@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.shop.entity.AddressEntity;
-import com.kingcent.campus.shop.entity.vo.AddressVo;
+import com.kingcent.campus.shop.entity.vo.address.AddressVo;
 import com.kingcent.campus.shop.mapper.AddressMapper;
 import com.kingcent.campus.service.AddressService;
 import com.kingcent.campus.service.GroupPointService;
@@ -33,13 +33,11 @@ public class AppShopAddressService extends ServiceImpl<AddressMapper, AddressEnt
     @Override
     public List<AddressVo> getUserAddress(Long userId){
 
-        long start = System.currentTimeMillis();
         List<AddressEntity> addressEntities = list(
                 new QueryWrapper<AddressEntity>()
                         .eq("user_id", userId)
                         .orderByDesc("id")
         );
-        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
         List<AddressVo> res = new ArrayList<>();
 
 
@@ -51,13 +49,9 @@ public class AppShopAddressService extends ServiceImpl<AddressMapper, AddressEnt
             pointIds.add(addressEntity.getPointId());
         }
         //获取配送点的名称
-        start = System.currentTimeMillis();
         Map<Long, String> groupNames = groupService.getGroupNames(groupIds);
-        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
         //获取门牌号的名称
-        start = System.currentTimeMillis();
         Map<Long, String> pointNames = groupPointService.getPointNames(pointIds);
-        log.info("啊啊啊用{}", System.currentTimeMillis() - start);
 
         for (AddressEntity addressEntity : addressEntities) {
             AddressVo addressVo = new AddressVo();

@@ -27,4 +27,6 @@ public class OrderStatus {
     public static final int BACKED = -4;
     //已退款
     public static final int REFUNDED = -5;
+    //退款失败
+    public static final int FAIL_TO_REFUND = -6;
 }

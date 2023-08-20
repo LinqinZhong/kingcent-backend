@@ -5,7 +5,8 @@ import com.kingcent.campus.shop.entity.AddressEntity;
 import com.kingcent.campus.shop.entity.GroupEntity;
 import com.kingcent.campus.shop.entity.GroupPointEntity;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.shop.entity.vo.EditAddressVo;
+import com.kingcent.campus.shop.entity.vo.address.AddressDetailsVo;
+import com.kingcent.campus.shop.entity.vo.address.EditAddressVo;
 import com.kingcent.campus.shop.entity.vo.group.point.FloorConsumePointVo;
 import com.kingcent.campus.service.AddressService;
 import com.kingcent.campus.service.GroupPointService;
@@ -175,5 +176,21 @@ public class AddressController {
         }
         return Result.fail("收货地址不存在");
     }
+
+    @GetMapping("/get_by_id/{id}")
+    public Result<AddressDetailsVo> getById(HttpServletRequest request, @PathVariable Long id){
+        AddressEntity address = addressService.getById(id);
+        if(address == null || !address.getUserId().equals(RequestUtil.getUserId(request))){
+            return Result.fail("收货地址不存在");
+        }
+        return Result.success(new AddressDetailsVo(
+                address.getGroupId(),
+                address.getPointId(),
+                address.getName(),
+                address.getGender(),
+                address.getMobile()
+        ));
+    }
+
 
 }
