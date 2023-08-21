@@ -3,17 +3,21 @@ package com.kingcent.campus.admin.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.campus.admin.entity.vo.RefundOrderVo;
 import com.kingcent.campus.admin.service.OrderGoodsService;
 import com.kingcent.campus.admin.service.OrderRefundMapService;
 import com.kingcent.campus.admin.service.OrderRefundService;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.constant.RefundStatus;
 import com.kingcent.campus.shop.entity.OrderGoodsEntity;
 import com.kingcent.campus.shop.entity.OrderRefundEntity;
 import com.kingcent.campus.shop.entity.OrderRefundMapEntity;
 import com.kingcent.campus.shop.mapper.OrderRefundMapper;
+import com.kingcent.campus.shop.util.BeanCopyUtils;
 import com.kingcent.campus.wx.entity.WxOrderGoodsEntity;
 import com.kingcent.campus.wx.service.WxRefundService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,5 +120,37 @@ public class AdminOrderRefundService extends ServiceImpl<OrderRefundMapper, Orde
             return Result.fail(JSONObject.toJSONString(res));
         }
         return Result.success();
+    }
+
+    @Override
+    public VoList<RefundOrderVo> refundList(Long shopId, Integer pageNum, Integer status) {
+        Page<OrderRefundEntity> page = new Page<>(pageNum, 10, true);
+        QueryWrapper<OrderRefundEntity> w = new QueryWrapper<OrderRefundEntity>()
+                .eq("shop_id", shopId)
+                .orderByDesc("create_time");
+        if(status != null) w.eq("status", status);
+        page(page,w);
+        List<OrderRefundEntity> list = page.getRecords();
+        if (list.size() == 0){
+            return new VoList<>(0,new ArrayList<>());
+        }
+        return new VoList<>((int) page.getTotal(), BeanCopyUtils.copyBeanList(list,RefundOrderVo.class));
+    }
+
+    @Override
+    public Result<?> agree(Long shopId, Long refundId) {
+        OrderRefundEntity refundEntity = getById(refundId);
+        if(refundEntity == null || !refundEntity.getShopId().equals(shopId)){
+            return Result.fail("退款订单不存在");
+        }
+        if(!refundEntity.getStatus().equals(RefundStatus.SUBMITTED)){
+            return Result.fail("退款申请已失效");
+        }
+        if(update(new UpdateWrapper<OrderRefundEntity>()
+                .eq("id", refundEntity.getId())
+                .eq("status", refundEntity.getStatus())
+                .set("status",RefundStatus.AGREED)
+        )) return Result.success();
+        return Result.busy();
     }
 }

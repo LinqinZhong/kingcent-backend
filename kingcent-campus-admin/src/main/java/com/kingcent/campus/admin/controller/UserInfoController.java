@@ -19,20 +19,4 @@ import java.util.List;
 @RequestMapping("/user_info")
 public class UserInfoController {
 
-    @Autowired
-    private UserInfoService userInfoService;
-
-    @GetMapping("/{id}")
-    public Result<?> getUser(@PathVariable Long id){
-        return userInfoService.getUser(id);
-    }
-
-    @GetMapping
-    public Result<List<UserInfoEntity>> list(){
-        LambdaQueryWrapper<UserInfoEntity> queryWrapper = new LambdaQueryWrapper<>();
-        //后续需要啥条件在加
-
-        List<UserInfoEntity> list = userInfoService.list(queryWrapper);
-        return Result.success(list);
-    }
 }

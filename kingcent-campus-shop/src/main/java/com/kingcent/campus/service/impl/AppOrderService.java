@@ -854,6 +854,17 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             res.put("message", "退款订单状态更新失败");
             return res;
         }
+        //库存回滚
+        List<OrderGoodsEntity> goodsList = orderGoodsService.list(new QueryWrapper<OrderGoodsEntity>()
+                .in("order_id", orderIds)
+        );
+        for (OrderGoodsEntity goods : goodsList) {
+            UpdateWrapper<GoodsSkuEntity> w = new UpdateWrapper<GoodsSkuEntity>().eq("id", goods.getSkuId());
+            w.setSql("safe_stock_quantity = safe_stock_quantity + "+goods.getCount());
+            goodsSkuService.update(w);
+        }
+
+        //TODO 删除评论
         return null;
     }
 
@@ -882,13 +893,17 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                                 OrderStatus.READY,  //已支付的订单
                                 OrderStatus.DELIVERING,  //配送中的订单
                                 OrderStatus.RECEIVED,    //已收货的订单
-                                OrderStatus.REVIEWED    //已评论的订单
+                                OrderStatus.REVIEWED,    //已评论的订单
+                                OrderStatus.REFUNDING   //已提交退款申请的
                         )
                 )
                 .last("limit 1")
         );
         if(order == null)
             return Result.fail("该订单当前无法退款");
+        if(order.getStatus().equals(OrderStatus.REFUNDING)){
+            return Result.fail("退款申请已经提交，请勿重复提交");
+        }
 
         //获取同批次支付的订单总金额
         BigDecimal total = (BigDecimal) getMap(
@@ -897,11 +912,30 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                         .select("SUM(pay_price) AS total")
         ).get("total");
 
-        //创建退款订单
-        String outRefundNo = createNo(userId, loginId);
-        OrderRefundEntity refund = new OrderRefundEntity();
-        refund.setOutRefundNo(outRefundNo);
+        OrderRefundEntity refund = null;
+        //查找是否存在绑定
+        boolean haveToBind = false;
+        OrderRefundMapEntity bind = refundMapService.getOne(new QueryWrapper<OrderRefundMapEntity>()
+                .eq("order_id", orderId)
+        );
+        if(bind != null){
+            //存在绑定，直接使用之前的
+            refund = refundService.getById(bind.getRefundId());
+        }else {
+            //需要创建绑定
+            haveToBind = true;
+        }
+        if(refund == null){
+            //不存在，创建退款订单
+            String outRefundNo = createNo(userId, loginId);
+            refund = new OrderRefundEntity();
+            refund.setOutRefundNo(outRefundNo);
+        }
+
         refund.setTradeNo(order.getTradeNo());
+        refund.setUserId(userId);
+        refund.setShopId(order.getShopId());
+        refund.setOriginOrderStatus(order.getStatus());
         refund.setRefund(total);
         refund.setOriginTotal(total);
         refund.setPayType(order.getPayType());
@@ -909,14 +943,15 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         refund.setReason(reason);
         refund.setStatus(RefundStatus.SUBMITTED);
         refund.setMessage(message);
-        if(!refundService.save(refund) || refund.getId() == null) {
+        if(!refundService.saveOrUpdate(refund) || refund.getId() == null) {
             log.error("退款订单创建失败");
             return Result.fail("退款订单创建失败");
         }
 
-        //创建订单退款单映射
-        refundMapService.save(new OrderRefundMapEntity(refund.getId(), orderId));
-
+        if(haveToBind){
+            //创建订单退款单绑定
+            refundMapService.save(new OrderRefundMapEntity(refund.getId(), orderId));
+        }
         //修改订单状态
         if (!update(new UpdateWrapper<OrderEntity>()
                 .eq("id", orderId)

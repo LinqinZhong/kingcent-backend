@@ -1,16 +1,14 @@
 package com.kingcent.campus.admin.controller;
 
+import com.kingcent.campus.admin.entity.vo.RefundOrderVo;
 import com.kingcent.campus.admin.service.OrderRefundService;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 
 /**
  * @author zzy
@@ -26,13 +24,22 @@ public class OrderController {
     private OrderRefundService orderRefundService;
 
     @PostMapping("/confirm_refund")
-    public Result<?> confirmRefund(Long shopId, Long orderId, BigDecimal price) throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
-        return orderRefundService.confirmRefund(shopId, orderId,price);
+    public Result<?> confirmRefund(Long shopId, Long refundId, BigDecimal price) {
+        return orderRefundService.confirmRefund(shopId, refundId,price);
     }
 
-    @DeleteMapping("/{id}")
-    public Result<?> deleteOrder(@PathVariable Long id){
-        return orderService.deleteOrder(id);
+    @PostMapping("/agree_refund")
+    public Result<?> allow(Long shopId, Long refundId){
+        return orderRefundService.agree(shopId, refundId);
     }
 
+    @GetMapping("/refund_list/{shopId}/{pageNum}")
+    public Result<VoList<RefundOrderVo>> refundList(
+            HttpServletRequest request,
+            @PathVariable Long shopId,
+            @PathVariable Integer pageNum,
+            @RequestParam(required = false) Integer status
+    ){
+        return Result.success(orderRefundService.refundList(shopId, pageNum, status));
+    }
 }

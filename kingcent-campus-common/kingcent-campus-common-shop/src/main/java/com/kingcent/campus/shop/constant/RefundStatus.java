@@ -21,4 +21,6 @@ public class RefundStatus {
     public static final int CANCEL = -1;
     //退款失败
     public static final int FAIL = -2;
+    //商家拒绝
+    public static final int REJECT = -3;
 }

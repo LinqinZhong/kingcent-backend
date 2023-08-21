@@ -19,7 +19,6 @@ import java.util.Random;
 public class FileController {
 
     @Value("/www/wwwroot/file.intapter.cn/upload_files")
-//    @Value("C:/uploads")
     private String BASE_UPLOAD_PATH;
 
     @Value("http://file.intapter.cn/upload_files")

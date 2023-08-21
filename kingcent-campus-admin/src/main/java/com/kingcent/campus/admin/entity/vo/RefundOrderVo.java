@@ -1,36 +1,29 @@
-package com.kingcent.campus.shop.entity;
+package com.kingcent.campus.admin.entity.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单退款信息
  * @author rainkyzhong
- * @date 2023/8/19 5:44
+ * @date 2023/8/21 9:56
  */
-@TableName("kc_shop_order_refund")
 @Data
-public class OrderRefundEntity {
-
-    @TableId(type = IdType.AUTO)
+public class RefundOrderVo {
     private Long id;
-    private Long shopId;
     private Long userId;
     private String outRefundNo;
     private String tradeNo;
-    private String refundNo;
     private Integer status;
     private String payType;
     private Integer reason;
     private String message;
     private BigDecimal refund;
     private BigDecimal originTotal;
-    private Integer originOrderStatus;
     private LocalDateTime createTime;
     private LocalDateTime refundTime;
 }

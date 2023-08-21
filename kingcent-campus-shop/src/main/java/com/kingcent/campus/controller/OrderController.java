@@ -110,4 +110,10 @@ public class OrderController {
         return refundOrderService.getRefundInfo(RequestUtil.getUserId(request), orderId);
     }
 
+    @GetMapping("/cancel_refund/{orderId}")
+    @ResponseBody
+    public Result<?> cancelRefund(HttpServletRequest request, @PathVariable Long orderId) {
+        return refundOrderService.cancel(RequestUtil.getUserId(request), orderId);
+    }
+
 }

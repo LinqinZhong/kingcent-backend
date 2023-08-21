@@ -1,9 +1,10 @@
 package com.kingcent.campus.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.kingcent.campus.admin.entity.vo.RefundOrderVo;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.OrderRefundEntity;
-import com.kingcent.campus.shop.entity.vo.refund.RefundInfoVo;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -15,4 +16,8 @@ import java.math.BigDecimal;
 public interface OrderRefundService extends IService<OrderRefundEntity> {
     @Transactional
     Result<?> confirmRefund(Long shopId, Long refundId, BigDecimal price);
+
+    VoList<RefundOrderVo> refundList(Long shopId, Integer pageNum, Integer status);
+
+    Result<?> agree(Long shopId, Long refundId);
 }

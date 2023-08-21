@@ -10,5 +10,7 @@ import com.kingcent.campus.shop.entity.vo.refund.RefundInfoVo;
  * @date 2023/8/19 5:48
  */
 public interface OrderRefundService extends IService<OrderRefundEntity> {
+    Result<?> cancel(Long userId, Long orderId);
+
     Result<RefundInfoVo> getRefundInfo(Long userId, Long orderId);
 }
