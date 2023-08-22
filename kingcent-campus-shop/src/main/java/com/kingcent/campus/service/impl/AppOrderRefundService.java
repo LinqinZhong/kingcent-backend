@@ -43,7 +43,7 @@ public class AppOrderRefundService extends ServiceImpl<OrderRefundMapper, OrderR
 
     @Transactional
     @Override
-    public Result<?> cancel(Long userId, Long orderId){
+    public Result<Integer> cancel(Long userId, Long orderId){
         //查找对应的订单
         OrderEntity order = orderService.getById(orderId);
         if(order == null || !order.getUserId().equals(userId)){
@@ -97,7 +97,7 @@ public class AppOrderRefundService extends ServiceImpl<OrderRefundMapper, OrderR
         )) {
             return Result.busy();
         }
-        return Result.success();
+        return Result.success(refund.getOriginOrderStatus());
     }
 
     private String parseMinute(long m){

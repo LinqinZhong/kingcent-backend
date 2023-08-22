@@ -9,13 +9,18 @@ import com.kingcent.campus.wx.util.WxPayUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static com.kingcent.campus.wx.config.WxConfig.BASE_URL;
 
 
 /**
@@ -25,6 +30,9 @@ import java.util.*;
 @Slf4j
 public class WxPayService {
 
+    @Autowired
+    private WxCertificateService certificateService;
+
     /**
      * 时间格式模板
      */
@@ -33,7 +41,12 @@ public class WxPayService {
     /**
      * 统一下单接口
      */
-    private final static String WX_PAYMENT_API = "https://api.mch.weixin.qq.com/pay/unifiedorder";
+    private final static String WX_PAYMENT_API = "/pay/unifiedorder";
+
+    /**
+     * 查单接口
+     */
+    private final static String CHECK_API = "/v3/pay/transactions/out-trade-no/";
 
 
     @Autowired
@@ -47,6 +60,40 @@ public class WxPayService {
     @Lazy
     private WxOrderService orderService;
 
+    /**
+     * 查询订单
+     * trade_state 支付状态
+     * SUCCESS：支付成功
+     * REFUND：转入退款
+     * NOTPAY：未支付
+     * CLOSED：已关闭
+     * REVOKED：已撤销（仅付款码支付会返回）
+     * USERPAYING：用户支付中（仅付款码支付会返回）
+     * PAYERROR：支付失败（仅付款码支付会返回）
+     */
+    public JSONObject checkOrder(String outTradeNo){
+        String api = CHECK_API+outTradeNo+"?mchid="+WxConfig.MCH_ID;
+        long timestamp = System.currentTimeMillis()/1000;
+        String nonce = WxPayUtil.createNonce();
+        //获取证书私钥
+        PrivateKey key = certificateService.getPrivateKey();
+        try {
+            String sign = WxPayUtil.getSign("GET",api,timestamp,nonce,null, key);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.set("Authorization", WxPayUtil.createV3Authorization(nonce, timestamp, sign));
+            HttpEntity<String> request = new HttpEntity<>(headers);
+            ResponseEntity<String> exchange = restTemplate.exchange(BASE_URL + api, HttpMethod.GET, request, String.class);
+            if(exchange.getStatusCode().is2xxSuccessful()){
+                return JSONObject.parseObject(exchange.getBody());
+            }
+            return null;
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * 发起微信支付接口
@@ -57,7 +104,6 @@ public class WxPayService {
      * @param payPrice        支付价格
      * @param ipAddress       ip地址
      * @param orderCreateTime 订单创建时间
-     *)
      */
     public WxPaymentInfoVo requestToPay(
             String openId,
@@ -92,7 +138,7 @@ public class WxPayService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_XML);
         HttpEntity<String> formEntity = new HttpEntity<>(xmlData, headers);
-        String res = restTemplate.postForObject(WX_PAYMENT_API, formEntity, String.class);
+        String res = restTemplate.postForObject(BASE_URL+WX_PAYMENT_API, formEntity, String.class);
         try {
             Map<String, Object> map = XmlUtil.xmlToMap(res);
             log.info("响应数据->{}", map);

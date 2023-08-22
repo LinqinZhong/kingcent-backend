@@ -2,6 +2,7 @@ package com.kingcent.campus.service.impl;
 
 import com.kingcent.campus.wx.service.WxUserService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
  * @date 2023/06/15
  */
 @Service
+@Slf4j
 public class AppUserService implements WxUserService {
 
     @Resource
@@ -35,6 +37,7 @@ public class AppUserService implements WxUserService {
                 }
                 String url = String.format("http://%s:%s/user/id_of_wx_openid/"+openid, instance.getHost(), instance.getPort());
                 success[0] = restTemplate.getForObject(url,Long.class);
+                log.info("url: {}", url);
             });
             t.start();
             t.join();
@@ -59,6 +62,7 @@ public class AppUserService implements WxUserService {
                     return;
                 }
                 String url = String.format("http://%s:%s/user/wx_openid/"+userId, instance.getHost(), instance.getPort());
+
                 success[0] = restTemplate.getForObject(url,String.class);
             });
             t.start();

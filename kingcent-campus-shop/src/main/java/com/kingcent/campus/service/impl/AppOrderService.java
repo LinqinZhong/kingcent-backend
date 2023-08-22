@@ -3,7 +3,6 @@ package com.kingcent.campus.service.impl;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
@@ -93,6 +92,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     private OrderRefundMapService refundMapService;
 
     private static final String MESSAGE_KEY = "message:queue:order:dead";
+
+    @Autowired
+    private OrderOutTradeService outTradeService;
 
 
 
@@ -319,6 +321,70 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     }
 
     /**
+     * 订单下单时未支付重新发起的支付请求
+     * @param userId 用户ID
+     * @param loginId 登录ID
+     * @param orderId 订单ID
+     * @return 微信支付报文
+     */
+    @Override
+    public Result<?> pay(Long userId, Long loginId, Long orderId, String ipAddress){
+        //获取订单
+        OrderEntity order = getById(orderId);
+        if(order == null || !order.getUserId().equals(userId)) return Result.fail("订单不存在");
+        if(order.getPayType().equals(PayType.OFFLINE)){
+            return Result.fail("到付订单，不可在线支付");
+        }
+        switch (order.getStatus()) {
+            case OrderStatus.READY:
+            case OrderStatus.DELIVERING:
+            case OrderStatus.RECEIVED:
+            case OrderStatus.REVIEWED:
+                return Result.fail("订单已支付，请勿重复支付");
+            case OrderStatus.CLOSED:
+                return Result.fail("订单已关闭");
+            case OrderStatus.NOT_PAY:{
+                //处理微信支付
+                if(order.getPayType().equals(PayType.WX_PAY)) {
+                    //查询订单
+                    JSONObject check = wxPayService.checkOrder(order.getOutTradeNo());
+                    if (check == null || !check.containsKey("trade_state"))
+                        return Result.fail("订单校验失败，请稍后重试");
+                    switch (check.getString("trade_state")) {
+                        case "SUCCESS":
+                        case "REFUND":
+                            return Result.fail("订单已支付，请勿重复支付（如果仍显示未支付，请联系管理员处理）");
+                        case "CLOSED":
+                            return Result.fail("订单已关闭");
+                        case "NOTPAY": {
+                            //获取原订单支付报文
+                            //TODO 可以给订单加个out_trade_id加快搜索（不用out_trade_no搜）
+                            OrderOutTradeEntity outTradeOrder = outTradeService.getOne(
+                                    new QueryWrapper<OrderOutTradeEntity>()
+                                            .eq("out_trade_no", order.getOutTradeNo())
+                            );
+                            if(outTradeOrder != null){
+                                if(outTradeOrder.getOrderTotal() == 1){
+                                    //只有一笔订单，使用原定的支付报文进行支付
+                                    return Result.success(JSONObject.parseObject(
+                                            outTradeOrder.getPaymentPackage(),
+                                            WxPaymentInfoVo.class)
+                                    );
+                                }
+                                //TODO 原订单包含了多比订单，需要关闭后再重新发起单订单的支付
+                            }
+                        }
+                        return Result.fail("订单异常，请联系管理员");
+                    }
+                }
+
+            }
+        }
+
+        return Result.fail("接口错误，请联系管理员");
+    }
+
+    /**
      * 创建订单
      */
     @Override
@@ -366,6 +432,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             payTypeWrapper.or(w->{
                 w.eq("shop_id", store.getId());
                 w.eq("type", store.getPayType());
+                w.eq("enabled", 1);
             });
             deliveryTimes.put(store.getId(), store.getDeliveryTime());
             for (PurchaseConfirmGoodsVo goods : store.getGoodsList()) {
@@ -652,12 +719,22 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             WxPaymentInfoVo wxPaymentInfo = wxPayService.requestToPay(
                     wxOpenid,
                     outTradeNo,
-                    "仲达校园送商品下单",
+                    "商品下单",
                     wxPayPrice.multiply(new BigDecimal(100)).longValue(),
                     ipAddress,
                     createTime
             );
             result.setWxPaymentInfo(wxPaymentInfo);
+
+            //保存报文
+            OrderOutTradeEntity outTrade = new OrderOutTradeEntity();
+            outTrade.setOrderTotal(orders.size());
+            outTrade.setPayType(PayType.WX_PAY);
+            outTrade.setPaymentPackage(JSONObject.toJSONString(wxPaymentInfo));
+            outTrade.setOutTradeNo(outTradeNo);
+            if (!outTradeService.save(outTrade)) {
+                return Result.fail("支付信息保存失败");
+            }
         }
 
 

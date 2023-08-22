@@ -37,6 +37,11 @@ public class OrderController {
         return orderService.createOrders(RequestUtil.getUserId(request), RequestUtil.getLoginId(request), confirmVo, RequestUtil.getIpAddress(request));
     }
 
+    @GetMapping("/pay/{orderId}")
+    @ResponseBody Result<?> pay(HttpServletRequest request, @PathVariable Long orderId){
+        return orderService.pay(RequestUtil.getUserId(request), RequestUtil.getLoginId(request),orderId, RequestUtil.getIpAddress(request));
+    }
+
     @GetMapping("/list/{page}")
     @ResponseBody
     public Result<VoList<OrderStoreVo>> list(HttpServletRequest request, @PathVariable Integer page, @RequestParam(required = false) Integer status){
@@ -112,7 +117,7 @@ public class OrderController {
 
     @GetMapping("/cancel_refund/{orderId}")
     @ResponseBody
-    public Result<?> cancelRefund(HttpServletRequest request, @PathVariable Long orderId) {
+    public Result<Integer> cancelRefund(HttpServletRequest request, @PathVariable Long orderId) {
         return refundOrderService.cancel(RequestUtil.getUserId(request), orderId);
     }
 

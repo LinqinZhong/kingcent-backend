@@ -7,7 +7,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: 43.142.61.230:8848
 
   # 静态路由
     gateway:

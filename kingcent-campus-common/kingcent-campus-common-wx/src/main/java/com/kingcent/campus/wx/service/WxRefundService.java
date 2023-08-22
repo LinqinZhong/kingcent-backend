@@ -22,6 +22,8 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.*;
 
+import static com.kingcent.campus.wx.config.WxConfig.BASE_URL;
+
 /**
  * @author rainkyzhong
  * @date 2023/8/19 5:22
@@ -42,7 +44,7 @@ public class WxRefundService {
     /**
      * 退款接口
      */
-    private final static String WX_REFUND_API = "https://api.mch.weixin.qq.com/v3/refund/domestic/refunds";
+    private final static String WX_REFUND_API = "/v3/refund/domestic/refunds";
 
 
     DateTimeFormatter formatter = new DateTimeFormatterBuilder()
@@ -95,19 +97,15 @@ public class WxRefundService {
             //计算鉴权信息
             String nonce = WxPayUtil.createNonce();
             long timestamp = System.currentTimeMillis() / 1000;
-            String sign = WxPayUtil.getSign("POST", "/v3/refund/domestic/refunds",timestamp, nonce, data, key);
-            String authInfo = "mchid=\"" + WxConfig.MCH_ID + "\","
-                    + "nonce_str=\"" + nonce + "\","
-                    + "timestamp=\"" + timestamp + "\","
-                    + "serial_no=\"" + WxConfig.CERTIFICATE_SERIAL_NO + "\","
-                    + "signature=\"" + sign + "\"";
+            String sign = WxPayUtil.getSign("POST", WX_REFUND_API,timestamp, nonce, data, key);
+
             //设置请求头
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-            headers.set("Authorization", "WECHATPAY2-SHA256-RSA2048 " + authInfo);
+            headers.set("Authorization", WxPayUtil.createV3Authorization(nonce, timestamp, sign));
             HttpEntity<SortedMap<String, Object>> req = new HttpEntity<>(data, headers);
-            String res = restTemplateForWxService.postForObject(WX_REFUND_API, req, String.class);
+            String res = restTemplateForWxService.postForObject(BASE_URL+WX_REFUND_API, req, String.class);
             return JSONObject.parseObject(res);
         } catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);

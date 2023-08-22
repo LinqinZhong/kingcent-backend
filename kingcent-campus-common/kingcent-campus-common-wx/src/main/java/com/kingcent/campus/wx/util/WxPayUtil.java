@@ -4,6 +4,7 @@ import com.alibaba.cloud.commons.lang.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.common.utils.MD5Utils;
 import com.alibaba.nacos.shaded.com.google.common.collect.Lists;
+import com.kingcent.campus.wx.config.WxConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
@@ -19,12 +20,24 @@ import java.util.*;
 @Slf4j
 public class WxPayUtil {
 
+    /**
+     * 拼接V3接口鉴权的请求头
+     */
+    public static String createV3Authorization(String nonce, long timestamp, String sign){
+        String authInfo = "mchid=\"" + WxConfig.MCH_ID + "\","
+                + "nonce_str=\"" + nonce + "\","
+                + "timestamp=\"" + timestamp + "\","
+                + "serial_no=\"" + WxConfig.CERTIFICATE_SERIAL_NO + "\","
+                + "signature=\"" + sign + "\"";
+        return "WECHATPAY2-SHA256-RSA2048 " + authInfo;
+    }
+
     public static String getSign(String method, String url, long timestamp, String nonce, SortedMap<String, Object> data, PrivateKey key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
         String originalText = method+"\n"
                 +url+"\n"
                 +timestamp+"\n"
                 +nonce+"\n"
-                +(method.equals("GET") ? "" : JSONObject.toJSONString(data))+"\n";
+                +(method.equals("GET") ? "" : data == null ? "" : JSONObject.toJSONString(data))+"\n";
         log.info("originalText: {}\n", originalText);
         Signature sign = Signature.getInstance("SHA256withRSA");
         sign.initSign(key);

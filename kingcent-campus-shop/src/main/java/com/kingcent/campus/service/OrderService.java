@@ -25,6 +25,8 @@ public interface OrderService extends IService<OrderEntity> {
 
     <T> Result<T> checkOrder(Long userId, Integer orderNum);
 
+    Result<?> pay(Long userId, Long loginId, Long orderId, String ipAddress);
+
     @Transactional
     Result<?> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress);
 

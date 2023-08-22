@@ -24,7 +24,7 @@ public class Result<T> {
         return this;
     }
 
-    public static Result<?> busy(){
+    public static <T> Result<T> busy(){
         return fail("系统繁忙，请稍后重试");
     }
 
