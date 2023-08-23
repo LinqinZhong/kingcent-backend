@@ -45,9 +45,6 @@ public class AppPurchaseService implements PurchaseService {
     private AddressService addressService;
 
     @Autowired
-    private AppPayTypeService payTypeService;
-
-    @Autowired
     private AppShopDeliveryGroupService deliveryGroupService;
 
 
@@ -119,12 +116,6 @@ public class AppPurchaseService implements PurchaseService {
         //5.获取地址信息
         List<AddressVo> userAddress = addressService.getUserAddress(userId);
 
-        //6.获取支持的支付方式
-        List<PayTypeEntity> payTypes = payTypeService.list(
-                new QueryWrapper<PayTypeEntity>()
-                        .in("shop_id", shopIds)
-                        .eq("enabled", true)
-        );
         //7.配送范围信息
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
         //用户有设置地址才能查询配送范围信息
@@ -305,14 +296,6 @@ public class AppPurchaseService implements PurchaseService {
             store.getGoodsList().add(vo);
         }
 
-        //支付方式
-        for (PayTypeEntity payType : payTypes) {
-            //获取店铺
-            PurchaseStoreVo store = storeMap.get(payType.getShopId());
-            if (store != null){
-                store.getPayTypes().add(payType.getType());
-            }
-        }
         return Result.success(purchaseInfoVo);
     }
 

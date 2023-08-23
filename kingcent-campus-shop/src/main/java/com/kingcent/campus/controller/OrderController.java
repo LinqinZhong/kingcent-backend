@@ -5,7 +5,9 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.OrderRefundService;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
+import com.kingcent.campus.shop.constant.RefundReasons;
 import com.kingcent.campus.shop.entity.OrderEntity;
+import com.kingcent.campus.shop.entity.RefundReasonEntity;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
@@ -34,7 +36,7 @@ public class OrderController {
     @PostMapping("/confirm")
     @ResponseBody
     public Result<?> confirmOrder(HttpServletRequest request, @RequestBody PurchaseConfirmVo confirmVo){
-        return orderService.createOrders(RequestUtil.getUserId(request), RequestUtil.getLoginId(request), confirmVo, RequestUtil.getIpAddress(request));
+        return orderService.createOrders(RequestUtil.getUserId(request), RequestUtil.getLoginId(request), confirmVo, RequestUtil.getIpAddress(request), PayType.WX_PAY);
     }
 
     @GetMapping("/pay/{orderId}")
@@ -47,6 +49,11 @@ public class OrderController {
     public Result<VoList<OrderStoreVo>> list(HttpServletRequest request, @PathVariable Integer page, @RequestParam(required = false) Integer status){
         VoList<OrderStoreVo> res = orderService.orderList(RequestUtil.getUserId(request), status, page);
         return Result.success(res);
+    }
+
+    @GetMapping("/refund_reasons")
+    public Result<List<RefundReasonEntity>> refundReasons(){
+        return Result.success(RefundReasons.list);
     }
 
     @GetMapping("/close/{orderId}")

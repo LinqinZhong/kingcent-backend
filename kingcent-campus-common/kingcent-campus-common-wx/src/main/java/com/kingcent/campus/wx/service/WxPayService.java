@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.kingcent.campus.wx.config.WxConfig.BASE_URL;
+import static com.kingcent.campus.wx.config.WxConfig.MCH_BASE_URL;
 
 
 /**
@@ -71,8 +71,8 @@ public class WxPayService {
      * USERPAYING：用户支付中（仅付款码支付会返回）
      * PAYERROR：支付失败（仅付款码支付会返回）
      */
-    public JSONObject checkOrder(String outTradeNo){
-        String api = CHECK_API+outTradeNo+"?mchid="+WxConfig.MCH_ID;
+    public JSONObject checkOrder(String orderNo){
+        String api = CHECK_API+orderNo+"?mchid="+WxConfig.MCH_ID;
         long timestamp = System.currentTimeMillis()/1000;
         String nonce = WxPayUtil.createNonce();
         //获取证书私钥
@@ -84,7 +84,7 @@ public class WxPayService {
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.set("Authorization", WxPayUtil.createV3Authorization(nonce, timestamp, sign));
             HttpEntity<String> request = new HttpEntity<>(headers);
-            ResponseEntity<String> exchange = restTemplate.exchange(BASE_URL + api, HttpMethod.GET, request, String.class);
+            ResponseEntity<String> exchange = restTemplate.exchange(MCH_BASE_URL + api, HttpMethod.GET, request, String.class);
             if(exchange.getStatusCode().is2xxSuccessful()){
                 return JSONObject.parseObject(exchange.getBody());
             }
@@ -99,29 +99,32 @@ public class WxPayService {
      * 发起微信支付接口
      *
      * @param openId          用户openId
-     * @param outTradeNo      订单outTradeNo（多个orderNo可以对应一个outTradeNo，实现多个订单同时支付）
+     * @param orderNo      订单outTradeNo（多个orderNo可以对应一个outTradeNo，实现多个订单同时支付）
      * @param body            商品描述
      * @param payPrice        支付价格
      * @param ipAddress       ip地址
      * @param orderCreateTime 订单创建时间
+     * @param expireTime 订单结束时间
      */
     public WxPaymentInfoVo requestToPay(
             String openId,
-            String outTradeNo,
+            String orderNo,
             String body,
             Long payPrice,
             String ipAddress,
-            LocalDateTime orderCreateTime
+            LocalDateTime orderCreateTime,
+            LocalDateTime expireTime
     )  {
         String nonceStr = WxPayUtil.createNonce();
         SortedMap<String, Object> data = new TreeMap<>();
         data.put("appid", WxConfig.MINI_APP_ID);
         data.put("mch_id", WxConfig.MCH_ID);
+        data.put("time_expire", expireTime.format(dateTimeFormatter));
         //data.put("device_info","");   //设备号
         data.put("nonce_str", nonceStr);
         data.put("body", body);
         data.put("attach", "测试");   //附加信息
-        data.put("out_trade_no", outTradeNo);  //订单编号
+        data.put("out_trade_no", orderNo);  //订单编号
         data.put("total_fee", payPrice);  //总价
         data.put("spbill_create_ip", ipAddress);    //终端IP
         data.put("time_start",orderCreateTime.format(dateTimeFormatter));
@@ -138,7 +141,7 @@ public class WxPayService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_XML);
         HttpEntity<String> formEntity = new HttpEntity<>(xmlData, headers);
-        String res = restTemplate.postForObject(BASE_URL+WX_PAYMENT_API, formEntity, String.class);
+        String res = restTemplate.postForObject(MCH_BASE_URL +WX_PAYMENT_API, formEntity, String.class);
         try {
             Map<String, Object> map = XmlUtil.xmlToMap(res);
             log.info("响应数据->{}", map);
@@ -157,11 +160,11 @@ public class WxPayService {
                         resign
                 );
             }else{
-                log.error("订单编号->{}\n接口返回结果->{}",outTradeNo,res);
+                log.error("订单编号->{}\n接口返回结果->{}",orderNo,res);
                 throw new RuntimeException("微信支付接口调用失败1");
             }
         }catch (Exception e){
-            log.error("订单编号->{}\n接口返回结果->{}",outTradeNo,res);
+            log.error("订单编号->{}\n接口返回结果->{}",orderNo,res);
             e.printStackTrace();
             throw new RuntimeException("微信支付接口调用失败");
         }

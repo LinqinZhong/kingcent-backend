@@ -49,6 +49,9 @@ public class AppOrderRefundService extends ServiceImpl<OrderRefundMapper, OrderR
         if(order == null || !order.getUserId().equals(userId)){
             return Result.fail("订单不存在");
         }
+        if(order.getStatus().equals(OrderStatus.REFUNDED)){
+            return Result.fail("该订单已退款成功");
+        }
         if(!order.getStatus().equals(OrderStatus.REFUNDING)){
             return Result.fail("该订单没有发起退款");
         }
@@ -64,6 +67,9 @@ public class AppOrderRefundService extends ServiceImpl<OrderRefundMapper, OrderR
         OrderRefundEntity refund = getById(orderRefundBind.getRefundId());
         if(refund == null){
             return Result.fail("退款订单不存在");
+        }
+        if(refund.getStatus().equals(RefundStatus.PROCESSING)){
+            return Result.fail("取消退款失败，商家已退款，请等待到账");
         }
         //如果订单未配送，当前时间超过配送时间或距离配送时间小于预留时间的无法取消退款申请
         if(refund.getOriginOrderStatus().equals(OrderStatus.READY) || refund.getOriginOrderStatus().equals(OrderStatus.DELIVERING)){

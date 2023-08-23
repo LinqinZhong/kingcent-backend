@@ -13,7 +13,6 @@ import java.util.List;
 public class PurchaseConfirmStoreVo {
     private Long id;
     private LocalDateTime deliveryTime;
-    private String payType;
     private String remark;
     private List<PurchaseConfirmGoodsVo> goodsList;
 }

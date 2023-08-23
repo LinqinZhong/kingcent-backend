@@ -1,5 +1,6 @@
 package com.kingcent.campus.service.impl;
 
+import cn.hutool.core.date.DateTime;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -10,8 +11,10 @@ import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
+import com.kingcent.campus.shop.constant.RefundReasons;
 import com.kingcent.campus.shop.constant.RefundStatus;
 import com.kingcent.campus.shop.entity.*;
+import com.kingcent.campus.wx.entity.WxOrderGoodsEntity;
 import com.kingcent.campus.wx.entity.vo.CreateWxOrderResultVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderGoodsVo;
 import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
@@ -23,6 +26,7 @@ import com.kingcent.campus.shop.mapper.OrderMapper;
 import com.kingcent.campus.wx.entity.vo.WxPaymentInfoVo;
 import com.kingcent.campus.wx.service.WxOrderService;
 import com.kingcent.campus.wx.service.WxPayService;
+import com.kingcent.campus.wx.service.WxRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -65,9 +69,6 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     private OrderGoodsService orderGoodsService;
 
     @Autowired
-    private PayTypeService payTypeService;
-
-    @Autowired
     private ShopService shopService;
 
     @Autowired
@@ -91,10 +92,14 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Autowired
     private OrderRefundMapService refundMapService;
 
-    private static final String MESSAGE_KEY = "message:queue:order:dead";
+    @Autowired
+    private WxRefundService wxRefundService;
 
     @Autowired
-    private OrderOutTradeService outTradeService;
+    private OrderPaymentService orderPaymentService;
+
+
+    private static final String MESSAGE_KEY = "message:queue:order:dead";
 
 
 
@@ -347,7 +352,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 //处理微信支付
                 if(order.getPayType().equals(PayType.WX_PAY)) {
                     //查询订单
-                    JSONObject check = wxPayService.checkOrder(order.getOutTradeNo());
+                    JSONObject check = wxPayService.checkOrder(order.getOrderNo());
                     if (check == null || !check.containsKey("trade_state"))
                         return Result.fail("订单校验失败，请稍后重试");
                     switch (check.getString("trade_state")) {
@@ -357,22 +362,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                         case "CLOSED":
                             return Result.fail("订单已关闭");
                         case "NOTPAY": {
-                            //获取原订单支付报文
-                            //TODO 可以给订单加个out_trade_id加快搜索（不用out_trade_no搜）
-                            OrderOutTradeEntity outTradeOrder = outTradeService.getOne(
-                                    new QueryWrapper<OrderOutTradeEntity>()
-                                            .eq("out_trade_no", order.getOutTradeNo())
-                            );
-                            if(outTradeOrder != null){
-                                if(outTradeOrder.getOrderTotal() == 1){
-                                    //只有一笔订单，使用原定的支付报文进行支付
-                                    return Result.success(JSONObject.parseObject(
-                                            outTradeOrder.getPaymentPackage(),
-                                            WxPaymentInfoVo.class)
-                                    );
-                                }
-                                //TODO 原订单包含了多比订单，需要关闭后再重新发起单订单的支付
-                            }
+
                         }
                         return Result.fail("订单异常，请联系管理员");
                     }
@@ -389,7 +379,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      */
     @Override
     @Transactional
-    public Result<CreateWxOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress) {
+    public Result<CreateWxOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress, String payType) {
 
         //检查是否存在订单异常
         Result<CreateWxOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
@@ -401,17 +391,12 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         AddressEntity address = addressService.getById(purchase.getAddressId());
         if (address == null || !address.getUserId().equals(userId)) return Result.fail("收货地址不存在");
 
-        //所有微信支付的金额
-        BigDecimal wxPayPrice = new BigDecimal(0);
-
         //SKU
         Map<String,GoodsSkuEntity> skuMap = new HashMap<>();
         //配送模板
         Map<Long, DeliveryTemplateEntity> deliveryTmpMap = new HashMap<>();
         //配送范围
         Map<Long, DeliveryGroup> deliveryGroupMap = new HashMap<>();
-        //支付方式
-        Map<Long, String> payTypeMaps = new HashMap<>();
         //skuIds
         List<Long> skuIds = new ArrayList<>();
 
@@ -425,15 +410,8 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         Map<Long, LocalDateTime> deliveryTimes = new HashMap<>();
         //查询sku的条件式
         QueryWrapper<GoodsSkuEntity> skuWrapper = new QueryWrapper<>();
-        //查询payType的条件式
-        QueryWrapper<PayTypeEntity> payTypeWrapper = new QueryWrapper<>();
         for (PurchaseConfirmStoreVo store : purchase.getStoreList()) {
             shopIds.add(store.getId());
-            payTypeWrapper.or(w->{
-                w.eq("shop_id", store.getId());
-                w.eq("type", store.getPayType());
-                w.eq("enabled", 1);
-            });
             deliveryTimes.put(store.getId(), store.getDeliveryTime());
             for (PurchaseConfirmGoodsVo goods : store.getGoodsList()) {
                 goodsIds.add(goods.getId());
@@ -529,22 +507,8 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         //--------------------------------------------------------------------
 
-        //--------------------------------------------------------------------
-        //查询店铺支持的支付方式
-        List<PayTypeEntity> payTypes = payTypeService.list(payTypeWrapper);
-        for (PayTypeEntity payType : payTypes) {
-            payTypeMaps.put(payType.getShopId(), payType.getType());
-        }
-        for (Long shopId : shopIds) {
-            if (!payTypeMaps.containsKey(shopId)){
-                return Result.fail("不支持该支付方式，请稍后重试");
-            }
-        }
-        //--------------------------------------------------------------------
 
 
-        //生成统一的outTradeNo
-        String outTradeNo = createNo(userId, loginId);
         //统一订单创建时间
         LocalDateTime createTime = LocalDateTime.now();
 
@@ -553,6 +517,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         int length = purchase.getStoreList().size();
         Map<String, List<OrderGoodsEntity>> orderGoodsListMap = new HashMap<>();
         for (int index = 0; index < length; index++) {
+
+            //生成订单号
+            String orderNo = createNo(userId, loginId);
             PurchaseConfirmStoreVo store = purchase.getStoreList().get(index);
             OrderEntity order = new OrderEntity();
             BigDecimal orderPrice = new BigDecimal(0);
@@ -635,12 +602,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 orderGoodsList.add(orderGoods);
             }
 
-            String payType = payTypeMaps.get(store.getId());
-
 
             orders.add(order);
-            order.setOrderNo(outTradeNo+""+String.format("%02d",index));
-            order.setOutTradeNo(outTradeNo);
+            order.setOrderNo(orderNo);
             order.setCreateTime(createTime);
             order.setDeliveryTime(deliveryTimes.get(store.getId()));
             order.setDeliveryFee(deliveryGroupMap.get(store.getId()).getDeliveryFee());
@@ -661,15 +625,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             order.setDiscount(orderDiscount);
 
             if (!PayType.OFFLINE.equals(order.getPayType())) {
-                //非到货订单，需要计算价格和订单支付超时时间
-
-                //微信支付订单
-                if(PayType.WX_PAY.equals(order.getPayType()))
-                    wxPayPrice = wxPayPrice.add(orderPrice);
-
-                //未知的支付方式，退出（应该不会出现，上面做了判断）
-                else return Result.fail("不支持该支付方式,"+order.getPayType());
-
+                //非到货订单，需要计算订单支付超时时间
                 //订单支付超时时间 = 配送时间 - 准备时长 - 30分钟
                 //订单支付超时时长不超过8小时，如果超过就设为8小时
                 long deliveryTimestamp = order.getDeliveryTime().toEpochSecond(ZoneOffset.of("+8"));
@@ -708,33 +664,27 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
 
 
-        //需要线上支付
-        if(wxPayPrice.doubleValue() > 0){
-            //获取用户信息
-            String wxOpenid = userService.getWxOpenid(userId);
-            if(wxOpenid.equals("")){
-                return Result.fail("微信用户不存在");
-            }
-            //获取微信支付请求信息
-            WxPaymentInfoVo wxPaymentInfo = wxPayService.requestToPay(
-                    wxOpenid,
-                    outTradeNo,
-                    "商品下单",
-                    wxPayPrice.multiply(new BigDecimal(100)).longValue(),
+        //发起支付
+        String openId = userService.getWxOpenid(userId);
+        if(orders.size() == 1){
+            OrderEntity order = orders.get(0);
+            //只有一个订单，发起普通支付
+            WxPaymentInfoVo payment = wxPayService.requestToPay(
+                    openId,
+                    order.getOrderNo(),
+                    "仲达校园购物商品下单",
+                    order.getPayPrice().multiply(BigDecimal.valueOf(100)).longValue(),
                     ipAddress,
-                    createTime
+                    order.getCreateTime(),
+                    new DateTime(order.getPaymentDeadline()*1000).toLocalDateTime()
             );
-            result.setWxPaymentInfo(wxPaymentInfo);
-
-            //保存报文
-            OrderOutTradeEntity outTrade = new OrderOutTradeEntity();
-            outTrade.setOrderTotal(orders.size());
-            outTrade.setPayType(PayType.WX_PAY);
-            outTrade.setPaymentPackage(JSONObject.toJSONString(wxPaymentInfo));
-            outTrade.setOutTradeNo(outTradeNo);
-            if (!outTradeService.save(outTrade)) {
-                return Result.fail("支付信息保存失败");
-            }
+            //保存支付报文
+            OrderPaymentEntity orderPayment = new OrderPaymentEntity();
+            orderPayment.setOrderTotal(1);
+            orderPayment.setPayType(payType);
+            orderPayment.setPaymentPackage(JSONObject.toJSONString(payment));
+            orderPaymentService.save(orderPayment);
+            result.setWxPaymentInfo(payment);
         }
 
 
@@ -846,42 +796,37 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
     @Override
     @Transactional
-    public Result<?> onWxPayed(Long userId, String outTradeNo, String tradeNo, Integer totalFee, LocalDateTime payTime) {
-        List<OrderEntity> list = list(new QueryWrapper<OrderEntity>()
+    public Result<?> onWxPayed(Long userId, String orderNo, String tradeNo, Integer totalFee, LocalDateTime payTime) {
+
+        //查询订单
+        OrderEntity order = getOne(new QueryWrapper<OrderEntity>()
                 .eq("user_id", userId)
-                .eq("out_trade_no", outTradeNo)
+                .eq("order_no", orderNo)
                 .eq("pay_type", PayType.WX_PAY)
+                .last("limit 1")
         );
-        Set<String> orderIds = new HashSet<>();
-        BigDecimal totalPrice = new BigDecimal(0);
-        for (OrderEntity order : list) {
-            orderIds.add(order.getId()+"");
-            order.setTradeNo(tradeNo);
-            order.setPayTime(payTime);
-            order.setStatus(1);
-            totalPrice = totalPrice.add(order.getPrice());
+        if(order == null){
+            return Result.fail("订单不存在");
         }
-        if(totalPrice.multiply(BigDecimal.valueOf(100)).longValue() != totalFee){
+        if(order.getPayPrice().multiply(BigDecimal.valueOf(100)).intValue() != totalFee){
             return Result.fail("订单金额不一致");
         }
+
+        order.setTradeNo(tradeNo);
+        order.setPayTime(payTime);
+        order.setStatus(1);
+
         //更新订单状态
-        BigDecimal refundPrice = new BigDecimal(0); //未处理成功的订单计入退款
-        for (OrderEntity order : list) {
-            //逐条更新，取出异常订单
-            if(!update(order, new QueryWrapper<OrderEntity>()
-                    .eq("id", order.getId())
-                    .eq("status", 0)    //订单待支付时才能支付
-            )){
-                refundPrice = refundPrice.add(order.getPayPrice());
-            }
+        if(!update(order, new QueryWrapper<OrderEntity>()
+                .eq("id", order.getId())
+                .eq("status", 0)    //订单待支付时才能支付
+        )){
+            return Result.fail("订单状态更新失败");
         }
         //移除订单自动关闭任务
-        if(!removeCloseOrderTask(orderIds)){
-            log.warn("移除自动关闭订单任务失败 --> 订单ID:{}", orderIds);
+        if(!removeCloseOrderTask(Set.of(order.getId()+""))){
+            log.warn("移除自动关闭订单任务失败 --> 订单ID:{}", order.getId());
         }
-
-        //TODO 退款
-        log.info("订单处理成功 -> 订单ID:{}，总金额:{}，退款金额:{}", orderIds,totalPrice,refundPrice);
 
         return Result.success();
     }
@@ -982,12 +927,6 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             return Result.fail("退款申请已经提交，请勿重复提交");
         }
 
-        //获取同批次支付的订单总金额
-        BigDecimal total = (BigDecimal) getMap(
-                new QueryWrapper<OrderEntity>()
-                        .eq("trade_no", order.getTradeNo())
-                        .select("SUM(pay_price) AS total")
-        ).get("total");
 
         OrderRefundEntity refund = null;
         //查找是否存在绑定
@@ -1013,12 +952,14 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         refund.setUserId(userId);
         refund.setShopId(order.getShopId());
         refund.setOriginOrderStatus(order.getStatus());
-        refund.setRefund(total);
-        refund.setOriginTotal(total);
+        refund.setRefund(order.getPayPrice());
+        refund.setOriginTotal(order.getPayPrice());
         refund.setPayType(order.getPayType());
         refund.setCreateTime(LocalDateTime.now());
         refund.setReason(reason);
-        refund.setStatus(RefundStatus.SUBMITTED);
+
+        //如果没有收到货，直接自动退款
+        refund.setStatus(order.getStatus().equals(OrderStatus.RECEIVED) ? RefundStatus.SUBMITTED : RefundStatus.PROCESSING);
         refund.setMessage(message);
         if(!refundService.saveOrUpdate(refund) || refund.getId() == null) {
             log.error("退款订单创建失败");
@@ -1037,6 +978,34 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         )) {
             return Result.busy();
         }
+
+        //自动退款
+        if(refund.getStatus().equals(RefundStatus.PROCESSING)) {
+            List<OrderGoodsEntity> orderGoodsList = orderGoodsService.list(
+                    new QueryWrapper<OrderGoodsEntity>()
+                            .eq("order_id", orderId)
+            );
+            List<WxOrderGoodsEntity> goodsList = new ArrayList<>();
+            for (OrderGoodsEntity g : orderGoodsList) {
+                WxOrderGoodsEntity wg = new WxOrderGoodsEntity();
+                wg.setGoodsName(g.getTitle());
+                wg.setRefundAmount(g.getPrice().multiply(BigDecimal.valueOf(100)).longValue());
+                wg.setUnitPrice(g.getUnitPrice().multiply(BigDecimal.valueOf(100)).longValue());
+                wg.setRefundQuantity(g.getCount());
+                wg.setMerchantGoodsId(g.getSkuId() + "");
+                goodsList.add(wg);
+            }
+            wxRefundService.requestToRefund(
+                    refund.getTradeNo(),
+                    refund.getOutRefundNo(),
+                    refund.getRefund().multiply(BigDecimal.valueOf(100)).longValue(),
+                    refund.getOriginTotal().multiply(BigDecimal.valueOf(100)).longValue(),
+                    goodsList,
+                    RefundReasons.getReasonValue(refund.getReason())
+            );
+        }
+
+
         return Result.success();
     }
 }

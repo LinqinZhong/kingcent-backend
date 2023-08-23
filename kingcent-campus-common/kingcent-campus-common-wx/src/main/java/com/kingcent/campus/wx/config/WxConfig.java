@@ -9,10 +9,14 @@ package com.kingcent.campus.wx.config;
  * @date 2023/8/20 3:33
  */
 public class WxConfig {
+    //微信小程序接口地址
+    public final static String MINI_BASE_URL = "https://api.weixin.qq.com";
     //微信支付接口地址
-    public final static  String BASE_URL = "https://api.mch.weixin.qq.com";
+    public final static  String MCH_BASE_URL = "https://api.mch.weixin.qq.com";
     //小程序appid
     public final static String MINI_APP_ID =  "wx78ac22e61f72cba5";
+    //小程序secret
+    public final static String MINI_SECRET = "759674b8d91f7c213483fcc1282b002f";
     //微信商户号
     public final static String MCH_ID = "1650981448";
     //微信商户号证书存放路径

@@ -39,11 +39,6 @@ public class OrderEntity {
     private String orderNo;
 
     /**
-     * 外部交易号
-     */
-    private String outTradeNo;
-
-    /**
      * 交易号
      */
     private String tradeNo;

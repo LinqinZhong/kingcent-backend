@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.*;
 
-import static com.kingcent.campus.wx.config.WxConfig.BASE_URL;
+import static com.kingcent.campus.wx.config.WxConfig.MCH_BASE_URL;
 
 /**
  * @author rainkyzhong
@@ -105,7 +105,7 @@ public class WxRefundService {
             headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             headers.set("Authorization", WxPayUtil.createV3Authorization(nonce, timestamp, sign));
             HttpEntity<SortedMap<String, Object>> req = new HttpEntity<>(data, headers);
-            String res = restTemplateForWxService.postForObject(BASE_URL+WX_REFUND_API, req, String.class);
+            String res = restTemplateForWxService.postForObject(MCH_BASE_URL +WX_REFUND_API, req, String.class);
             return JSONObject.parseObject(res);
         } catch (InvalidKeyException | SignatureException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);

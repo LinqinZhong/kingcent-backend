@@ -12,6 +12,7 @@ import com.kingcent.campus.admin.service.OrderRefundService;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
+import com.kingcent.campus.shop.constant.RefundReasons;
 import com.kingcent.campus.shop.constant.RefundStatus;
 import com.kingcent.campus.shop.entity.OrderGoodsEntity;
 import com.kingcent.campus.shop.entity.OrderRefundEntity;
@@ -113,7 +114,7 @@ public class AdminOrderRefundService extends ServiceImpl<OrderRefundMapper, Orde
                 refund.getRefund().multiply(new BigDecimal(100)).longValue(),
                 refund.getOriginTotal().multiply(new BigDecimal(100)).longValue(),
                 goodsList,
-                refund.getReason() + ""   //TODO reason用字典转换
+                RefundReasons.getReasonValue(refund.getReason())
         );
         if(!"SUCCESS".equals(res.get("status")) && !"PROCESSING".equals(res.get("status"))){
             //退款失败
