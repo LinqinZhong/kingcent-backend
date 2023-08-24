@@ -12,4 +12,6 @@ import java.util.List;
 public class CreateWxOrderResultVo {
     private List<Long> orderIds;
     private WxPaymentInfoVo wxPaymentInfo;
+    //多订单模式：订单过多无法直接发起支付，需要买家单个支付
+    private Boolean isMultiOrder;
 }

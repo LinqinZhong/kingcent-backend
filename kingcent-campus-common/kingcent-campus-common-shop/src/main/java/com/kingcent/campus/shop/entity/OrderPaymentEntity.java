@@ -1,5 +1,7 @@
 package com.kingcent.campus.shop.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -10,6 +12,7 @@ import lombok.Data;
 @Data
 @TableName("kc_shop_order_payment")
 public class OrderPaymentEntity {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String payType;
     private Integer orderTotal;

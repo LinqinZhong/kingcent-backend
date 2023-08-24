@@ -180,12 +180,14 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //过滤出可以关闭的订单
         List<OrderEntity> orderUnclose = list(
                 new QueryWrapper<OrderEntity>()
-                        .or(w->w.eq("status", OrderStatus.NOT_PAY))
-                        .or(w->{
-                            w.eq("pay_type", PayType.OFFLINE);
-                            w.eq("status", OrderStatus.READY);
-                        })
                         .in("id", orderIds)
+                        .and(w0->{
+                            w0.or(w->w.eq("status", OrderStatus.NOT_PAY));
+                            w0.or(w->{
+                                w.eq("pay_type", PayType.OFFLINE);
+                                w.eq("status", OrderStatus.READY);
+                            });
+                        })
                         .select("id")
         );
         orderIds = new ArrayList<>();
@@ -336,7 +338,8 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     public Result<?> pay(Long userId, Long loginId, Long orderId, String ipAddress){
         //获取订单
         OrderEntity order = getById(orderId);
-        if(order == null || !order.getUserId().equals(userId)) return Result.fail("订单不存在");
+        if(order == null || !order.getUserId().equals(userId))
+            return Result.fail("订单不存在");
         if(order.getPayType().equals(PayType.OFFLINE)){
             return Result.fail("到付订单，不可在线支付");
         }
@@ -351,27 +354,78 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             case OrderStatus.NOT_PAY:{
                 //处理微信支付
                 if(order.getPayType().equals(PayType.WX_PAY)) {
-                    //查询订单
-                    JSONObject check = wxPayService.checkOrder(order.getOrderNo());
-                    if (check == null || !check.containsKey("trade_state"))
-                        return Result.fail("订单校验失败，请稍后重试");
-                    switch (check.getString("trade_state")) {
-                        case "SUCCESS":
-                        case "REFUND":
-                            return Result.fail("订单已支付，请勿重复支付（如果仍显示未支付，请联系管理员处理）");
-                        case "CLOSED":
-                            return Result.fail("订单已关闭");
-                        case "NOTPAY": {
-
+                    //查询订单是否存在未关闭的支付订单
+                    if(order.getPaymentId() != null) {
+                        OrderPaymentEntity payment = orderPaymentService.getById(order.getPaymentId());
+                        JSONObject check = wxPayService.checkOrder(order.getOrderNo());
+                        if (check == null || !check.containsKey("trade_state"))
+                            return Result.fail("订单校验失败，请稍后重试");
+                        switch (check.getString("trade_state")) {
+                            case "SUCCESS":
+                            case "REFUND":
+                                return Result.fail("订单已支付，请勿重复支付（如果仍显示未支付，请联系管理员处理）");
+                            case "CLOSED":
+                                return Result.fail("订单已关闭");
+                            case "NOTPAY": {
+                                //订单关闭，重新发起支付
+                                if(payment == null) return repay(order,userId,ipAddress, false);
+                                //该批支付包含其它订单，关闭后重新发起支付
+                                if(payment.getOrderTotal() > 1) return repay(order,userId,ipAddress, true);
+                            }
                         }
-                        return Result.fail("订单异常，请联系管理员");
+                        //返回原来的支付报文
+                        return Result.success(JSONObject.parseObject(payment.getPaymentPackage(), WxPaymentInfoVo.class));
                     }
+                    //订单之前没有未关闭的支付订单，发起支付
+                    return repay(order,userId,ipAddress, false);
                 }
 
             }
         }
 
         return Result.fail("接口错误，请联系管理员");
+    }
+
+    /**
+     * 重新拉取支付信息
+     * @param order 订单给
+     * @param userId 用户id
+     * @param ipAddress ip地址
+     * @param needClose 是否需要先关闭原来的订单
+     */
+    @Transactional
+    private Result<?> repay(OrderEntity order,Long userId, String ipAddress, boolean needClose){
+        String openId = userService.getWxOpenid(userId);
+        //支付方式
+        if(PayType.WX_PAY.equals(order.getPayType())) {
+
+            if(needClose){
+                //TODO 先关闭原来的订单
+            }
+
+            WxPaymentInfoVo paymentInfo = wxPayService.requestToPay(
+                    openId,
+                    order.getOrderNo(),
+                    "仲达校园送商品下单",
+                    order.getPayPrice().multiply(BigDecimal.valueOf(100)).longValue(),
+                    ipAddress, order.getCreateTime(),
+                    new DateTime(order.getPaymentDeadline() * 1000).toLocalDateTime()
+            );
+            //保存支付信息
+            OrderPaymentEntity paymentEntity = new OrderPaymentEntity();
+            paymentEntity.setOrderTotal(1);
+            paymentEntity.setPaymentPackage(JSONObject.toJSONString(paymentInfo));
+            paymentEntity.setPayType(order.getPayType());
+            if(!orderPaymentService.save(paymentEntity)){
+                log.error("重新支付时保存支付信息失败,orderId: {}", order.getId());
+                return Result.fail("服务器故障，请稍后重试");
+            }
+            //重新绑定支付信息
+            order.setPaymentId(paymentEntity.getId());
+            //返回支付报文
+            return Result.success(paymentInfo);
+        }
+        return Result.fail("未知的支付方式");
     }
 
     /**
@@ -639,6 +693,36 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             orderGoodsListMap.put(order.getOrderNo(), orderGoodsList);
         }
 
+        //拉取支付数据
+        String openId = userService.getWxOpenid(userId);
+        if(orders.size() == 1){
+            OrderEntity order = orders.get(0);
+            //只有一个订单，发起普通支付
+            WxPaymentInfoVo payment = wxPayService.requestToPay(
+                    openId,
+                    order.getOrderNo(),
+                    "仲达校园购物商品下单",
+                    order.getPayPrice().multiply(BigDecimal.valueOf(100)).longValue(),
+                    ipAddress,
+                    order.getCreateTime(),
+                    new DateTime(order.getPaymentDeadline()*1000).toLocalDateTime()
+            );
+            //保存支付信息
+            OrderPaymentEntity orderPayment = new OrderPaymentEntity();
+            orderPayment.setOrderTotal(1);
+            orderPayment.setPayType(payType);
+            orderPayment.setPaymentPackage(JSONObject.toJSONString(payment));
+            if(!orderPaymentService.save(orderPayment)){
+                log.error("保存支付信息失败");
+                return Result.fail("服务器出现故障，请稍后重试");
+            }
+            order.setPaymentId(orderPayment.getId());
+            result.setWxPaymentInfo(payment);
+        }else{
+            //多订单模式
+            result.setIsMultiOrder(true);
+        }
+
         //创建订单
         if(saveBatch(orders)){
             List<Long> orderIds = new ArrayList<>();
@@ -661,30 +745,6 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             }
             result.setOrderIds(orderIds);
             orderGoodsService.saveBatch(orderGoodsEntities);
-        }
-
-
-        //发起支付
-        String openId = userService.getWxOpenid(userId);
-        if(orders.size() == 1){
-            OrderEntity order = orders.get(0);
-            //只有一个订单，发起普通支付
-            WxPaymentInfoVo payment = wxPayService.requestToPay(
-                    openId,
-                    order.getOrderNo(),
-                    "仲达校园购物商品下单",
-                    order.getPayPrice().multiply(BigDecimal.valueOf(100)).longValue(),
-                    ipAddress,
-                    order.getCreateTime(),
-                    new DateTime(order.getPaymentDeadline()*1000).toLocalDateTime()
-            );
-            //保存支付报文
-            OrderPaymentEntity orderPayment = new OrderPaymentEntity();
-            orderPayment.setOrderTotal(1);
-            orderPayment.setPayType(payType);
-            orderPayment.setPaymentPackage(JSONObject.toJSONString(payment));
-            orderPaymentService.save(orderPayment);
-            result.setWxPaymentInfo(payment);
         }
 
 
