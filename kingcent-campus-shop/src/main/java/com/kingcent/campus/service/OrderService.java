@@ -16,7 +16,7 @@ import java.util.Set;
 
 public interface OrderService extends IService<OrderEntity> {
 
-    void listenOrderDead(OrderListener orderListener);
+    void closeDeadOrder();
 
     boolean removeCloseOrderTask(Set<String> orderIds);
 
@@ -36,4 +36,8 @@ public interface OrderService extends IService<OrderEntity> {
 
     @Transactional
     Result<?> requireRefund(Long userId, Long loginId, Long orderId, Integer reason, String message);
+
+    Result<?> checkReceiveCode(Long orderId, String code);
+
+    Result<String> setReceiveCode(Long userId, Long orderId, String code);
 }

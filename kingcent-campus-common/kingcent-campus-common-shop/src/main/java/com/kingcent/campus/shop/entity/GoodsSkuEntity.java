@@ -18,6 +18,7 @@ public class GoodsSkuEntity {
     private String description;
     private BigDecimal price;
     private BigDecimal originalPrice;
+    private BigDecimal cost;
     private Integer limitMinCount;
     private Integer limitMaxCount;
     private String image;

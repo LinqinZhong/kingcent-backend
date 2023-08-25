@@ -1,8 +1,6 @@
 package com.kingcent.campus.wx;
 
-import com.kingcent.campus.wx.service.WxCertificateService;
-import com.kingcent.campus.wx.service.WxPayService;
-import com.kingcent.campus.wx.service.WxRefundService;
+import com.kingcent.campus.wx.service.*;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -18,7 +16,12 @@ import java.lang.annotation.*;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({WxCertificateService.class, WxPayService.class, WxRefundService.class})
+@Import({WxCertificateService.class,
+        WxPayService.class,
+        WxRefundService.class,
+        WxShippingService.class,
+        WxTokenService.class
+})
 @Documented
 public @interface EnableWxService {
 }

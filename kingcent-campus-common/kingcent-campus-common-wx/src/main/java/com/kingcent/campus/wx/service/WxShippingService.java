@@ -33,9 +33,12 @@ public class WxShippingService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private WxUserService userService;
+
     private final static String API = "/wxa/sec/order/upload_shipping_info";
 
-    public Result<?> upload(String openId, String orderNo, boolean isAllDelivered, String goodsDescription){
+    public Result<?> upload(Long userId, String orderNo, String goodsDescription){
         String accessToken = null;
         if(tokenStorageService != null){
             accessToken = tokenStorageService.getWxToken(WxConfig.MINI_APP_ID);
@@ -61,7 +64,7 @@ public class WxShippingService {
         shippingList.add(shipping);
 
         JSONObject payer = new JSONObject();
-        payer.put("openid", openId);
+        payer.put("openid", userService.getWxOpenid(userId));
 
         data.put("logistics_type", 2);  //发货方式，2是同城配送
         data.put("delivery_mode", "UNIFIED_DELIVERY");    //分拆发货

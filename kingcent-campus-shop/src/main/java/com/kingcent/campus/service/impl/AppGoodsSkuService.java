@@ -10,6 +10,7 @@ import com.kingcent.campus.shop.mapper.GoodsSkuMapper;
 import com.kingcent.campus.service.GoodsSkuService;
 import com.kingcent.campus.service.GoodsSpecService;
 import com.kingcent.campus.service.GoodsSpecValueService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ import java.util.List;
  * @date 2023/8/8 1:12
  */
 @Service
+@Slf4j
 public class AppGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEntity> implements GoodsSkuService {
 
     @Autowired

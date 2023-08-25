@@ -80,6 +80,11 @@ public class OrderEntity {
     private BigDecimal discount;
 
     /**
+     * 销售利润
+     */
+    private BigDecimal profit;
+
+    /**
      * 支付信息的id
      */
     private Long paymentId;

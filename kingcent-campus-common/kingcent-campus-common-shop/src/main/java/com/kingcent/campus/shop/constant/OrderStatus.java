@@ -13,10 +13,12 @@ public class OrderStatus {
     public static final int READY = 1;
     //配送中
     public static final int DELIVERING = 2;
+    //已送达
+    public static final int ARRIVED = 3;
     //已收货
-    public static final int RECEIVED = 3;
+//    public static final int RECEIVED = 4;
     //已评价
-    public static final int REVIEWED = 4;
+    public static final int REVIEWED = 5;
     //已取消
     public static final int CLOSED = -1;
     //退款中

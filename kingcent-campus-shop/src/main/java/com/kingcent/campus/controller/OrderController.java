@@ -71,8 +71,8 @@ public class OrderController {
         }else if(!List.of(
                 OrderStatus.NOT_PAY,
                 OrderStatus.REFUNDED,
-                OrderStatus.RECEIVED,
-                OrderStatus.REVIEWED
+                OrderStatus.REVIEWED,
+                OrderStatus.ARRIVED
         ).contains(order.getStatus())){
             return Result.fail("交易未结束，暂时无法取消");
         }
@@ -80,6 +80,15 @@ public class OrderController {
             return Result.success();
         }
         return Result.fail("取消失败");
+    }
+
+    /**
+     * 修改取货码
+     */
+    @PostMapping("/set_receive_code")
+    @ResponseBody
+    public Result<String> setReceiveCode(HttpServletRequest request,Long orderId,String code){
+        return orderService.setReceiveCode(RequestUtil.getUserId(request),orderId,code);
     }
 
     @GetMapping("/details")

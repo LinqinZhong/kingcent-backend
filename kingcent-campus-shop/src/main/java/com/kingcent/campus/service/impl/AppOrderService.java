@@ -2,6 +2,8 @@ package com.kingcent.campus.service.impl;
 
 import cn.hutool.core.date.DateTime;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.common.utils.MD5Utils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,10 +11,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.service.*;
-import com.kingcent.campus.shop.constant.OrderStatus;
-import com.kingcent.campus.shop.constant.PayType;
-import com.kingcent.campus.shop.constant.RefundReasons;
-import com.kingcent.campus.shop.constant.RefundStatus;
+import com.kingcent.campus.shop.constant.*;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.wx.entity.WxOrderGoodsEntity;
 import com.kingcent.campus.wx.entity.vo.CreateWxOrderResultVo;
@@ -21,7 +20,6 @@ import com.kingcent.campus.shop.entity.vo.order.OrderStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
-import com.kingcent.campus.shop.listener.OrderListener;
 import com.kingcent.campus.shop.mapper.OrderMapper;
 import com.kingcent.campus.wx.entity.vo.WxPaymentInfoVo;
 import com.kingcent.campus.wx.service.WxOrderService;
@@ -30,14 +28,17 @@ import com.kingcent.campus.wx.service.WxRefundService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author rainkyzhong
@@ -99,55 +100,51 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     private OrderPaymentService orderPaymentService;
 
 
+    //自动关单消息队列键
     private static final String MESSAGE_KEY = "message:queue:order:dead";
 
+    //取货码键
+    private static final String RECEIVE_CODE_KEY = "receive:code";
+
+    @Autowired
+    private CarrierService carrierService;
+
+    @Autowired
+    private OrderDeliveryService orderDeliveryService;
 
 
 
     //订单超时自动关闭暂时使用redis作为消息队列，后期可能会使用其它mq中间件
     //---------------------------------------------------------------------------
-    //TODO 改成定时任务
+
     /**
-     * 监听超时订单
+     * 关闭过期订单
      */
     @Override
-    public void listenOrderDead(OrderListener orderListener) {
+    public void closeDeadOrder(){
         ZSetOperations<String, String> ops = redisTemplate.opsForZSet();
-
-        while (true){
-            long current = System.currentTimeMillis() + 1000;
-            //一次处理10条
-            Set<String> set = ops.rangeByScore(
-                            MESSAGE_KEY,
-                            0,
-                            current,
-                            0,
-                            10
-                    );
-            if(set != null) {
-                if (set.isEmpty()) {
-                    try {
-                        Thread.sleep(2000L);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }else{
-                    orderListener.onOverTime(set);
-                    //删除
-                    for (String s : set) {
-                        ops.remove(MESSAGE_KEY, s);
-                    }
-                }
-            }else {
-                try {
-                    Thread.sleep(5000L);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        long current = System.currentTimeMillis() + 1000;
+        //一次处理10条
+        Set<String> set = ops.rangeByScore(
+                MESSAGE_KEY,
+                0,
+                current,
+                0,
+                10
+        );
+        if (set == null || set.size() == 0) return;
+        removeCloseOrderTask(set);
+        //删除
+        for (String s : set) {
+            ops.remove(MESSAGE_KEY, s);
         }
     }
 
+    /**
+     * 为订单设置自动关闭任务
+     * @param orderId 订单id
+     * @param deadline 过期时间
+     */
     private boolean setOrderAutoCloseTask(Long orderId, long deadline){
         return Boolean.TRUE.equals(redisTemplate.opsForZSet().add(
                 MESSAGE_KEY,
@@ -205,6 +202,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 .set("status", -1)
                 .set("finish_time", LocalDateTime.now())
         );
+
         if(update){
             //库存回滚
             List<OrderGoodsEntity> goodsList = orderGoodsService.list(
@@ -346,8 +344,8 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         switch (order.getStatus()) {
             case OrderStatus.READY:
             case OrderStatus.DELIVERING:
-            case OrderStatus.RECEIVED:
             case OrderStatus.REVIEWED:
+            case OrderStatus.ARRIVED:
                 return Result.fail("订单已支付，请勿重复支付");
             case OrderStatus.CLOSED:
                 return Result.fail("订单已关闭");
@@ -579,6 +577,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             BigDecimal orderPrice = new BigDecimal(0);
             BigDecimal orderDiscount = new BigDecimal(0);
             BigDecimal goodsSumPrice = new BigDecimal(0);
+            BigDecimal totalCost = new BigDecimal(0); //订单总成本
 
             List<OrderGoodsEntity> orderGoodsList = new ArrayList<>();
 
@@ -632,6 +631,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                     BigDecimal price = sku.getPrice().multiply(new BigDecimal(goods.getCount()));
                     goodsSumPrice = goodsSumPrice.add(price);
                     orderPrice = orderPrice.add(price);
+                    totalCost = totalCost.add(sku.getCost().multiply(BigDecimal.valueOf(goods.getCount())));
 
                     //优惠金额
                     GoodsDiscountEntity discount = goodsDiscountService.getBestDiscount(goods.getId(), goods.getCount());
@@ -677,6 +677,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             order.setPrice(orderPrice);
             order.setPayPrice(orderPrice.subtract(orderDiscount));  //实付金额在orderPrice计算优惠金额后计算得到
             order.setDiscount(orderDiscount);
+            order.setProfit(order.getPayPrice().subtract(totalCost));
 
             if (!PayType.OFFLINE.equals(order.getPayType())) {
                 //非到货订单，需要计算订单支付超时时间
@@ -854,6 +855,42 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         return res;
     }
 
+    /**
+     * 为订单分配配送员
+     */
+    @Transactional
+    private void assignCarrier(Long shopId, OrderEntity order){
+        //查出今日排班的配送员
+        int day = LocalDate.now().getDayOfMonth();
+        CarrierEntity carrier = carrierService.getOne(new QueryWrapper<CarrierEntity>()
+                .eq("shop_id", shopId)
+                .eq("(active_day >> " + day + ") & 1", 1)
+                .orderByDesc("weight")
+                .last("limit 1")
+        );
+        if(carrier == null){
+            log.error("没有配送员");
+            return;
+        }
+        //更新配送员权重
+        if (!carrierService.update(new UpdateWrapper<CarrierEntity>()
+                .eq("id", carrier.getId())
+                .setSql("weight = weight - 1")
+        )) {
+            log.error("配送员权重更新失败");
+            return;
+        }
+        //分配订单
+        OrderDeliveryEntity orderDelivery = new OrderDeliveryEntity();
+        orderDelivery.setCarrierId(carrier.getId());
+        orderDelivery.setOrderId(order.getId());
+        orderDelivery.setStatus(OrderDeliveryStatus.ASSIGN);
+        orderDelivery.setCommission(order.getProfit().multiply(BigDecimal.valueOf(0.1)));  //佣金
+        if (!orderDeliveryService.save(orderDelivery)) {
+            log.error("订单分配失败");
+        }
+    }
+
     @Override
     @Transactional
     public Result<?> onWxPayed(Long userId, String orderNo, String tradeNo, Integer totalFee, LocalDateTime payTime) {
@@ -887,6 +924,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         if(!removeCloseOrderTask(Set.of(order.getId()+""))){
             log.warn("移除自动关闭订单任务失败 --> 订单ID:{}", order.getId());
         }
+
+        //分配配送员
+        assignCarrier(order.getShopId(), order);
 
         return Result.success();
     }
@@ -974,7 +1014,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                         List.of(
                                 OrderStatus.READY,  //已支付的订单
                                 OrderStatus.DELIVERING,  //配送中的订单
-                                OrderStatus.RECEIVED,    //已收货的订单
+                                OrderStatus.ARRIVED,    //已送达的订单
                                 OrderStatus.REVIEWED,    //已评论的订单
                                 OrderStatus.REFUNDING   //已提交退款申请的
                         )
@@ -1018,8 +1058,13 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         refund.setCreateTime(LocalDateTime.now());
         refund.setReason(reason);
 
-        //如果没有收到货，直接自动退款
-        refund.setStatus(order.getStatus().equals(OrderStatus.RECEIVED) ? RefundStatus.SUBMITTED : RefundStatus.PROCESSING);
+        //如果未开始发货，直接自动退款
+        refund.setStatus(
+                Objects.equals(OrderStatus.READY, order.getStatus())
+                        ?
+                        RefundStatus.PROCESSING
+                        : RefundStatus.SUBMITTED
+        );
         refund.setMessage(message);
         if(!refundService.saveOrUpdate(refund) || refund.getId() == null) {
             log.error("退款订单创建失败");
@@ -1067,5 +1112,59 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
 
         return Result.success();
+    }
+
+    @Override
+    public Result<?> checkReceiveCode(Long orderId, String code){
+        ValueOperations<String, String> ops = redisTemplate.opsForValue();
+        String codeEncrypt = ops.get(RECEIVE_CODE_KEY + ":" + orderId);
+        if(codeEncrypt == null){
+            return Result.fail("取货码已过期");
+        }
+        try {
+            if(!MD5Utils.md5Hex(
+                    ("orderId="+orderId+"&code="+code).getBytes()
+            ).toUpperCase().equals(codeEncrypt)){
+                return Result.fail("取货码错误");
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        return Result.success();
+    }
+
+
+    /**
+     * 设置取货码
+     * 配送员送货上门时，需要买家出示取货码，验证成功方可交货
+     * 取货码经用户本地生成，在加盐MD5加密后上传至服务器
+     * （加密格式order_id=订单编号&receive_code=取货码）
+     * 在任何情况下，如果买家不出示取货码，任何人将无法知道
+     * @param userId 用户id
+     * @param orderId 订单id
+     * @param code 取货码
+     */
+    @Override
+    public Result<String> setReceiveCode(Long userId, Long orderId, String code) {
+        ValueOperations<String, String> ops = redisTemplate.opsForValue();
+        OrderEntity order = getOne(
+                new LambdaQueryWrapper<OrderEntity>()
+                        .eq(OrderEntity::getId, orderId)
+                        .eq(OrderEntity::getUserId, userId)
+                        .select(OrderEntity::getOrderNo,OrderEntity::getStatus)
+
+        );
+        if(order == null){
+            return Result.fail("订单不存在");
+        }
+        switch (order.getStatus()){
+            case OrderStatus.READY:
+            case OrderStatus.DELIVERING: break;
+            case OrderStatus.ARRIVED:
+            case OrderStatus.REVIEWED: return Result.fail("订单已送达");
+            default: return Result.fail("该订单无法取货");
+        }
+        ops.set(RECEIVE_CODE_KEY+":"+orderId, code,310, TimeUnit.SECONDS);
+        return Result.success(null,order.getOrderNo());
     }
 }
