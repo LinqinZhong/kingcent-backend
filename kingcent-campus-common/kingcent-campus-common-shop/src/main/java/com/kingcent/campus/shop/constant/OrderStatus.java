@@ -21,7 +21,7 @@ public class OrderStatus {
     public static final int REVIEWED = 5;
     //已取消
     public static final int CLOSED = -1;
-    //退款中
+    //申请退款中
     public static final int REFUNDING = -2;
     //已退款
     public static final int REFUNDED = -3;

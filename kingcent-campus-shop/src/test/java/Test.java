@@ -1,9 +1,13 @@
+import com.alibaba.fastjson.JSONObject;
 import com.kingcent.campus.ShopApplication;
 import com.kingcent.campus.service.GoodsSkuService;
 import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.wx.service.WxOrderService;
+import com.kingcent.campus.wx.service.WxSubscribeMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Map;
 
 /**
  * @author rainkyzhong
@@ -21,8 +25,11 @@ public class Test {
     @Autowired
     private WxOrderService wxOrderService;
 
+    @Autowired
+    private WxSubscribeMessageService subscribeMessageService;
+
     @org.junit.jupiter.api.Test
-    public void test() throws InterruptedException {
+    public void test() {
 
     }
 }

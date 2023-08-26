@@ -9,15 +9,21 @@ import com.kingcent.campus.service.OrderDeliveryService;
 import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.shop.constant.OrderDeliveryStatus;
 import com.kingcent.campus.shop.constant.OrderStatus;
+import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.CarrierEntity;
 import com.kingcent.campus.shop.entity.OrderDeliveryEntity;
 import com.kingcent.campus.shop.entity.OrderEntity;
 import com.kingcent.campus.shop.mapper.OrderDeliveryMapper;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.wx.service.WxSubscribeMessageService;
+import com.kingcent.campus.wx.service.WxUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 /**
  * @author rainkyzhong
@@ -30,6 +36,11 @@ public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, Or
     @Autowired
     @Lazy
     private OrderService orderService;
+    @Autowired
+    private WxSubscribeMessageService wxSubscribeMessageService;
+
+    @Autowired
+    private WxUserService wxUserService;
 
 
     @Override
@@ -77,7 +88,32 @@ public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, Or
                         .eq("id", orderId)
                         .eq("status", order.getStatus())
                         .set("status", OrderStatus.ARRIVED)
+                        .set("finish_time", LocalDateTime.now())
         )) return Result.busy();
+
+        //发送送达通知
+        if(order.getReceiveArriveMessage().equals(1)){
+            if(order.getPayType().equals(PayType.WX_PAY)){
+                try{
+                    String openId = wxUserService.getWxOpenid(order.getUserId());
+                    wxSubscribeMessageService.send(
+                            "vVPPcwjWbpnhouKwkwF_xOm6VRHRAp9se8vEWfhWfLA",
+                            "pages/order/order?ids=["+orderId+"]",
+                            openId,
+                            Map.of(
+                                    "character_string1",Map.of("value",order.getOrderNo()),
+                                    "thing4", Map.of("value", order.getReceiverName()),
+                                    "time5", Map.of("value", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm")))
+                            ),
+                            null,
+                            null
+                    );
+                }catch (Exception e){
+                    log.error("订单消息发送失败,{}", e);
+                    e.printStackTrace();
+                }
+            }
+        }
         return Result.success();
     }
 }

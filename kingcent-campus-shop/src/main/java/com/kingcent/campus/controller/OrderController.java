@@ -137,4 +137,12 @@ public class OrderController {
         return refundOrderService.cancel(RequestUtil.getUserId(request), orderId);
     }
 
+    @GetMapping("/subscribe_arrive_message")
+    @ResponseBody
+    public Result<?> subscribeArriveMessage(HttpServletRequest request, @RequestParam("id") List<Long> orderIds){
+        if(orderService.subscribeReceiveMessage(RequestUtil.getUserId(request),orderIds))
+            return Result.success();
+        return Result.fail("订阅失败");
+    }
+
 }

@@ -19,4 +19,5 @@ public class OrderDeliveryEntity {
     private Long carrierId;
     private Integer status;
     private BigDecimal commission;
+    private LocalDateTime deliveryTime;
 }

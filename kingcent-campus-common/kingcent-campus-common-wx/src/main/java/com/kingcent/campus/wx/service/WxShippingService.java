@@ -39,20 +39,11 @@ public class WxShippingService {
     private final static String API = "/wxa/sec/order/upload_shipping_info";
 
     public Result<?> upload(Long userId, String orderNo, String goodsDescription){
-        String accessToken = null;
-        if(tokenStorageService != null){
-            accessToken = tokenStorageService.getWxToken(WxConfig.MINI_APP_ID);
-        }
-        //token为空，重新加载
-        if(accessToken == null){
-            accessToken = tokenService.fetchWxAccessToken(WxConfig.MINI_APP_ID, WxConfig.MINI_SECRET);
-        }
-        if(accessToken == null){
-            log.error("获取accessToken失败");
+        String accessToken = tokenService.getWxAccessToken(MINI_APP_ID);
+        if(tokenService == null){
             return Result.fail("服务异常，请稍后重试");
         }
         JSONObject data = new JSONObject();
-
         JSONObject orderKey = new JSONObject();
         orderKey.put("order_number_type", 1);   //使用mchid和out_trade_no
         orderKey.put("mchid",MCH_ID);

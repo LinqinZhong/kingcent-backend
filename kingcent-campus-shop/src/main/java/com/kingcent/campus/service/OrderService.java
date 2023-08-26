@@ -40,4 +40,6 @@ public interface OrderService extends IService<OrderEntity> {
     Result<?> checkReceiveCode(Long orderId, String code);
 
     Result<String> setReceiveCode(Long userId, Long orderId, String code);
+
+    boolean subscribeReceiveMessage(Long userId, List<Long> orderIds);
 }

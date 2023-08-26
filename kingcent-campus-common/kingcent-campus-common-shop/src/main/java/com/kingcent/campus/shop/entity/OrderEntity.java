@@ -154,4 +154,6 @@ public class OrderEntity {
      */
     @TableLogic
     private Boolean is_deleted;
+
+    private Integer receiveArriveMessage;
 }

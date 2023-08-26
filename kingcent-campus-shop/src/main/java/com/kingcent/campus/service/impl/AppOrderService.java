@@ -269,6 +269,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             orderIds.add(order.getId());
             o.setPayType(order.getPayType());
             o.setOrderId(order.getId());
+            o.setTradeNo(order.getTradeNo());
             o.setGoodsList(new ArrayList<>());
             o.setPaymentDeadline(order.getPaymentDeadline());
             orders.add(o);
@@ -883,6 +884,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //分配订单
         OrderDeliveryEntity orderDelivery = new OrderDeliveryEntity();
         orderDelivery.setCarrierId(carrier.getId());
+        orderDelivery.setDeliveryTime(order.getDeliveryTime());
         orderDelivery.setOrderId(order.getId());
         orderDelivery.setStatus(OrderDeliveryStatus.ASSIGN);
         orderDelivery.setCommission(order.getProfit().multiply(BigDecimal.valueOf(0.1)));  //佣金
@@ -1166,5 +1168,18 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         ops.set(RECEIVE_CODE_KEY+":"+orderId, code,310, TimeUnit.SECONDS);
         return Result.success(null,order.getOrderNo());
+    }
+
+    /**
+     * 订阅送达消息
+     */
+    @Override
+    public boolean subscribeReceiveMessage(Long userId, List<Long> orderIds){
+        return update(
+                new UpdateWrapper<OrderEntity>()
+                        .eq("user_id", userId)
+                        .in("id", orderIds)
+                        .set("receive_arrive_message",1)
+        );
     }
 }
