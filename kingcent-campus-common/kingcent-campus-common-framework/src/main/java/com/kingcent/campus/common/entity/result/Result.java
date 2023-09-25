@@ -34,7 +34,7 @@ public class Result<T> {
     }
 
     public static <T> Result<T> success(String message, T data){
-        return new Result<T>().success(true).message(message).data(data);
+        return new Result<T>().success(true).code(200).message(message).data(data);
     }
 
     public static Result<?> success(){
@@ -55,6 +55,6 @@ public class Result<T> {
     }
 
     public static <T> Result<T> fail(String message){
-        return fail(null, message);
+        return fail(400, message);
     }
 }

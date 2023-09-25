@@ -11,6 +11,8 @@ import com.kingcent.campus.shop.listener.OrderListener;
 import com.kingcent.campus.wx.entity.vo.CreateWxOrderResultVo;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +23,7 @@ public interface OrderService extends IService<OrderEntity> {
     boolean removeCloseOrderTask(Set<String> orderIds);
 
     @Transactional
-    boolean closeOrder(List<Long> orderIds);
+    boolean closeOrder(Collection<Long> orderIds);
 
     VoList<OrderStoreVo> orderList(Long userId, Integer status, Integer page);
 

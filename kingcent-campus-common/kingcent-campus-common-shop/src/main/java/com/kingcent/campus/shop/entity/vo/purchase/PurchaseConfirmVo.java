@@ -12,5 +12,6 @@ import java.util.List;
 @Data
 public class PurchaseConfirmVo {
     private Long addressId;
+    private Double payPrice;
     private List<PurchaseConfirmStoreVo> storeList;
 }

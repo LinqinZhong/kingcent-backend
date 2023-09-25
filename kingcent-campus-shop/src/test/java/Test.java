@@ -16,20 +16,4 @@ import java.util.Map;
 @SpringBootTest(classes = ShopApplication.class)
 public class Test {
 
-    @Autowired
-    private OrderService orderService;
-
-    @Autowired
-    private GoodsSkuService skuService;
-
-    @Autowired
-    private WxOrderService wxOrderService;
-
-    @Autowired
-    private WxSubscribeMessageService subscribeMessageService;
-
-    @org.junit.jupiter.api.Test
-    public void test() {
-
-    }
 }

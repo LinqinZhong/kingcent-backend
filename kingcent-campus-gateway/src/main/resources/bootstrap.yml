@@ -60,8 +60,8 @@ auth:
     - /shop/goods/details/**  #商品详情
     - /shop/category/list/**  #分类目录
     - /shop/goods_comment/preview/**  #评论预览
-    - /shop/address/nearby_group/** #获取附近配送点
-    - /shop/address/nearest_group/**  #获取最近配送点
+    - /shop/address/nearby_group/** #获取附近楼栋
+    - /shop/address/nearest_group/**  #获取最近楼栋
     - /shop/want/keywords #获取”想要“关键词
     - /shop/wx_notify/**  #微信接口回调
     - /shop/order/refund_reasons/** #退款原因

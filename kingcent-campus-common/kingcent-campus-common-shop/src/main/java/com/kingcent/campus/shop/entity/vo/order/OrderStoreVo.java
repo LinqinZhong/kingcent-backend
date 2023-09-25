@@ -34,4 +34,9 @@ public class OrderStoreVo {
     private Long paymentDeadline;
     private String remark;
     private List<OrderGoodsVo> goodsList;
+
+    //配送员
+    private Long carrierId;
+    private String carrierName;
+    private String carrierContact;
 }

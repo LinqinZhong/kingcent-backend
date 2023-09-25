@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * @author rainkyzhong
  * @date 2023/8/24 19:15
@@ -17,6 +19,8 @@ public class CarrierEntity {
     private Integer activeDay;
     private String name;
     private String mobile;
+    //时薪
+    private BigDecimal hourSalaries;
     @TableLogic
     private Integer isDeleted;
 }

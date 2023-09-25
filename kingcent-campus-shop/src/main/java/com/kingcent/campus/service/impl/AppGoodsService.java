@@ -56,9 +56,9 @@ public class AppGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imple
         //获取商铺
         QueryWrapper<DeliveryGroup> wrapper = new QueryWrapper<>();
         wrapper.select("any_value(shop_id) as shop_id, any_value(group_id) as_group_id, any_value(delivery_fee) as delivery_fee");
-        //指定配送点
+        //指定楼栋
         if (groupId != null) wrapper.eq("group_id", groupId);
-            //不指定配送点，按商铺id分组，以免出现多条相同商铺的
+            //不指定楼栋，按商铺id分组，以免出现多条相同商铺的
         else wrapper.groupBy("shop_id");
         List<DeliveryGroup> deliveryGroups = deliveryGroupService.list(wrapper);
         if(deliveryGroups.size() == 0){
@@ -71,7 +71,7 @@ public class AppGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imple
         for (DeliveryGroup deliveryGroup : deliveryGroups) {
             shopIds.add(deliveryGroup.getShopId());
 
-            //设置了配送点才有运费信息
+            //设置了楼栋才有运费信息
             if(groupId != null && deliveryGroup.getDeliveryFee() != null)
                 deliveryGroupFreight.put(deliveryGroup.getShopId(), deliveryGroup.getDeliveryFee());
         }
@@ -107,18 +107,20 @@ public class AppGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imple
 
         //TODO redis做缓存
         //获取折扣信息
-        List<GoodsDiscountEntity> discounts = goodsDiscountService.list(new QueryWrapper<GoodsDiscountEntity>()
-                .in("goods_id", goodsIds)
-                .gt("deadline", LocalDateTime.now().plusHours(2))
-                .select("any_value(more_than) as more_than, any_value(goods_id) as goods_id, any_value(num) as num, any_value(type) as type")
-                .groupBy("goods_id")
-                .orderByDesc("more_than")
-        );
-        for (GoodsDiscountEntity discount : discounts) {
-            if (discount.getType() == 1){
-                goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan()+"件减"+discount.getNum());
-            }else if (discount.getType() == 2){
-                goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan()+"件"+discount.getNum().doubleValue()*10+"折");
+        if(goodsIds.size() > 0) {
+            List<GoodsDiscountEntity> discounts = goodsDiscountService.list(new QueryWrapper<GoodsDiscountEntity>()
+                    .in("goods_id", goodsIds)
+                    .gt("deadline", LocalDateTime.now().plusHours(2))
+                    .select("any_value(more_than) as more_than, any_value(goods_id) as goods_id, any_value(num) as num, any_value(type) as type")
+                    .groupBy("goods_id")
+                    .orderByDesc("more_than")
+            );
+            for (GoodsDiscountEntity discount : discounts) {
+                if (discount.getType() == 1) {
+                    goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan() + "件减" + discount.getNum());
+                } else if (discount.getType() == 2) {
+                    goodsVoMap.get(discount.getGoodsId()).getTags().add(discount.getMoreThan() + "件" + discount.getNum().doubleValue() * 10 + "折");
+                }
             }
         }
 
@@ -132,7 +134,7 @@ public class AppGoodsService extends ServiceImpl<GoodsMapper, GoodsEntity> imple
 
         //获取商铺
         QueryWrapper<DeliveryGroup> wrapper = new QueryWrapper<>();
-        //指定配送点
+        //指定楼栋
         wrapper.eq("group_id", groupId);
         //指定免配送费的店铺
         if(freeForDelivery != null)

@@ -2,7 +2,8 @@ package com.kingcent.campus.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.entity.vo.carrier.DeliveryOrder;
+import com.kingcent.campus.entity.vo.carrier.CarrierDeliveryVo;
+import com.kingcent.campus.entity.vo.carrier.DeliveryOrderVo;
 import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.constant.OrderDeliveryStatus;
 import com.kingcent.campus.shop.entity.CarrierEntity;
@@ -12,12 +13,14 @@ import com.kingcent.campus.shop.entity.OrderGoodsEntity;
 import com.kingcent.campus.shop.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -56,8 +59,9 @@ public class CarrierController {
     }
 
     @GetMapping("/delivery_list")
-    public Result<List<DeliveryOrder>> deliveryList(HttpServletRequest request){
+    public Result<CarrierDeliveryVo> deliveryList(HttpServletRequest request, String date, String statuses){
         Long userId = RequestUtil.getUserId(request);
+        LocalDate today = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         CarrierEntity carrier = carrierService.getOne(
                 new QueryWrapper<CarrierEntity>()
                         .eq("user_id", userId)
@@ -65,34 +69,77 @@ public class CarrierController {
         if(carrier == null){
             return Result.fail("非配送员");
         }
-        Map<Long,DeliveryOrder> orderMap = new HashMap<>();
-        List<DeliveryOrder> result = new ArrayList<>();
+
+        Map<String, Object> day0 = orderDeliveryService.getMap(
+                new QueryWrapper<OrderDeliveryEntity>()
+                        .eq("carrier_id", carrier.getId())
+                        .ge("delivery_time", today)
+                        .lt("delivery_time", today.plusDays(1))
+                        .in("status", List.of(
+                                OrderDeliveryStatus.ASSIGN,
+                                OrderDeliveryStatus.CONFIRM
+                                , OrderDeliveryStatus.FINISH)
+                        )
+                        .select("COUNT(order_id) AS day_total_order")
+        );
+        Map<String, Object> day1 = orderDeliveryService.getMap(
+                new QueryWrapper<OrderDeliveryEntity>()
+                        .eq("carrier_id", carrier.getId())
+                        .ge("delivery_time", today)
+                        .lt("delivery_time", today.plusDays(1))
+                        .eq("status", OrderDeliveryStatus.FINISH)
+                        .select("COUNT(order_id) AS day_finish_order, SUM(commission) AS day_commission")
+        );
+        LocalDate thisMonth = LocalDate.of(today.getYear(), today.getMonth(), 1);
+        Map<String, Object> month = orderDeliveryService.getMap(
+                new QueryWrapper<OrderDeliveryEntity>()
+                        .eq("carrier_id", carrier.getId())
+                        .ge("delivery_time", thisMonth)
+                        .lt("delivery_time",thisMonth.plusMonths(1))
+                        .eq("status", OrderDeliveryStatus.FINISH)
+                        .select("COUNT(order_id) AS month_finish_order, SUM(commission) AS month_commission")
+        );
+
+        CarrierDeliveryVo res = new CarrierDeliveryVo();
+        res.setDayCommission(day1 != null ? (BigDecimal) day1.get("day_commission") : BigDecimal.valueOf(0));
+        res.setDayOrderCount(day0 != null ? (Long) day0.get("day_total_order") : 0);
+        res.setDeliveredOrderCount(day1 != null ? (Long) day1.get("day_finish_order") : 0);
+        res.setMonthCommission(month != null ? (BigDecimal) month.get("month_commission") : BigDecimal.valueOf(0));
+        res.setMouthDeliveredOrderCount(month != null ? (Long) month.get("month_finish_order") : 0);
+
+        Map<Long, DeliveryOrderVo> orderMap = new HashMap<>();
+        List<DeliveryOrderVo> orderList = new ArrayList<>();
         List<OrderDeliveryEntity> deliveryOrders = orderDeliveryService.list(
                 new QueryWrapper<OrderDeliveryEntity>()
                         .eq("carrier_id", carrier.getId())
-                        .in("status",List.of(
-                                OrderDeliveryStatus.ASSIGN,
-                                OrderDeliveryStatus.CONFIRM
-                        ))
+                        .in("status", Arrays.stream(statuses.split(",")).toList())
+                        .ge("delivery_time", today)
+                        .lt("delivery_time", today.plusDays(1))
         );
+
+        if(deliveryOrders.size() == 0){
+            return Result.success(res);
+        }
+
 
         List<Long> orderIds = new ArrayList<>();
         for (OrderDeliveryEntity deliveryOrder : deliveryOrders) {
             orderIds.add(deliveryOrder.getOrderId());
-            DeliveryOrder order = new DeliveryOrder();
+            DeliveryOrderVo order = new DeliveryOrderVo();
             order.setOrderId(deliveryOrder.getOrderId());
             order.setId(deliveryOrder.getId());
             order.setStatus(deliveryOrder.getStatus());
             order.setCommission(deliveryOrder.getCommission());
             orderMap.put(deliveryOrder.getOrderId(),order);
-            result.add(order);
+            orderList.add(order);
         }
 
         Set<Long> pointIds = new HashSet<>();
         Set<Long> groupIds = new HashSet<>();
+
         List<OrderEntity> orders = orderService.listByIds(orderIds);
         for (OrderEntity o : orders) {
-            DeliveryOrder order = orderMap.get(o.getId());
+            DeliveryOrderVo order = orderMap.get(o.getId());
             order.setName(o.getReceiverName());
             order.setRemark(o.getRemark());
             order.setPhone(o.getReceiverMobile());
@@ -104,7 +151,7 @@ public class CarrierController {
         Map<Long, String> groupNames = groupService.getGroupNames(groupIds);
 
         for (OrderEntity order : orders) {
-            DeliveryOrder o = orderMap.get(order.getId());
+            DeliveryOrderVo o = orderMap.get(order.getId());
             o.setAddress(
                     groupNames.getOrDefault(order.getGroupId(),"")
                             +pointNames.getOrDefault(order.getPointId(),"")
@@ -120,10 +167,11 @@ public class CarrierController {
         for (OrderGoodsEntity g : goodsList) {
             List<String> goodsInfo = orderGoodsMap.computeIfAbsent(g.getOrderId(), w -> new ArrayList<>());
             goodsInfo.add(g.getTitle()+" "+g.getSkuInfo()+" ×"+g.getCount());
-            DeliveryOrder order = orderMap.get(g.getOrderId());
+            DeliveryOrderVo order = orderMap.get(g.getOrderId());
             order.setGoods(goodsInfo);
         }
-        return Result.success(result);
+        res.setOrders(orderList);
+        return Result.success(res);
     }
 
 }

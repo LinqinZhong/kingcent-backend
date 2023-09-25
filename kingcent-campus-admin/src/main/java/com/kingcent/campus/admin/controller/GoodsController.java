@@ -1,12 +1,16 @@
 package com.kingcent.campus.admin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.campus.admin.service.GoodsService;
+import com.kingcent.campus.admin.service.GoodsSkuService;
 import com.kingcent.campus.admin.service.ShopService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.GoodsEntity;
+import com.kingcent.campus.shop.entity.GoodsSkuEntity;
+import com.kingcent.campus.shop.entity.ShopEntity;
 import com.kingcent.campus.shop.entity.vo.goods.EditGoodsVo;
 import com.kingcent.campus.shop.util.BeanCopyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/goods")
@@ -23,6 +28,9 @@ public class GoodsController {
 
     @Autowired
     private ShopService shopService;
+
+    @Autowired
+    private GoodsSkuService skuService;
 
     @GetMapping("/list/{page}/{pageSize}")
     public Result<VoList<GoodsEntity>> goodsList(
@@ -52,10 +60,33 @@ public class GoodsController {
         return Result.success(new VoList<>((int) res.getTotal(), res.getRecords()));
     }
 
-    @DeleteMapping("/delete/{goodsId}")
-    public Result<?> goodsList(@PathVariable Long goodsId){
-        goodsService.removeById(goodsId);
-        return Result.success();
+    @PutMapping("/set_is_sale/{shopId}/{goodsId}/{isSale}")
+    public Result<?> setIsSale(@PathVariable Long shopId, @PathVariable Long goodsId, @PathVariable Boolean isSale){
+        if(isSale){
+            Map<String, Object> sku = skuService.getMap(
+                    new QueryWrapper<GoodsSkuEntity>()
+                            .eq("goods_id", goodsId)
+                            .select("COUNT(stock_quantity) AS stock")
+            );
+            if(sku == null || !sku.containsKey("stock") || (Long) sku.get("stock") == 0){
+                return Result.fail("库存不足，无法上架");
+            }
+        }
+        goodsService.update(new UpdateWrapper<GoodsEntity>()
+                .eq("shop_id", shopId)
+                .eq("id", goodsId)
+                .set("is_sale", isSale)
+        );
+        return Result.success((isSale ? "上架" : "下架")+ "成功");
+    }
+
+    @DeleteMapping("/delete/{shopId}/{goodsId}")
+    public Result<?> goodsList(@PathVariable Long shopId, @PathVariable Long goodsId){
+        goodsService.remove(new QueryWrapper<GoodsEntity>()
+                .eq("shop_id", shopId)
+                .eq("id", goodsId)
+        );
+        return Result.success("删除成功");
     }
 
     @PostMapping("/create/{shopId}")
@@ -73,7 +104,7 @@ public class GoodsController {
         goods.setShopId(shopId);
         goods.setIsSale(0);
         goodsService.save(goods);
-        return Result.success();
+        return Result.success("创建成功");
     }
     @PutMapping("/update/{goodsId}")
     public Result<?> update(@PathVariable Long goodsId,@RequestBody EditGoodsVo vo){
@@ -82,7 +113,7 @@ public class GoodsController {
         goods.setImages(String.join(",",vo.getImages()));
         goods.setDescription(String.join(",",vo.getDescription()));
         if (goodsService.updateById(goods)) {
-            return Result.success();
+            return Result.success("修改成功");
         }
         return Result.fail("商品不存在");
     }

@@ -60,7 +60,7 @@ public class AddressController {
                 .last("limit 1")
         );
         if(res == null || !res.containsKey("floor"))
-            return Result.fail("该配送点没有可选的楼层，请联系管理员");
+            return Result.fail("该楼栋没有可选的楼层，请联系管理员");
         return Result.success((Integer)(res.get("floor")));
     }
 
@@ -74,7 +74,7 @@ public class AddressController {
                         .select("id, name")
         );
         if(pointEntities.size() == 0)
-            return Result.fail("该配送点没有可选的楼层，请联系管理员");
+            return Result.fail("该楼栋没有可选的楼层，请联系管理员");
         List<FloorConsumePointVo> points = new ArrayList<>();
         for (GroupPointEntity pointEntity : pointEntities) {
             FloorConsumePointVo point = new FloorConsumePointVo();
@@ -100,10 +100,10 @@ public class AddressController {
             return Result.fail("门牌号不存在");
         }
 
-        //获取配送点信息
+        //获取楼栋信息
         GroupEntity group = groupService.getById(point.getGroupId());
         if(group == null){
-            return Result.fail("配送点不存在，请联系管理员");
+            return Result.fail("楼栋不存在，请联系管理员");
         }
         addressEntity.setUserId(RequestUtil.getUserId(request));
         addressEntity.setSiteId(group.getSiteId());
@@ -149,17 +149,17 @@ public class AddressController {
         address.setGender(vo.getGender());
         address.setName(vo.getName());
         if(vo.getPointId() != null){
-            //修改配送点
+            //修改楼栋
             //获取门牌信息
             GroupPointEntity point = groupPointService.getById(vo.getPointId());
             if(point == null){
                 return Result.fail("门牌号不存在");
             }
 
-            //获取配送点信息
+            //获取楼栋信息
             GroupEntity group = groupService.getById(point.getGroupId());
             if(group == null){
-                return Result.fail("配送点不存在，请联系管理员");
+                return Result.fail("楼栋不存在，请联系管理员");
             }
             address.setPointId(point.getId());
             address.setGroupId(point.getGroupId());
@@ -183,12 +183,27 @@ public class AddressController {
         if(address == null || !address.getUserId().equals(RequestUtil.getUserId(request))){
             return Result.fail("收货地址不存在");
         }
+        Result<Integer> maxFloor = maxFloorOfGroup(address.getGroupId());
+        if(!maxFloor.getSuccess()){
+            return Result.fail(maxFloor.getMessage());
+        }
+
+        GroupPointEntity point = groupPointService.getById(address.getPointId());
+
+        Result<List<FloorConsumePointVo>> floorPoints = getFloorPoints(point.getGroupId(), point.getFloor());
+        if(!floorPoints.getSuccess()){
+            return Result.fail(floorPoints.getMessage());
+        }
+
         return Result.success(new AddressDetailsVo(
                 address.getGroupId(),
                 address.getPointId(),
                 address.getName(),
                 address.getGender(),
-                address.getMobile()
+                address.getMobile(),
+                maxFloor.getData(),
+                point.getFloor(),
+                floorPoints.getData()
         ));
     }
 

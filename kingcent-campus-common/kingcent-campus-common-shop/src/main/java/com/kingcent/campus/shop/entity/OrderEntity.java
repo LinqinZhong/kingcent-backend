@@ -44,7 +44,7 @@ public class OrderEntity {
     private String tradeNo;
 
     /**
-     * 配送点id
+     * 楼栋id
      */
     private Long groupId;
 

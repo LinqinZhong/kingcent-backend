@@ -48,7 +48,7 @@ public class AppShopAddressService extends ServiceImpl<AddressMapper, AddressEnt
             groupIds.add(addressEntity.getGroupId());
             pointIds.add(addressEntity.getPointId());
         }
-        //获取配送点的名称
+        //获取楼栋的名称
         Map<Long, String> groupNames = groupService.getGroupNames(groupIds);
         //获取门牌号的名称
         Map<Long, String> pointNames = groupPointService.getPointNames(pointIds);

@@ -18,7 +18,7 @@ public class GoodsController {
 
     /**
      * 获取商城商品列表
-     * @param groupId 配送点
+     * @param groupId 楼栋
      * @param page 页
      * @param pageSize 页大小
      */

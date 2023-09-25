@@ -2,17 +2,22 @@ package com.kingcent.campus.service.impl;
 
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.common.utils.MD5Utils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.entity.*;
 import com.kingcent.campus.shop.entity.vo.cart.*;
+import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;
+import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmStoreVo;
+import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PutCartGoodsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -343,5 +348,24 @@ public class AppCartGoodsService implements CartGoodsService {
         redisTemplate.expire(key,30, TimeUnit.DAYS);
 
         return Result.success();
+    }
+
+    @Override
+    public void removeGoods(Long userId, PurchaseConfirmVo purchase) {
+        String key = key(userId);
+        //redis操作器
+        HashOperations<String, Long, CartGoodsEntity> ops = redisTemplate.opsForHash();
+        for (PurchaseConfirmStoreVo s : purchase.getStoreList()) {
+            for (PurchaseConfirmGoodsVo g : s.getGoodsList()) {
+                try {
+                    String cartGoodsCode = MD5Utils.md5Hex(
+                            (g.getId()+g.getSku().substring(1,g.getSku().length()-1)).getBytes()
+                    );
+                    ops.delete(key, cartGoodsCode);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

@@ -99,7 +99,6 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Autowired
     private OrderPaymentService orderPaymentService;
 
-
     //自动关单消息队列键
     private static final String MESSAGE_KEY = "message:queue:order:dead";
 
@@ -112,6 +111,9 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Autowired
     private OrderDeliveryService orderDeliveryService;
 
+
+    @Autowired
+    private CartGoodsService cartGoodsService;
 
 
     //订单超时自动关闭暂时使用redis作为消息队列，后期可能会使用其它mq中间件
@@ -135,6 +137,13 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         if (set == null || set.size() == 0) return;
         removeCloseOrderTask(set);
         //删除
+        List<Long> orderIds = new ArrayList<>();
+        for (String s : set) {
+            orderIds.add(Long.valueOf(s));
+        }
+        if (closeOrder(orderIds)){
+            log.info("自动关单成功,{}", set);
+        }
         for (String s : set) {
             ops.remove(MESSAGE_KEY, s);
         }
@@ -173,7 +182,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
      */
     @Override
     @Transactional
-    public boolean closeOrder(List<Long> orderIds){
+    public boolean closeOrder(Collection<Long> orderIds){
         //过滤出可以关闭的订单
         List<OrderEntity> orderUnclose = list(
                 new QueryWrapper<OrderEntity>()
@@ -212,11 +221,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             );
             if (goodsList.size() == 0) return true; //商品为空？一般不会出现这种情况
             for (OrderGoodsEntity goods : goodsList) {
-                if(!goodsSkuService.update(
-                        new UpdateWrapper<GoodsSkuEntity>()
-                                .eq("id", goods.getSkuId())
-                                .setSql("safe_stock_quantity = safe_stock_quantity + " + goods.getCount())
-                )) {
+                if(!goodsSkuService.changeSafeStockQuantity(goods.getSkuId(), goods.getCount())) {
                     //如果存在这个sku，则修改失败
                     //如果sku不存在，修改失败归为正常情况
                     if(goodsSkuService.getById(goods.getSkuId()) != null){
@@ -249,7 +254,6 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         List<Long> orderIds = new ArrayList<>();
 
         Map<Long, OrderStoreVo> map = new HashMap<>();
-
 
         //查询商铺名称
         Set<Long> shopIds = new HashSet<>();
@@ -433,6 +437,10 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
     @Override
     @Transactional
     public Result<CreateWxOrderResultVo> createOrders(Long userId, Long loginId, PurchaseConfirmVo purchase, String ipAddress, String payType) {
+
+        if(purchase.getPayPrice() > 99999){
+            return Result.fail("交易金额较大，如需继续支付请开放限额");
+        }
 
         //检查是否存在订单异常
         Result<CreateWxOrderResultVo> checkResult = checkOrder(userId, purchase.getStoreList().size());
@@ -620,13 +628,10 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
                 orderGoods.setUserId(userId);
 
                 //更新库存
-                if (goodsSkuService.update(
-                        new UpdateWrapper<GoodsSkuEntity>()
-                                .setSql("safe_stock_quantity = safe_stock_quantity - "+goods.getCount())
-                                .eq("goods_id", goods.getId())
-                                .eq("spec_info", goods.getSku())
-                                .ge("safe_stock_quantity", goods.getCount()
-                                )
+                if (goodsSkuService.changeSafeStockQuantityBySpecInfo(
+                        goods.getId(),
+                        goods.getSku(),
+                        - goods.getCount()   //注意负号不要漏了
                 )) {
                     //计算价格
                     BigDecimal price = sku.getPrice().multiply(new BigDecimal(goods.getCount()));
@@ -692,13 +697,21 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
 
             }
 
+            //删除购物车中的商品
+            cartGoodsService.removeGoods(userId, purchase);
+
+
             orderGoodsListMap.put(order.getOrderNo(), orderGoodsList);
         }
+
 
         //拉取支付数据
         String openId = userService.getWxOpenid(userId);
         if(orders.size() == 1){
             OrderEntity order = orders.get(0);
+            if(order.getPayPrice().doubleValue() != purchase.getPayPrice()){
+                return Result.busy();
+            }
             //只有一个订单，发起普通支付
             WxPaymentInfoVo payment = wxPayService.requestToPay(
                     openId,
@@ -723,6 +736,13 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }else{
             //多订单模式
             result.setIsMultiOrder(true);
+            double totalPayPrice = 0;
+            for (OrderEntity order : orders) {
+                totalPayPrice += order.getPayPrice().doubleValue();
+            }
+            if(totalPayPrice != purchase.getPayPrice()){
+                return Result.busy();
+            }
         }
 
         //创建订单
@@ -796,8 +816,32 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         //获取端点名称
         Map<Long, String> pointNames = pointService.getPointNames(pointIds);
 
-        //获取配送点名称
+        //获取楼栋名称
         Map<Long, String> groupNames = groupService.getGroupNames(groupIds);
+
+        //获取订单所有配送员
+        List<OrderDeliveryEntity> orderDeliveryEntities = orderDeliveryService.list(
+                new QueryWrapper<OrderDeliveryEntity>()
+                        .in("order_id", ids)
+                        .select("carrier_id, order_id")
+        );
+        Map<Long, Long> orderCarrierIdMap = new HashMap<>();
+        for (OrderDeliveryEntity d : orderDeliveryEntities) {
+            orderCarrierIdMap.put(d.getOrderId(), d.getCarrierId());
+        }
+        Map<Long, CarrierEntity> carrierMap = new HashMap<>();
+        if(orderCarrierIdMap.size() > 0) {
+            //获取所有配送员信息
+            List<CarrierEntity> carriers = carrierService.list(
+                    new QueryWrapper<CarrierEntity>()
+                            .in("id", orderCarrierIdMap.values())
+                            .select("id, name, mobile")
+            );
+            for (CarrierEntity carrier : carriers) {
+                carrierMap.put(carrier.getId(), carrier);
+            }
+        }
+
 
 
         List<OrderGoodsEntity> goodsList = orderGoodsService.list(
@@ -838,8 +882,25 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             o.setDeliveryFee(order.getDeliveryFee());
             o.setGoodsList(new ArrayList<>());
             res.add(o);
+
+            //配送员信息
+            if(orderCarrierIdMap.containsKey(order.getId())) {
+                Long carrierId = orderCarrierIdMap.get(order.getId());
+                if(carrierMap.containsKey(carrierId)){
+                    CarrierEntity carrier = carrierMap.get(carrierId);
+                    if (carrier != null) {
+                        o.setCarrierContact(carrier.getMobile());
+                        o.setCarrierId(carrier.getId());
+                        o.setCarrierName(carrier.getName());
+                    }
+                }
+            }
+
+
             orderStoreVoMap.put(o.getOrderId(), o);
         }
+
+
 
         for (OrderGoodsEntity goods : goodsList) {
             OrderGoodsVo g = new OrderGoodsVo();
@@ -865,17 +926,13 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         int day = LocalDate.now().getDayOfMonth();
         CarrierEntity carrier = carrierService.getOne(new QueryWrapper<CarrierEntity>()
                 .eq("shop_id", shopId)
-                .eq("(active_day >> " + day + ") & 1", 1)
+                .eq("(active_day >> " + (day-1) + ") & 1", 1)
                 .orderByDesc("weight")
                 .last("limit 1")
         );
-        if(carrier == null){
-            log.error("没有配送员");
-            return;
-        }
         //更新配送员权重
         if (!carrierService.update(new UpdateWrapper<CarrierEntity>()
-                .eq("id", carrier.getId())
+                .eq("id", carrier != null ? carrier.getId() : null)
                 .setSql("weight = weight - 1")
         )) {
             log.error("配送员权重更新失败");
@@ -883,7 +940,7 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
         }
         //分配订单
         OrderDeliveryEntity orderDelivery = new OrderDeliveryEntity();
-        orderDelivery.setCarrierId(carrier.getId());
+        orderDelivery.setCarrierId(carrier != null ? carrier.getId() : null);
         orderDelivery.setDeliveryTime(order.getDeliveryTime());
         orderDelivery.setOrderId(order.getId());
         orderDelivery.setStatus(OrderDeliveryStatus.ASSIGN);
@@ -978,14 +1035,23 @@ public class AppOrderService extends ServiceImpl<OrderMapper, OrderEntity> imple
             res.put("message", "退款订单状态更新失败");
             return res;
         }
+        //更新配送单状态
+        if(!orderDeliveryService.update(
+                new UpdateWrapper<OrderDeliveryEntity>()
+                        .in("order_id", orderIds)
+                        .set("status", OrderDeliveryStatus.CANCEL)
+        )){
+            JSONObject res = new JSONObject();
+            res.put("code", "SUCCESS");
+            res.put("message", "配送单状态更新失败");
+            return res;
+        }
         //库存回滚
         List<OrderGoodsEntity> goodsList = orderGoodsService.list(new QueryWrapper<OrderGoodsEntity>()
                 .in("order_id", orderIds)
         );
         for (OrderGoodsEntity goods : goodsList) {
-            UpdateWrapper<GoodsSkuEntity> w = new UpdateWrapper<GoodsSkuEntity>().eq("id", goods.getSkuId());
-            w.setSql("safe_stock_quantity = safe_stock_quantity + "+goods.getCount());
-            goodsSkuService.update(w);
+            goodsSkuService.changeSafeStockQuantity(goods.getSkuId(), goods.getCount());
         }
 
         //TODO 删除评论

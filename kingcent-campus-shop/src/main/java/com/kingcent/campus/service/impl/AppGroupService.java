@@ -139,7 +139,7 @@ public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implem
                         args
                 );
         if(radius == null || radius.getContent().size() == 0){
-            return Result.fail("附近没有配送点");
+            return Result.fail("附近没有楼栋");
         }
         String[] info = radius.getContent().get(0).getContent().getName().split(",");
         GroupLocationVo vo = new GroupLocationVo();
@@ -155,7 +155,7 @@ public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implem
      */
     @Override
     public void initPointLocations(){
-        log.info("初始化配送点坐标信息");
+        log.info("初始化楼栋坐标信息");
         List<GroupEntity> list = list();
         log.info("点数："+list.size());
         BoundGeoOperations<String, String> ops = redisTemplate.boundGeoOps(KEY_OF_GROUP_POINTS);
@@ -163,6 +163,6 @@ public class AppGroupService extends ServiceImpl<GroupMapper,GroupEntity> implem
             Point point = new Point(group.getLongitude(), group.getLatitude());
             ops.add(point, group.getId()+","+group.getName());
         }
-        log.info("配送点坐标初始化成功");
+        log.info("楼栋坐标初始化成功");
     }
 }

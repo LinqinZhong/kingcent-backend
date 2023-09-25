@@ -9,4 +9,5 @@ import com.kingcent.campus.shop.entity.vo.goods.GoodsVo;
 import java.util.List;
 
 public interface GoodsService extends IService<GoodsEntity> {
+    boolean exist(Long shopId, Long goodsId);
 }

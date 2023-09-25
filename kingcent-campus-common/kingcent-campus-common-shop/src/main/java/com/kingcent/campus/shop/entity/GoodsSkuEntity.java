@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -26,8 +27,8 @@ public class GoodsSkuEntity {
     private Integer stockQuantity;
     private Integer safeStockQuantity;
     private Integer soldQuantity;
-    private Date createTime;
-    private Date updateTime;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
     @TableLogic
     private Integer isDeleted;
 }

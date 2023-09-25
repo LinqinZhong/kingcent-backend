@@ -4,18 +4,18 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.service.CarrierService;
-import com.kingcent.campus.service.OrderDeliveryService;
-import com.kingcent.campus.service.OrderService;
+import com.kingcent.campus.service.*;
 import com.kingcent.campus.shop.constant.OrderDeliveryStatus;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.constant.PayType;
 import com.kingcent.campus.shop.entity.CarrierEntity;
 import com.kingcent.campus.shop.entity.OrderDeliveryEntity;
 import com.kingcent.campus.shop.entity.OrderEntity;
+import com.kingcent.campus.shop.entity.OrderGoodsEntity;
 import com.kingcent.campus.shop.mapper.OrderDeliveryMapper;
 import com.kingcent.campus.wx.service.WxSubscribeMessageService;
 import com.kingcent.campus.wx.service.WxUserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +31,7 @@ import java.util.Map;
  * @date 2023/8/24 20:02
  */
 @Service
+@Slf4j
 public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, OrderDeliveryEntity> implements OrderDeliveryService {
     @Autowired
     private CarrierService carrierService;
@@ -41,6 +43,12 @@ public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, Or
 
     @Autowired
     private WxUserService wxUserService;
+
+    @Autowired
+    private OrderGoodsService orderGoodsService;
+
+    @Autowired
+    private GoodsSkuService skuService;
 
 
     @Override
@@ -78,6 +86,21 @@ public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, Or
         if(!check.getSuccess()){
             return check;
         }
+        //更新商品仓库库存
+        List<OrderGoodsEntity> goodsList = orderGoodsService.list(
+                new QueryWrapper<OrderGoodsEntity>()
+                        .eq("order_id", orderId)
+                        .select("sku_id, count")
+        );
+        for (OrderGoodsEntity g : goodsList) {
+            if (!skuService.updateStockQuantity(
+                    g.getSkuId(),
+                    - g.getCount()       //负号注意不要漏了
+            )) {
+                log.error("仓库库存更新失败, {}", g.getSkuId());
+            }
+        }
+
         //更新配送订单、订单状态
         if(!update(new UpdateWrapper<OrderDeliveryEntity>()
                 .eq("order_id",orderId)
@@ -109,7 +132,7 @@ public class AppOrderDeliveryService extends ServiceImpl<OrderDeliveryMapper, Or
                             null
                     );
                 }catch (Exception e){
-                    log.error("订单消息发送失败,{}", e);
+                    log.error("订单消息发送失败,{}", e.getMessage());
                     e.printStackTrace();
                 }
             }

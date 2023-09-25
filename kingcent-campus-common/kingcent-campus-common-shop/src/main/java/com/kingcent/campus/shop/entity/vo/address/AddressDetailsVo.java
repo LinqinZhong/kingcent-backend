@@ -1,7 +1,11 @@
 package com.kingcent.campus.shop.entity.vo.address;
 
+import com.kingcent.campus.shop.entity.vo.group.point.FloorConsumePointVo;
+import com.kingcent.campus.shop.entity.vo.group.point.PointVo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * @author rainkyzhong
@@ -10,7 +14,7 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class AddressDetailsVo {
-    //配送点ID
+    //楼栋ID
     private Long groupId;
     //收货点ID（即宿舍）
     private Long pointId;
@@ -20,4 +24,10 @@ public class AddressDetailsVo {
     private Integer gender;
     //手机
     private String mobile;
+    //楼栋的最大楼层
+    private Integer maxFloor;
+    //地址所在楼层
+    private Integer floor;
+    //该楼层的所有房间号
+    private List<FloorConsumePointVo> points;
 }

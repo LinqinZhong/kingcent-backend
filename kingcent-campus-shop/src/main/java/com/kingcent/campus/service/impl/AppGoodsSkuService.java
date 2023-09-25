@@ -39,4 +39,19 @@ public class AppGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEnti
         return vo;
     }
 
+    @Override
+    public boolean updateStockQuantity(long skuId, int delta){
+        return baseMapper.updateStockQuantity(skuId, delta);
+    }
+
+    @Override
+    public boolean changeSafeStockQuantity(long skuId, int delta) {
+        return baseMapper.changeSafeStockQuantityById(skuId, delta);
+    }
+
+    @Override
+    public boolean changeSafeStockQuantityBySpecInfo(long goodsId, String specInfo, int delta) {
+        return baseMapper.changeSafeStockQuantityBySpecInfo(goodsId, specInfo, delta);
+    }
+
 }
