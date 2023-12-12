@@ -9,10 +9,10 @@ spring:
   data:
     redis:
       timeout: 300s
-      host: 175.178.107.254
+      host: localhost
       port: 6379
       database: 0
-      password: qcxyg666
+#      password: qcxyg666
       jedis:
         pool:
           max-active: 8
@@ -21,12 +21,12 @@ spring:
           min-idle: 0
 
   datasource:
-#    username: root
-#    password: 11223344aaa
-#    url: jdbc:mysql://localhost:3306/kingcent_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
-    username: kc_campus
-    password: mysqlmysql123
-    url: jdbc:mysql://175.178.107.254:3306/kc_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+    username: root
+    password: 11223344aaa
+    url: jdbc:mysql://localhost:3306/kingcent_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+#    username: kc
+#    password: 38d58FdcsjHKsS7N
+#    url: jdbc:mysql://175.178.186.82:3306/kc?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       max-lifetime: 120000
@@ -34,9 +34,10 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 175.178.107.254:8848
-        username: nacos
-        password: nacosnacos666
+#        server-addr: 175.178.186.82:8848
+#        username: nacos
+#        password: nacos
+        server-addr: localhost:8848
 
 mybatis-plus:
   configuration:

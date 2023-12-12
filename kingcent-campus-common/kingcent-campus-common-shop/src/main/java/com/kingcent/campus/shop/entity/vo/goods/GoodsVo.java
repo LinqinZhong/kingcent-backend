@@ -9,6 +9,8 @@ import java.util.List;
 @Data
 public class GoodsVo {
     private Long id;
+    private Long shopId;
+    private String shopName;
     private String name;
     private BigDecimal price;
     private BigDecimal originalPrice;

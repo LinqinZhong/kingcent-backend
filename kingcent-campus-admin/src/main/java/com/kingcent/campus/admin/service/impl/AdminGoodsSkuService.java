@@ -4,12 +4,14 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.admin.entity.vo.EditSkuVo;
 import com.kingcent.campus.admin.service.GoodsService;
 import com.kingcent.campus.admin.service.GoodsSkuService;
 import com.kingcent.campus.admin.service.GoodsSpecValueService;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.GoodsEntity;
 import com.kingcent.campus.shop.entity.GoodsSkuEntity;
 import com.kingcent.campus.shop.entity.GoodsSpecValueEntity;
@@ -36,12 +38,16 @@ public class AdminGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEn
     private GoodsSpecValueService specValueService;
 
     @Override
-    public Result<List<GoodsSkuEntity>> list(Long shopId, Long goodsId) {
-        List<GoodsSkuEntity> list = list(
-                new QueryWrapper<GoodsSkuEntity>()
-                        .eq("goods_id", goodsId)
+    public Result<VoList<GoodsSkuEntity>> list(Long shopId, Long goodsId, Integer page, Integer pageSize) {
+
+        Page<GoodsSkuEntity> p = new Page<>(page,pageSize,true);
+        Page<GoodsSkuEntity> res = page(p, new QueryWrapper<GoodsSkuEntity>()
+                .eq("goods_id", goodsId)
         );
-        return Result.success(list);
+        VoList<GoodsSkuEntity> voList = new VoList<>();
+        voList.setRecords(res.getRecords());
+        voList.setTotal((int) res.getTotal());
+        return Result.success(voList);
     }
 
     @Override
@@ -84,11 +90,19 @@ public class AdminGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEn
             return Result.fail("价格不能为负数");
         }
 
-        if(vo.getLimitMinCount() != null && vo.getLimitMinCount() <= 0){
-            return Result.fail("起购数量只能为正整数");
+        if(vo.getLimitMinCount() != null){
+            if(vo.getLimitMinCount() == 0){
+                vo.setLimitMinCount(null);
+            }else if(vo.getLimitMinCount() < 0) {
+                return Result.fail("起购数量只能为正整数");
+            }
         }
-        if(vo.getLimitMaxCount() != null && vo.getLimitMaxCount() <= 0){
-            return Result.fail("限购数量只能为正整数");
+        if(vo.getLimitMaxCount() != null){
+            if(vo.getLimitMaxCount() == 0){
+                vo.setLimitMaxCount(null);
+            }else if(vo.getLimitMaxCount() < 0){
+                return Result.fail("限购数量只能为正整数");
+            }
         }
         if (vo.getLimitMinCount() != null && vo.getLimitMaxCount() != null && vo.getLimitMaxCount() < vo.getLimitMinCount()){
             return Result.fail("起购数量不能大于限购数量");
@@ -163,6 +177,19 @@ public class AdminGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEn
             return Result.fail("售价不能小于成本");
         }
 
+        GoodsEntity goods = goodsService.getOne(
+                new QueryWrapper<GoodsEntity>()
+                        .eq("id", goodsId)
+                        .eq("shop_id", shopId)
+                        .select("is_sale")
+        );
+        if(goods == null){
+            return Result.fail("商品不存在");
+        }
+        if(goods.getIsSale() == 1){
+            return Result.fail("商品上架中，请勿修改");
+        }
+
         if(vo.getSpecInfo()!=null) {
             try {
                 QueryWrapper<GoodsSpecValueEntity> wrapper = new QueryWrapper<>();
@@ -187,13 +214,23 @@ public class AdminGoodsSkuService extends ServiceImpl<GoodsSkuMapper, GoodsSkuEn
                 return Result.fail("该规格的商品已经存在");
             }
         }
-
-        GoodsSkuEntity sku = BeanCopyUtils.copyBean(vo,GoodsSkuEntity.class);
-        sku.setId(skuId);
-        sku.setStockQuantity(null); //不修改库存
-        if(updateById(sku)){
+        if(update(
+                new UpdateWrapper<GoodsSkuEntity>()
+                        .eq("goods_id", goodsId)
+                        .eq("id", skuId)
+                        .set("cost", vo.getCost())
+                        .set("price", vo.getPrice())
+                        .setSql("safe_stock_quantity =  safe_stock_quantity - stock_quantity + "+vo.getStockQuantity())
+                        .set("stock_quantity", vo.getStockQuantity())
+                        .set("description", vo.getDescription())
+                        .set("image", vo.getImage())
+                        .set("original_price",vo.getOriginalPrice())
+                        .set("limit_min_count", vo.getLimitMinCount())
+                        .set("limit_max_count", vo.getLimitMaxCount())
+                        .set("spec_info", vo.getSpecInfo())
+        )){
             recalculate(goodsId);
-            return Result.success("修改失败");
+            return Result.success("修改成功");
         }
         return Result.fail("修改失败");
     }

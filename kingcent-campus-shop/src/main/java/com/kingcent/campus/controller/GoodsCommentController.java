@@ -1,8 +1,8 @@
 package com.kingcent.campus.controller;
 
 import com.kingcent.campus.common.entity.result.Result;
-import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsCommentsPreviewVo;
 import com.kingcent.campus.service.GoodsCommentService;
+import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsCommentsPreviewVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

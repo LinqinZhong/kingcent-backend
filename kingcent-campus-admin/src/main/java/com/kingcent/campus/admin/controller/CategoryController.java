@@ -25,9 +25,9 @@ public class CategoryController {
      * 查询商品分类列表
      * @param parentId  父节点id
      */
-    @GetMapping("/list/{parentId}")
+    @GetMapping("/list")
     public Result<List<CategoryVo>> list(
-            @PathVariable Long parentId,
+            @RequestParam(required = false) Long parentId,
             @RequestParam(required = false) Integer height,
             @RequestParam(required = false) Boolean withPrice,
             @RequestParam(required = false) Boolean withSales
@@ -36,18 +36,9 @@ public class CategoryController {
         return Result.success(categoryVos);
     }
 
-    @PostMapping("/create/{parentId}")
+    @PostMapping("/save/{parentId}")
     public Result<?> create(@PathVariable Long parentId, @RequestBody CreateCategoryVo vo){
-        if (vo.getName() == null || vo.getName().trim().equals("")) return Result.fail("name不能为空");
-        if(parentId != 0 && categoryService.getById(parentId) == null){
-            return Result.fail("父分类标题不存在");
-        }
-
-        CategoryEntity category = BeanCopyUtils.copyBean(vo, CategoryEntity.class);
-        category.setCreateTime(LocalDateTime.now());
-        category.setParentId(parentId);
-        categoryService.save(category);
-        return Result.success();
+        return categoryService.save(parentId, vo);
     }
 
     @PutMapping("/update/{id}")
@@ -60,16 +51,21 @@ public class CategoryController {
         category.setCreateTime(null);
         category.setUpdateTime(LocalDateTime.now());
         categoryService.updateById(category);
-        return Result.success();
+        return Result.success("修改成功");
     }
 
     @DeleteMapping("/delete/{id}")
     public Result<?> update(@PathVariable Long id){
-        if(categoryService.getById(id) == null){
-            return Result.fail("分类标题不存在");
-        }
-        categoryService.removeById(id);
-        return Result.success();
+        return categoryService.delete(id);
     }
 
+    @PutMapping("/move/{id}/{weight}")
+    public Result<?> move(@PathVariable Long id, @PathVariable Integer weight){
+        return categoryService.move(id, weight);
+    }
+
+    @PutMapping("/reset_parent/{id}/{parentId}")
+    public Result<?> move(@PathVariable Long id, @PathVariable Long parentId){
+        return categoryService.resetParent(id, parentId);
+    }
 }

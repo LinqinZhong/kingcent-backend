@@ -2,11 +2,13 @@ package com.kingcent.campus.admin.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.admin.service.CarrierService;
 import com.kingcent.campus.admin.service.OrderGoodsService;
 import com.kingcent.campus.admin.service.OrderService;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.constant.OrderStatus;
 import com.kingcent.campus.shop.entity.CarrierEntity;
 import com.kingcent.campus.shop.entity.OrderEntity;
@@ -18,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,6 +41,31 @@ public class AdminOrderService extends ServiceImpl<OrderMapper, OrderEntity> imp
 
     @Autowired
     private CarrierService carrierService;
+
+    @Override
+    public Result<VoList<OrderEntity>> list(Integer page, Integer pageSize, Long shopId) {
+        Page<OrderEntity> p = new Page<>(page, pageSize, true);
+        Page<OrderEntity> res = page(p);
+        return Result.success(new VoList<>((int) res.getTotal(), res.getRecords()));
+    }
+
+    @Override
+    public Result<?> setDiscount(Long shopId, Long orderId, BigDecimal discount) {
+        if(discount == null || discount.doubleValue() < 0) return Result.fail("优惠金额不能小于0");
+        OrderEntity order = getOne(new QueryWrapper<OrderEntity>()
+                .eq("id", orderId)
+                .eq("shop_id", shopId)
+        );
+        if(order.getStatus() != 0){
+            return Result.fail("订单已支付或已关闭");
+        }
+        order.setDiscount(discount);
+        order.setPayPrice(order.getPrice().subtract(discount));
+        if (updateById(order)) {
+            return Result.success("修改成功");
+        }
+        return Result.fail("修改失败");
+    }
 
 
     /**

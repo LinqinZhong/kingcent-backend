@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -42,10 +44,12 @@ public class AdminGoodsSpecValueService extends ServiceImpl<GoodsSpecValueMapper
     private GoodsSkuService skuService;
 
     @Override
-    public Result<?> update(Long shopId, Long specValId, EditSpecValVo vo) {
+    public Result<?> update(Long shopId, Long goodsId, Long specId, Long specValId, EditSpecValVo vo) {
         if(update(
                 new UpdateWrapper<GoodsSpecValueEntity>()
                         .eq("id", specValId)
+                        .eq("spec_id", specId)
+                        .eq("goods_id", goodsId)
                         .set("val", vo.getVal())
                         .set("image", vo.getImage())
         )) return Result.success("修改成功");
@@ -103,5 +107,25 @@ public class AdminGoodsSpecValueService extends ServiceImpl<GoodsSpecValueMapper
         ) return Result.success("删除成功");
 
         return Result.fail("商品规格不存在");
+    }
+
+    @Override
+    public boolean batchDelete(Long shopId, Long goodsId, Collection<Long> specValIds) {
+        //过滤存在SKU的规格选项
+        List<GoodsSkuEntity> skus = skuService.list(new QueryWrapper<GoodsSkuEntity>()
+                .eq("goods_id", goodsId)
+                .select("spec_info")
+        );
+        for (GoodsSkuEntity sku : skus) {
+            for (JSONArray array : JSONObject.parseArray(sku.getSpecInfo(), JSONArray.class)) {
+                specValIds.removeIf(specValId -> array.getLong(1).equals(specValId));
+            }
+        }
+        if(specValIds.size() == 0) return true;
+        return remove(
+                new QueryWrapper<GoodsSpecValueEntity>()
+                        .eq("goods_id", goodsId)
+                        .in("id", specValIds)
+        );
     }
 }

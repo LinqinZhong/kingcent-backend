@@ -13,7 +13,7 @@ import com.kingcent.campus.shop.entity.vo.order.OrderVo;
 import com.kingcent.campus.shop.entity.vo.purchase.PurchaseConfirmVo;
 import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.shop.entity.vo.refund.RefundInfoVo;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;

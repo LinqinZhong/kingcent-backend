@@ -3,6 +3,7 @@ package com.kingcent.campus.admin.controller;
 import com.kingcent.campus.admin.service.ShopService;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
+import com.kingcent.campus.shop.entity.ShopEntity;
 import com.kingcent.campus.shop.entity.vo.shop.ShopNameVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,5 +30,13 @@ public class ShopController {
             @PathVariable Integer page
     ){
         return Result.success(shopService.getShopNames(keywords, page));
+    }
+
+    @GetMapping("/list/{page}/{pageSize}")
+    public Result<VoList<ShopEntity>> list(
+            @PathVariable("page") Integer page,
+            @PathVariable("pageSize") Integer pageSize
+    ){
+        return shopService.list(page, pageSize);
     }
 }

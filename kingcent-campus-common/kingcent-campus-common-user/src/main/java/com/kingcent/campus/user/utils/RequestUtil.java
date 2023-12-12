@@ -1,4 +1,4 @@
-package com.kingcent.campus.shop.util;
+package com.kingcent.campus.user.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 

@@ -3,7 +3,7 @@ package com.kingcent.campus.controller;
 import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.vo.purchase.CheckPurchaseVo;
 import com.kingcent.campus.service.PurchaseService;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

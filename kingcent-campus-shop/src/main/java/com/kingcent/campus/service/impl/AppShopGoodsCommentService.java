@@ -2,9 +2,9 @@ package com.kingcent.campus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.campus.user.entity.UserInfoEntity;
 import com.kingcent.campus.shop.entity.GoodsCommentCountEntity;
 import com.kingcent.campus.shop.entity.GoodsCommentEntity;
-import com.kingcent.campus.shop.entity.UserInfoEntity;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsCommentVo;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsDetailsCommentsPreviewVo;
 import com.kingcent.campus.shop.mapper.GoodsCommentMapper;

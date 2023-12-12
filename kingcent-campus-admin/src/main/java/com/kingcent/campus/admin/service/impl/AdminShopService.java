@@ -4,13 +4,18 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.campus.admin.service.ShopService;
+import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.ShopEntity;
 import com.kingcent.campus.shop.entity.vo.shop.ShopNameVo;
 import com.kingcent.campus.shop.mapper.ShopMapper;
 import com.kingcent.campus.shop.util.BeanCopyUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.BoundHashOperations;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import java.util.*;
 
 /**
  * @author rainkyzhong
@@ -18,6 +23,40 @@ import java.util.List;
  */
 @Service
 public class AdminShopService extends ServiceImpl<ShopMapper, ShopEntity> implements ShopService {
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+    private static final String KEY_OF_SHOP_NAMES = "shop_names";
+
+    @Override
+    public Map<Long, String> getShopNames(Collection<Long> shopIds) {
+        BoundHashOperations<String, String, String> ops = redisTemplate.boundHashOps(KEY_OF_SHOP_NAMES);
+        Map<Long, String> names = new HashMap<>();
+        List<Long> notFindShopIds = new ArrayList<>();
+
+        for (Long shopId : shopIds) {
+            //读取缓存
+            String name = ops.get(shopId+"");
+            if (name != null){
+                //加入结果
+                names.put(shopId, name);
+            }else{
+                //加入搜索集合
+                notFindShopIds.add(shopId);
+            }
+        }
+
+        if(notFindShopIds.size() > 0){
+            List<ShopEntity> map = list(new QueryWrapper<ShopEntity>().in("id", notFindShopIds).select("id, name"));
+            for (ShopEntity shopEntity : map) {
+                //加入缓存
+                ops.put(shopEntity.getId() + "", shopEntity.getName());
+                //加入结果
+                names.put(shopEntity.getId(), shopEntity.getName());
+            }
+        }
+        return names;
+    }
 
     /**
      * 获取店铺名称列表（用于下拉选择店铺）
@@ -43,5 +82,27 @@ public class AdminShopService extends ServiceImpl<ShopMapper, ShopEntity> implem
     @Override
     public boolean exists(Long shopId) {
         return count(new QueryWrapper<ShopEntity>().eq("id", shopId)) > 0;
+    }
+
+    @Override
+    public String getShopName(Long shopId) {
+        BoundHashOperations<String, String, String> ops = redisTemplate.boundHashOps(KEY_OF_SHOP_NAMES);
+        String name = ops.get(shopId+"");
+        if(name == null){
+            ShopEntity shop = getById(shopId);
+            name = shop.getName();
+            ops.put(shopId+"", name);
+        }
+        return name;
+    }
+
+    @Override
+    public Result<VoList<ShopEntity>> list(Integer page, Integer pageSize) {
+        Page<ShopEntity> p = new Page<>(page, pageSize,true);
+        Page<ShopEntity> res = page(p);
+        VoList<ShopEntity> shopEntityVoList = new VoList<>();
+        shopEntityVoList.setTotal((int) res.getTotal());
+        shopEntityVoList.setRecords(res.getRecords());
+        return Result.success(shopEntityVoList);
     }
 }

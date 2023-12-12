@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.kingcent.campus.shop.util.RequestUtil.getUserId;
+import static com.kingcent.campus.user.utils.RequestUtil.getUserId;
 
 
 @RestController

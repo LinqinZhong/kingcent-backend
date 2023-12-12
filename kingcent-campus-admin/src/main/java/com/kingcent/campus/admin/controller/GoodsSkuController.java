@@ -3,6 +3,7 @@ package com.kingcent.campus.admin.controller;
 import com.kingcent.campus.admin.entity.vo.EditSkuVo;
 import com.kingcent.campus.admin.service.GoodsSkuService;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.common.entity.vo.VoList;
 import com.kingcent.campus.shop.entity.GoodsSkuEntity;
 import com.kingcent.campus.shop.entity.vo.goods.GoodsSkuVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,17 @@ public class GoodsSkuController {
     @Autowired
     private GoodsSkuService skuService;
 
-    @GetMapping("/list/{shopId}/{goodsId}")
-    public Result<List<GoodsSkuEntity>> list(@PathVariable Long shopId, @PathVariable Long goodsId){
-        return skuService.list(shopId, goodsId);
+    @GetMapping("/list/{shopId}/{goodsId}/{page}/{pageSize}")
+    public Result<VoList<GoodsSkuEntity>> list(
+            @PathVariable Long shopId,
+            @PathVariable Long goodsId,
+            @PathVariable Integer page,
+            @PathVariable Integer pageSize
+    ){
+        return skuService.list(shopId, goodsId, page, pageSize);
     }
 
-    @PostMapping("/create/{shopId}/{goodsId}")
+    @PostMapping("/save/{shopId}/{goodsId}")
     public Result<?> create(@PathVariable Long shopId, @PathVariable Long goodsId,  @RequestBody EditSkuVo vo){
         return skuService.create(shopId,goodsId,vo);
     }

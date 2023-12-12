@@ -18,12 +18,12 @@ import java.util.Random;
 @RequestMapping("/file")
 public class FileController {
 
-//    @Value("C:/AppServ/www/aaaaaaa")
-    @Value("/www/wwwroot/file.intapter.cn/upload_files")
+    @Value("C:/AppServ/www/aaaaaaa")
+//    @Value("/www/wwwroot/file.intapter.cn/upload_files")
     private String BASE_UPLOAD_PATH;
 
-//    @Value("http://localhost/aaaaaaa")
-    @Value("http://file.intapter.cn/upload_files")
+    @Value("http://localhost/aaaaaaa")
+//    @Value("http://file.intapter.cn/upload_files")
     private String VISIT_PATH;
 
 

@@ -30,6 +30,7 @@ public class AppShopCategoryService extends ServiceImpl<CategoryMapper, Category
             List<CategoryEntity> list = list(new QueryWrapper<CategoryEntity>()
                     .in("parent_id", parentIds)
                     .select("id,name,thumbnail,ref,parent_id")
+                    .orderByDesc("weight")
             );
             parentIds.clear();
             for (CategoryEntity category : list){
@@ -38,9 +39,11 @@ public class AppShopCategoryService extends ServiceImpl<CategoryMapper, Category
                         category.getName(),
                         category.getThumbnail(),
                         null,
+                        category.getWeight(),
                         category.getRef(),
                         Boolean.TRUE.equals(withPrice) ? new BigDecimal("9.9") : null,
-                        Boolean.TRUE.equals(withSales) ? 100 : null
+                        Boolean.TRUE.equals(withSales) ? 100 : null,
+                        true
                 );
                 parentIds.add(category.getId());
                 map.put(category.getId(), vo);

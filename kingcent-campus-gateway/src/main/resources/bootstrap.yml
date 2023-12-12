@@ -7,9 +7,10 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 175.178.107.254:8848
-        username: nacos
-        password: nacosnacos666
+#        server-addr: 175.178.107.254:8848
+        server-addr: localhost:8848
+#        username: nacos
+#        password: nacos
 
   # 静态路由
     gateway:
@@ -30,6 +31,14 @@ spring:
         uri: lb://kingcent-campus-shop
         predicates:
           - Path=/shop/**
+        filters:
+          - StripPrefix=1
+
+        #社区服务
+      - id: shop
+        uri: lb://kingcent-campus-community
+        predicates:
+          - Path=/community/**
         filters:
           - StripPrefix=1
 
@@ -65,5 +74,8 @@ auth:
     - /shop/want/keywords #获取”想要“关键词
     - /shop/wx_notify/**  #微信接口回调
     - /shop/order/refund_reasons/** #退款原因
+    - /shop/site/search/**  #搜索校园
+    - /shop/group/of_site/** #搜索校园的所有楼栋
     - /admin/goods/test #测试接口
     - /admin/file/upload/** #上传文件
+    - /community/document/list/** #获取文章

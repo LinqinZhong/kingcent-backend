@@ -13,7 +13,9 @@ public class CategoryVo {
     private String name;
     private String thumbnail;
     private List<CategoryVo> children;
+    private Integer weight;
     private String ref;
     private BigDecimal price;
     private Integer sales;
+    private Boolean isLeaf;
 }

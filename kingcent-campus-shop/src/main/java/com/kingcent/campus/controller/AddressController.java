@@ -2,9 +2,9 @@ package com.kingcent.campus.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.shop.entity.AddressEntity;
+import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.GroupEntity;
 import com.kingcent.campus.shop.entity.GroupPointEntity;
-import com.kingcent.campus.common.entity.result.Result;
 import com.kingcent.campus.shop.entity.vo.address.AddressDetailsVo;
 import com.kingcent.campus.shop.entity.vo.address.EditAddressVo;
 import com.kingcent.campus.shop.entity.vo.group.point.FloorConsumePointVo;
@@ -12,7 +12,7 @@ import com.kingcent.campus.service.AddressService;
 import com.kingcent.campus.service.GroupPointService;
 import com.kingcent.campus.service.GroupService;
 import com.kingcent.campus.service.SiteService;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,20 +36,20 @@ public class AddressController {
     @Autowired
     private SiteService siteService;
 
-    @GetMapping("/nearby_group/{lng}/{lat}")
-    public Result<?> nearbyGroup(@PathVariable Double lng, @PathVariable Double lat){
-        return groupService.fetchNearbyGroups(lng, lat);
-    }
+//    @GetMapping("/nearby_group/{lng}/{lat}")
+//    public Result<?> nearbyGroup(@PathVariable Double lng, @PathVariable Double lat){
+//        return groupService.fetchNearbyGroups(lng, lat);
+//    }
 
-    @GetMapping("/nearest_group/{lng}/{lat}")
-    public Result<?> nearestGroup(@PathVariable Double lng, @PathVariable Double lat){
-        return groupService.fetchNearestGroup(lng, lat);
-    }
+//    @GetMapping("/nearest_group/{lng}/{lat}")
+//    public Result<?> nearestGroup(@PathVariable Double lng, @PathVariable Double lat){
+//        return groupService.fetchNearestGroup(lng, lat);
+//    }
 
-    @GetMapping("/nearby_site/{lng}/{lat}")
-    public Result<?> nearbySite(@PathVariable Double lng, @PathVariable Double lat){
-        return siteService.fetchNearestSite(lng, lat);
-    }
+//    @GetMapping("/nearby_site/{lng}/{lat}")
+//    public Result<?> nearbySite(@PathVariable Double lng, @PathVariable Double lat){
+//        return siteService.fetchNearestSite(lng, lat);
+//    }
 
     @GetMapping("/max_floor_of_group/{groupId}")
     public Result<Integer> maxFloorOfGroup(@PathVariable Long groupId){

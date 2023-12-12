@@ -30,6 +30,16 @@ public class CategoryEntity implements Serializable {
     private String name;
 
     /**
+     * 权重
+     */
+    private Integer weight;
+
+    /**
+     * 子节点个数
+     */
+    private Integer childrenCount;
+
+    /**
      * 图片
      */
     private String thumbnail;

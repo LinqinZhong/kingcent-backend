@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -18,5 +19,5 @@ public class CartGoodsDiscountVo {
     //参考数值
     private BigDecimal num;
     //截至时间
-    private Date deadline;
+    private LocalDateTime deadline;
 }

@@ -23,10 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author rainkyzhong
@@ -79,9 +76,10 @@ public class AdminGoodsSpecService extends ServiceImpl<GoodsSpecMapper, GoodsSpe
     }
 
     @Override
-    public Result<?> update(Long shopId, Long specId, EditSpecVo vo) {
+    public Result<?> update(Long shopId, Long goodsId, Long specId, EditSpecVo vo) {
         if(update(new UpdateWrapper<GoodsSpecEntity>()
                 .eq("id",specId)
+                .eq("goods_id", goodsId)
                 .set("title",vo.getTitle())
         )) return Result.success("修改成功");
         return Result.fail("修改失败");
@@ -125,7 +123,6 @@ public class AdminGoodsSpecService extends ServiceImpl<GoodsSpecMapper, GoodsSpe
         );
         for (GoodsSkuEntity sku : skus) {
             for (JSONArray array : JSONObject.parseArray(sku.getSpecInfo(), JSONArray.class)) {
-                System.out.println(array.get(0));
                 if(array.getLong(0).equals(specId)){
                     return Result.fail("删除失败，SKU列表中有该规格的商品");
                 }
@@ -138,5 +135,24 @@ public class AdminGoodsSpecService extends ServiceImpl<GoodsSpecMapper, GoodsSpe
         ) return Result.success("删除成功");
 
         return Result.fail("商品规格不存在");
+    }
+
+    @Override
+    public boolean batchDelete(Long shopId, Long goodsId, Collection<Long> specIds) {
+        //过滤存在SKU的规格
+        List<GoodsSkuEntity> skus = skuService.list(new QueryWrapper<GoodsSkuEntity>()
+                .eq("goods_id", goodsId)
+                .select("spec_info")
+        );
+        for (GoodsSkuEntity sku : skus) {
+            for (JSONArray array : JSONObject.parseArray(sku.getSpecInfo(), JSONArray.class)) {
+                specIds.removeIf(specId -> array.getLong(0).equals(specId));
+            }
+        }
+        if(specIds.size() == 0) return true;
+        return remove(new QueryWrapper<GoodsSpecEntity>()
+                .eq("goods_id", goodsId)
+                .in("id", specIds)
+        );
     }
 }

@@ -10,7 +10,7 @@ import com.kingcent.campus.shop.entity.CarrierEntity;
 import com.kingcent.campus.shop.entity.OrderDeliveryEntity;
 import com.kingcent.campus.shop.entity.OrderEntity;
 import com.kingcent.campus.shop.entity.OrderGoodsEntity;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -13,14 +13,14 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 175.178.107.254:8848
-        username: nacos
-        password: nacosnacos666
+        server-addr: localhost:8848
+#        username: nacos
+#        password: nacos
 
   datasource:
-    username: kc_campus
-    password: mysqlmysql123
-    url: jdbc:mysql://175.178.107.254:3306/kc_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+    username: root
+    password: 11223344aaa
+    url: jdbc:mysql://localhost:3306/kingcent_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       max-lifetime: 120000

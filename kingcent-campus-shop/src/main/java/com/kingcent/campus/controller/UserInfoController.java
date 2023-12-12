@@ -2,12 +2,12 @@ package com.kingcent.campus.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.campus.common.entity.result.Result;
+import com.kingcent.campus.user.entity.UserInfoEntity;
 import com.kingcent.campus.shop.entity.OrderEntity;
-import com.kingcent.campus.shop.entity.UserInfoEntity;
 import com.kingcent.campus.shop.entity.vo.UserCenterVo;
 import com.kingcent.campus.service.OrderService;
 import com.kingcent.campus.service.UserInfoService;
-import com.kingcent.campus.shop.util.RequestUtil;
+import com.kingcent.campus.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,11 +30,7 @@ public class UserInfoController {
     @ResponseBody
     public Result<UserCenterVo> getUserCenter(HttpServletRequest request){
         Long userId = RequestUtil.getUserId(request);
-        UserInfoEntity user = userInfoService.getOne(
-                new QueryWrapper<UserInfoEntity>()
-                        .eq("user_id", userId)
-                        .last("limit 1")
-        );
+        UserInfoEntity user = userInfoService.get(userId);
         UserCenterVo center = new UserCenterVo();
         if (user != null) {
             center.setNickname(user.getNickname());
