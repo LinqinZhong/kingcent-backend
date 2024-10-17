@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.kingcent</groupId>
-  <artifactId>kingcent-campus</artifactId>
+  <artifactId>kingcent</artifactId>
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>kingcent-campus</name>
+  <name>kingcent</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,17 +24,18 @@
   </properties>
 
   <modules>
-    <module>kingcent-campus-shop</module>
-    <module>kingcent-campus-common</module>
-    <module>kingcent-campus-auth</module>
-    <module>kingcent-campus-gateway</module>
-    <module>kingcent-campus-mybatis-plus</module>
-    <module>kingcent-campus-admin</module>
-    <module>kingcent-campus-common/kingcent-campus-common-shop</module>
-    <module>kingcent-campus-common/kingcent-campus-common-framework</module>
-      <module>kingcent-campus-common/kingcent-campus-common-wx</module>
-      <module>kingcent-campus-community</module>
-    <module>kingcent-campus-user</module>
+    <module>kingcent-shop</module>
+    <module>kingcent-common</module>
+    <module>kingcent-auth</module>
+    <module>kingcent-gateway</module>
+    <module>kingcent-mybatis-plus</module>
+    <module>kingcent-admin</module>
+    <module>kingcent-common/kingcent-common-shop</module>
+    <module>kingcent-common/kingcent-common-framework</module>
+    <module>kingcent-common/kingcent-common-wx</module>
+    <module>kingcent-community</module>
+    <module>kingcent-user</module>
+    <module>kingcent-afast</module>
   </modules>
 
   <dependencyManagement>
