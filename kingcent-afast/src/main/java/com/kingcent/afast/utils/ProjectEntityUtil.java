@@ -5,16 +5,51 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.shaded.io.grpc.netty.shaded.io.netty.util.internal.StringUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.kingcent.afast.entity.ProjectEntityEntity;
+import com.kingcent.common.entity.result.Result;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author rainkyzhong
  * @date 2024/10/17 23:33
  */
 public class ProjectEntityUtil {
+
+
+    public static String formatEntityName(String name){
+        return name+"Entity";
+    }
+
+    //获取字段类型对应sql的类型
+    public static String generateSql(ProjectEntityEntity entity){
+        List<String> fields = new ArrayList<>();
+        String value = entity.getValue();
+        try{
+            List<Map<String,Object>> data = JSONObject.parseObject(value,List.class);
+            for (Map<String, Object> field : data) {
+                if((boolean) field.getOrDefault("isTableField", false)){
+                    String name = (String) field.get("name");
+                    String type = FieldTypeUtil.parseSql((String) field.get("type"));
+                    if(name == null || type == null){
+                        throw new RuntimeException("字段内容错误");
+                    }
+                    String nullStr = ((boolean) field.getOrDefault("isNull",false)) ? " NULL " : "";
+                    String description = (String) field.getOrDefault("description", "");
+                    String comment =  description.trim().length() > 0 ? " COMMENT '"+field.getOrDefault("description","")+"'" : "";
+                    fields.add("\t`"+ StringUtils.camelToUnderline(name) +"` "+nullStr+type+comment);
+                }
+            }
+        }catch (Exception e){
+            throw new RuntimeException("实体内容错误");
+        }
+        return "/*\n"+entity.getDescription()+"\n*/\nCREATE TABLE `"+entity.getTableName()+"`(\n" +
+                String.join(",\n",fields)+
+                "\n)";
+    }
+
     public static String generate(
             String packageName,
             ProjectEntityEntity entityEntity,
@@ -30,9 +65,11 @@ public class ProjectEntityUtil {
         List<JSONObject> list = JSON.parseArray(value, JSONObject.class);
         String tableName = useMybatisPlus && entityEntity.getTableName() != null ? "@TableName(\""+ entityEntity.getTableName()+"\")\n" : "";
         for (JSONObject jsonObject : list) {
+            String desc = (String) jsonObject.getOrDefault("description","");
+            String comment = desc.trim().length() > 0 ? "\t// "+desc : "";
             String name = jsonObject.getString("name");
-            String type = jsonObject.getString("type");
-            fields.add("    private "+type+" "+name+";");
+            String type = FieldTypeUtil.parseJava(jsonObject.getString("type"));
+            fields.add("    private "+type+" "+name+";"+comment);
         }
         return "package "+packageName+";\n" +
                 "\n" +
@@ -45,7 +82,7 @@ public class ProjectEntityUtil {
                 " */\n" +
                 "@Data\n" +
                 tableName+
-                "public class "+className+" {\n" +
+                "public class "+className+"Entity {\n" +
                 String.join("\n",fields)+
                 "\n}\n";
     }

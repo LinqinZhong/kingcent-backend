@@ -19,4 +19,6 @@ public interface ProjectDaoService extends IService<ProjectDaoEntity> {
     Result<?> save(Long userId, Long projectId, ProjectDaoDto daoDto);
 
     Result<?> delete(Long userId, Long projectId, Long daoId);
+
+    Result<?> generateJava(Long userId, Long projectId, Long daoId);
 }

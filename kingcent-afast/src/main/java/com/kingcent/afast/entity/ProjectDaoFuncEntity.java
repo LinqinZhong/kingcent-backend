@@ -20,5 +20,8 @@ public class ProjectDaoFuncEntity {
     private String params;
     private String returnParam;
     private String description;
+    private String execution;  //执行语句
+    private Integer sourceType; //数据源类型（0mysql,1redis）
+    private Integer executionType;  //执行类型 （0增1删2改3查）
     private LocalDateTime createTime;
 }

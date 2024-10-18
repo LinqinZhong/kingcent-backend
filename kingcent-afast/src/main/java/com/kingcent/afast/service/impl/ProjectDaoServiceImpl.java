@@ -1,6 +1,7 @@
 package com.kingcent.afast.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -8,11 +9,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.afast.dto.ProjectDaoDto;
 import com.kingcent.afast.dto.ProjectEntityDto;
 import com.kingcent.afast.entity.ProjectDaoEntity;
+import com.kingcent.afast.entity.ProjectDaoFuncEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.mapper.ProjectDaoMapper;
 import com.kingcent.afast.mapper.ProjectEntityMapper;
+import com.kingcent.afast.service.ProjectDaoFuncService;
 import com.kingcent.afast.service.ProjectDaoService;
 import com.kingcent.afast.service.ProjectEntityService;
+import com.kingcent.afast.utils.ProjectDaoUtil;
 import com.kingcent.afast.vo.ProjectDaoVo;
 import com.kingcent.common.entity.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +34,9 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
 
     @Autowired
     private ProjectEntityService projectEntityService;
+
+    @Autowired
+    private ProjectDaoFuncService projectDaoFuncService;
 
     @Override
     public Result<Page<ProjectDaoVo>> list(Long userId, Long projectId, Long pageSize, Long pageNum) {
@@ -86,5 +93,39 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
         wrapper.eq(ProjectDaoEntity::getId,daoId);
         remove(wrapper);
         return Result.success("删除成功");
+    }
+
+    @Override
+    public Result<?> generateJava(Long userId, Long projectId, Long daoId) {
+        LambdaQueryWrapper<ProjectDaoEntity> w1 = new LambdaQueryWrapper<>();
+        w1.eq(ProjectDaoEntity::getProjectId,projectId);
+        w1.eq(ProjectDaoEntity::getId, daoId);
+        ProjectDaoEntity dao = getOne(w1);
+        if(dao == null){
+            return Result.fail("数据控制对象不存在");
+        }
+
+
+        LambdaQueryWrapper<ProjectDaoFuncEntity> w2 = new LambdaQueryWrapper<>();
+        w2.eq(ProjectDaoFuncEntity::getProjectId,projectId);
+        w2.eq(ProjectDaoFuncEntity::getDaoId, daoId);
+        List<ProjectDaoFuncEntity> list = projectDaoFuncService.list(w2);
+
+        ProjectEntityEntity entity = projectEntityService.get(userId, projectId, dao.getEntityId());
+        if (entity == null){
+            return Result.fail("实体不存在");
+        }
+
+        return Result.success("操作成功",
+                ProjectDaoUtil.generateJava(
+                        "com.a.a",
+                        entity,
+                        dao,
+                        list,
+                        true,
+                        true,
+                        13
+                )
+        );
     }
 }

@@ -56,4 +56,13 @@ public class ProjectDaoController {
     ){
         return projectDaoService.delete(RequestUtil.getUserId(request),projectId, daoId);
     }
+
+    @GetMapping("/toJava/{projectId}/{daoId}")
+    public Result<?> get(
+            HttpServletRequest request,
+            @PathVariable Long projectId,
+            @PathVariable Long daoId
+    ){
+        return projectDaoService.generateJava(RequestUtil.getUserId(request),projectId, daoId);
+    }
 }

@@ -7,12 +7,9 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.afast.dto.ProjectEntityDto;
-import com.kingcent.afast.entity.ProjectEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.mapper.ProjectEntityMapper;
-import com.kingcent.afast.mapper.ProjectMapper;
 import com.kingcent.afast.service.ProjectEntityService;
-import com.kingcent.afast.service.ProjectService;
 import com.kingcent.afast.utils.ProjectEntityUtil;
 import com.kingcent.common.entity.result.Result;
 import org.springframework.stereotype.Service;
@@ -57,20 +54,6 @@ public class ProjectEntityServiceImpl extends ServiceImpl<ProjectEntityMapper, P
         return Result.success("删除成功");
     }
 
-    //获取字段类型对应sql的类型
-    public static String parseSqlType(String type){
-        return switch (type) {
-            case "int" -> "INT";
-            case "long" -> "BIGINT";
-            case "string" -> "VARCHAR(255)";
-            case "longtext" -> "LONGTEXT";
-            case "datetime" -> "DATETIME";
-            case "date" -> "DATE";
-            case "decimal" -> "DECIMAL";
-            case "boolean" -> "TINYINT";
-            default -> "VARCHAR";
-        };
-    }
 
     @Override
     public Result<String> toSql(Long userId, Long projectId, Long entityId) {
@@ -78,29 +61,9 @@ public class ProjectEntityServiceImpl extends ServiceImpl<ProjectEntityMapper, P
         wrapper.eq(ProjectEntityEntity::getProjectId,projectId);
         wrapper.eq(ProjectEntityEntity::getId,entityId);
         ProjectEntityEntity projectEntity = getOne(wrapper);
-        List<String> fields = new ArrayList<>();
-        String value = projectEntity.getValue();
-        try{
-            List<Map<String,Object>> data = JSONObject.parseObject(value,List.class);
-            for (Map<String, Object> field : data) {
-                String name = (String) field.get("name");
-                String type = (String) field.get("type");
-                Boolean isTableField = (Boolean) field.getOrDefault("isTableField", false);
-                if(name == null || type == null){
-                    return Result.fail("字段内容错误");
-                }
-                if(isTableField){
-                    fields.add("\t`"+ StringUtils.camelToUnderline(name) +"`, "+parseSqlType(type)+" #"+field.getOrDefault("description",""));
-                }
-            }
-        }catch (Exception e){
-            return Result.fail("实体内容错误");
-        }
         return Result.success(
                 "操作成功",
-                "/*\n"+projectEntity.getDescription()+"\n*/\nCREATE TABLE `"+projectEntity.getTableName()+"`(\n" +
-                        String.join("\n",fields)+
-                "\n)"
+                ProjectEntityUtil.generateSql(projectEntity)
         );
     }
 
