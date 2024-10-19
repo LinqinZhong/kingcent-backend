@@ -16,6 +16,7 @@ public class ProjectDaoVo {
     private String entityName;
     private Long entityId;
     private Integer countMethod;
+    private Integer sourceType;
     private String description;
     private LocalDateTime createTime;
 }

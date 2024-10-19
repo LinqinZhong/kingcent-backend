@@ -58,11 +58,19 @@ public class ProjectDaoController {
     }
 
     @GetMapping("/toJava/{projectId}/{daoId}")
-    public Result<?> get(
+    public Result<?> toJava(
             HttpServletRequest request,
             @PathVariable Long projectId,
             @PathVariable Long daoId
     ){
         return projectDaoService.generateJava(RequestUtil.getUserId(request),projectId, daoId);
+    }
+
+    @GetMapping("/detail/{daoId}")
+    public Result<ProjectDaoVo> detail(
+            HttpServletRequest request,
+            @PathVariable Long daoId
+    ){
+        return projectDaoService.detail(RequestUtil.getUserId(request), daoId);
     }
 }

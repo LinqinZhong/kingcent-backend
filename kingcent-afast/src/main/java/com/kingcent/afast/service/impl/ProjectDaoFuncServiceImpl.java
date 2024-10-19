@@ -1,23 +1,26 @@
 package com.kingcent.afast.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.kingcent.afast.entity.EcologyEntity;
+import com.kingcent.afast.entity.ProjectDaoEntity;
 import com.kingcent.afast.entity.ProjectDaoFuncEntity;
-import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.mapper.ProjectDaoFuncMapper;
 import com.kingcent.afast.service.ProjectDaoFuncService;
+import com.kingcent.afast.service.ProjectDaoService;
+import com.kingcent.afast.vo.ProjectDaoFuncVo;
 import com.kingcent.common.entity.result.Result;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author rainkyzhong
@@ -25,12 +28,46 @@ import java.util.Map;
  */
 @Service
 public class ProjectDaoFuncServiceImpl extends ServiceImpl<ProjectDaoFuncMapper, ProjectDaoFuncEntity> implements ProjectDaoFuncService {
+
+    @Autowired
+    @Lazy
+    private ProjectDaoService projectDaoService;
+
     @Override
-    public Result<Page<ProjectDaoFuncEntity>> list(Long userId, Long projectId, Long daoId, Long pageSize, Long pageNum) {
-        LambdaQueryWrapper<ProjectDaoFuncEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProjectDaoFuncEntity::getProjectId, projectId);
-        wrapper.eq(ProjectDaoFuncEntity::getDaoId, daoId);
-        return Result.success(page(new Page<>(pageNum,pageSize),wrapper));
+    public Result<Page<ProjectDaoFuncVo>> list(Long userId, Long projectId, Long daoId, Long pageSize, Long pageNum) {
+        LambdaQueryWrapper<ProjectDaoEntity> w1 = new LambdaQueryWrapper<>();
+        w1.eq(ProjectDaoEntity::getProjectId, projectId);
+        w1.eq(ProjectDaoEntity::getId, daoId);
+        ProjectDaoEntity dao = projectDaoService.getOne(w1);
+
+        LambdaQueryWrapper<ProjectDaoFuncEntity> w2 = new LambdaQueryWrapper<>();
+        w2.eq(ProjectDaoFuncEntity::getProjectId, projectId);
+        w2.eq(ProjectDaoFuncEntity::getDaoId, daoId);
+        Page<ProjectDaoFuncEntity> page = page(new Page<>(pageNum, pageSize), w2);
+        List<ProjectDaoFuncVo> resList = page.getRecords().stream().map(new Function<ProjectDaoFuncEntity, ProjectDaoFuncVo>() {
+            @Override
+            public ProjectDaoFuncVo apply(ProjectDaoFuncEntity entity) {
+                ProjectDaoFuncVo vo = new ProjectDaoFuncVo();
+                vo.setId(entity.getId());
+                vo.setDescription(entity.getDescription());
+                vo.setExecution(entity.getExecution());
+                vo.setName(entity.getName());
+                vo.setProjectId(entity.getProjectId());
+                vo.setEntityId(entity.getEntityId());
+                vo.setDaoId(entity.getDaoId());
+                vo.setCreateTime(entity.getCreateTime());
+                vo.setParams(entity.getParams());
+                vo.setReturnParam(entity.getReturnParam());
+                vo.setSourceType(dao.getSourceType());
+                vo.setExecutionType(entity.getExecutionType());
+                return vo;
+            }
+        }).toList();
+        Page<ProjectDaoFuncVo> resPage = new Page<>();
+        resPage.setRecords(resList);
+        resPage.setSize(page.getTotal());
+        resPage.setCurrent(page.getCurrent());
+        return Result.success(resPage);
     }
 
     @Override

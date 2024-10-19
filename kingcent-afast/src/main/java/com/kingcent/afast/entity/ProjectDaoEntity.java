@@ -15,6 +15,7 @@ public class ProjectDaoEntity {
     private Long id;
     private String name;
     private Long projectId;
+    private Integer sourceType; //数据源类型，0自定义，1Mysql，2Redis，3文件
     private Long entityId;
     private String description;
     private LocalDateTime createTime;

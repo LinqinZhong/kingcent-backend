@@ -13,4 +13,5 @@ public class ProjectDaoDto {
     private String value;
     private Long entityId;
     private String description;
+    private Integer sourceType;
 }

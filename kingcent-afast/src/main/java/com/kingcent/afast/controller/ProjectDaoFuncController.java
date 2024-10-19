@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.afast.dto.ProjectDaoDto;
 import com.kingcent.afast.entity.ProjectDaoFuncEntity;
 import com.kingcent.afast.service.ProjectDaoFuncService;
+import com.kingcent.afast.vo.ProjectDaoFuncVo;
 import com.kingcent.afast.vo.ProjectDaoVo;
 import com.kingcent.common.entity.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
@@ -33,7 +34,7 @@ public class ProjectDaoFuncController {
     }
 
     @GetMapping("/list/{projectId}/{daoId}/{pageNum}/{pageSize}")
-    public Result<Page<ProjectDaoFuncEntity>> list(
+    public Result<Page<ProjectDaoFuncVo>> list(
             HttpServletRequest request,
             @PathVariable Long projectId,
             @PathVariable Long daoId,

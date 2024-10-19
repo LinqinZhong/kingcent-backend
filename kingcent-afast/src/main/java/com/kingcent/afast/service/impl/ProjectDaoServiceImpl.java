@@ -60,6 +60,7 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
             vo.setEntityId(record.getEntityId());
             vo.setName(record.getName());
             vo.setCreateTime(record.getCreateTime());
+            vo.setSourceType(record.getSourceType());
             vo.setCountMethod(0);
             vo.setEntityName(names.getOrDefault(record.getEntityId(),""));
             vo.setDescription(record.getDescription());
@@ -81,6 +82,7 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
         dao.setName(daoDto.getName());
         dao.setDescription(daoDto.getDescription());
         dao.setCreateTime(LocalDateTime.now());
+        dao.setSourceType(daoDto.getSourceType());
         dao.setEntityId(daoDto.getEntityId());
         saveOrUpdate(dao);
         return Result.success("保存成功");
@@ -127,5 +129,26 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
                         13
                 )
         );
+    }
+
+    @Override
+    public Result<ProjectDaoVo> detail(Long userId, Long daoId) {
+        ProjectDaoEntity dao = getById(daoId);
+        if(dao == null) return Result.fail("数据操作对象不存在");
+
+        ProjectEntityEntity entity = projectEntityService.get(userId, dao.getProjectId(), dao.getEntityId());
+        if(entity == null) return Result.fail("实体不存在");
+
+        ProjectDaoVo daoVo = new ProjectDaoVo();
+        daoVo.setId(dao.getId());
+        daoVo.setEntityId(dao.getEntityId());
+        daoVo.setName(dao.getName());
+        daoVo.setCreateTime(dao.getCreateTime());
+        daoVo.setSourceType(dao.getSourceType());
+        daoVo.setCountMethod(0);
+        daoVo.setEntityName(entity.getName());
+        daoVo.setDescription(dao.getDescription());
+        daoVo.setProjectId(dao.getProjectId());
+        return Result.success(daoVo);
     }
 }

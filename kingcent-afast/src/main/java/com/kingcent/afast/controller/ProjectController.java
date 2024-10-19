@@ -5,6 +5,7 @@ import com.kingcent.afast.entity.ProjectEntity;
 import com.kingcent.afast.entity.RepositoryEntity;
 import com.kingcent.afast.service.ProjectService;
 import com.kingcent.afast.service.RepositoryService;
+import com.kingcent.afast.utils.ProjectUtil;
 import com.kingcent.afast.vo.RepositoryBranchVo;
 import com.kingcent.common.entity.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -40,6 +42,18 @@ public class ProjectController {
                 groupId,
                 pageSize,
                 pageNum
+        );
+    }
+
+    @GetMapping("/build/{groupId}/{projectId}")
+    public Result<?> build(
+            HttpServletRequest request,
+            @PathVariable Long groupId,
+            @PathVariable Long projectId
+    ) throws IOException, ProjectUtil.BuildProjectException {
+        return projectService.build(
+                RequestUtil.getUserId(request),
+                projectId
         );
     }
 }

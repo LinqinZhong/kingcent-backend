@@ -12,34 +12,37 @@ import java.util.Map;
 public class FieldTypeUtil {
 
     @AllArgsConstructor
-    private static class Type{
+    static class Type{
         public String javaType;
         public String sqlType;
         public String tsType;
+        public String javaPackage;
     }
     private static final Map<String,Type> baseType = new HashMap<>();
 
     static {
-        baseType.put("int",new Type("Integer","INT","number"));
-        baseType.put("long",new Type("Integer","LONG","number"));
-        baseType.put("varchar",new Type("String","VARCHAR","string"));
-        baseType.put("text",new Type("String","TEXT","string"));
-        baseType.put("boolean",new Type("Boolean","TINYINT","boolean"));
-        baseType.put("tinyint",new Type("Integer","TINYINT","number"));
-        baseType.put("date",new Type("LocalDate","DATE","string"));
-        baseType.put("datetime",new Type("LocalDatetime","DATETIME","string"));
-        baseType.put("color",new Type("String","VARCHAR","string"));
-        baseType.put("object",new Type("Object","VARCHAR","any"));
-        baseType.put("decimal",new Type("BigDecimal","decimal","string"));
-        baseType.put("void",new Type("void","decimal","string"));
-    }
-    public static String parseJava(String type){
-        if(!baseType.containsKey(type)) return type;
-        return baseType.get(type).javaType;
+        baseType.put("int",new Type("Integer","INT","number",null));
+        baseType.put("long",new Type("Integer","LONG","number",null));
+        baseType.put("varchar",new Type("String","VARCHAR","string",null));
+        baseType.put("text",new Type("String","TEXT","string",null));
+        baseType.put("boolean",new Type("Boolean","TINYINT","boolean",null));
+        baseType.put("tinyint",new Type("Integer","TINYINT","number",null));
+        baseType.put("date",new Type("LocalDate","DATE","string","java.time.LocalDate"));
+        baseType.put("datetime",new Type("LocalDateTime","DATETIME","string","java.time.LocalDateTime"));
+        baseType.put("color",new Type("String","VARCHAR","string",null));
+        baseType.put("object",new Type("Object","VARCHAR","any",null));
+        baseType.put("decimal",new Type("BigDecimal","decimal","string","java.math.BigDecimal"));
+        baseType.put("void",new Type("void","varchar","string",null));
     }
 
-    public static String parseSql(String type){
-        if(!baseType.containsKey(type)) return type;
-        return baseType.get(type).sqlType;
+    private final static Type UNKNOWN_TYPE = new Type(
+            "Unknown",
+            "??",
+            "unknown",
+            null
+    );
+    public static Type parse(String type){
+        if(!baseType.containsKey(type)) return UNKNOWN_TYPE;
+        return baseType.get(type);
     }
 }

@@ -32,7 +32,7 @@ public class ProjectEntityUtil {
             for (Map<String, Object> field : data) {
                 if((boolean) field.getOrDefault("isTableField", false)){
                     String name = (String) field.get("name");
-                    String type = FieldTypeUtil.parseSql((String) field.get("type"));
+                    String type = FieldTypeUtil.parse((String) field.get("type")).sqlType;
                     if(name == null || type == null){
                         throw new RuntimeException("字段内容错误");
                     }
@@ -56,6 +56,7 @@ public class ProjectEntityUtil {
             boolean useLombok,
             boolean useMybatisPlus
     ){
+        List<String> imports = new ArrayList<>();
         String className = entityEntity.getName();
         String authorName = "小明";
         String description = entityEntity.getDescription();
@@ -63,17 +64,34 @@ public class ProjectEntityUtil {
         String value = entityEntity.getValue();
         String date = entityEntity.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         List<JSONObject> list = JSON.parseArray(value, JSONObject.class);
-        String tableName = useMybatisPlus && entityEntity.getTableName() != null ? "@TableName(\""+ entityEntity.getTableName()+"\")\n" : "";
+        String tableName = "";
+
+        if(useLombok){
+            imports.add("import lombok.Data;");
+        }
+
+        if(useMybatisPlus && entityEntity.getTableName() != null){
+            imports.add("import com.baomidou.mybatisplus.annotation.TableName;");
+            tableName = "@TableName(\""+ entityEntity.getTableName()+"\")\n";
+        }
+
         for (JSONObject jsonObject : list) {
             String desc = (String) jsonObject.getOrDefault("description","");
             String comment = desc.trim().length() > 0 ? "\t// "+desc : "";
             String name = jsonObject.getString("name");
-            String type = FieldTypeUtil.parseJava(jsonObject.getString("type"));
+            FieldTypeUtil.Type typeInfo = FieldTypeUtil.parse(jsonObject.getString("type"));
+            String type = typeInfo.javaType;
+            if(typeInfo.javaPackage != null){
+                imports.add("import "+typeInfo.javaPackage+";");
+            }
             fields.add("    private "+type+" "+name+";"+comment);
         }
-        return "package "+packageName+";\n" +
+        String importStr = imports.size() > 0
+                ? String.join("\n", imports)
+                : "";
+        return "package "+packageName+".afast.entity;\n" +
                 "\n" +
-                "import lombok.Data;\n" +
+                importStr+"\n" +
                 "\n" +
                 "/**\n" +
                 " * "+description+"\n" +
