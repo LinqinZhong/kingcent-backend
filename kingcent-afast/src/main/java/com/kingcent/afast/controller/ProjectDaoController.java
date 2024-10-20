@@ -38,13 +38,15 @@ public class ProjectDaoController {
             HttpServletRequest request,
             @PathVariable Long projectId,
             @PathVariable Long pageNum,
-            @PathVariable Long pageSize
+            @PathVariable Long pageSize,
+            @RequestParam(required = false) Long entityId
     ){
         return projectDaoService.list(
                 RequestUtil.getUserId(request),
                 projectId,
                 pageSize,
-                pageNum
+                pageNum,
+                entityId
         );
     }
 

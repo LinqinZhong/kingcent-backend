@@ -43,8 +43,8 @@ public class ProjectServiceFuncController {
                 RequestUtil.getUserId(request),
                 projectId,
                 serviceId,
-                pageSize,
-                pageNum
+                pageNum,
+                pageSize
         );
     }
 

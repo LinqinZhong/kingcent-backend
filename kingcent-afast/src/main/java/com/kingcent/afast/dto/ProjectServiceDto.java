@@ -12,5 +12,7 @@ public class ProjectServiceDto {
     private String name;
     private String value;
     private Long entityId;
+
+    private Long daoId;
     private String description;
 }

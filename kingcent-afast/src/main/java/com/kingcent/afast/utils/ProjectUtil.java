@@ -21,6 +21,62 @@ public class ProjectUtil {
 
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    public static String formatProjectClassName(String name){
+        String[] split = name.split("-");
+        List<String> words = new ArrayList<>();
+        for (String s : split) {
+            words.add(String.valueOf(s.charAt(0)).toUpperCase()+s.substring(1));
+        }
+        return String.join("",words)+"Application";
+    }
+
+    public static String generateApplicationCode(ProjectEntity project){
+        String packageName = project.getPackageName();
+        String className = formatProjectClassName(project.getName());
+        List<String> imports = new ArrayList<>();
+        imports.add("import org.mybatis.spring.annotation.MapperScan;");
+        imports.add("import org.springframework.boot.SpringApplication;");
+        imports.add("import org.springframework.boot.autoconfigure.SpringBootApplication;");
+        String template =  """
+                package %s;
+                
+                %s
+                
+                @SpringBootApplication
+                @MapperScan(basePackages = "%s")
+                public class %s {
+                    public static void main(String[] args) {
+                        SpringApplication.run(%s.class, args);
+                    }
+                }
+                """;
+        return String.format(
+                template,
+                packageName,
+                String.join("\n",imports),
+                packageName+".afast.dao",
+                className,
+                className
+        );
+    }
+
+    public static void buildApplication(File packageDir, ProjectEntity project) throws BuildProjectException {
+        String className = formatProjectClassName(project.getName());
+        File javaFile = new File(packageDir,className+".java");
+        try {
+            if (!javaFile.exists() && !javaFile.createNewFile()) {
+                throw new BuildProjectException("创建失败");
+            }
+            String code = generateApplicationCode(project);
+            FileWriter fileWriter = new FileWriter(javaFile);
+            fileWriter.write(code);
+            fileWriter.close();
+        }catch (Exception e){
+            throw new BuildProjectException(e.getMessage());
+        }
+    }
+
+
     public static class BuildProjectException extends Exception{
         public BuildProjectException(String message){
             super(message);
@@ -39,9 +95,15 @@ public class ProjectUtil {
         return javaDir;
     }
 
-    public static File buildCoreDir(File srcDir, String packageName) throws BuildProjectException {
-        File javaDir = new File(srcDir,"main/java/"+packageName.replace(".","/")+"/afast");
-        if(!javaDir.exists() && !javaDir.mkdirs()) throw new BuildProjectException("代码目录创建失败");
+    public static File buildPackageDir(File srcDir, String packageName) throws BuildProjectException {
+        File javaDir = new File(srcDir,"main/java/"+packageName.replace(".","/"));
+        if(!javaDir.exists() && !javaDir.mkdirs()) throw new BuildProjectException("包目录创建失败");
+        return javaDir;
+    }
+
+    public static File buildCoreDir(File packageDir) throws BuildProjectException {
+        File javaDir = new File(packageDir,"afast");
+        if(!javaDir.exists() && !javaDir.mkdirs()) throw new BuildProjectException("afast目录创建失败");
         return javaDir;
     }
 
@@ -55,6 +117,12 @@ public class ProjectUtil {
         File daoDir = new File(javaDir,"dao");
         if(!daoDir.exists() && !daoDir.mkdirs()) throw new BuildProjectException("数据层目录创建失败");
         return daoDir;
+    }
+
+    public static File buildServiceDir(File javaDir) throws BuildProjectException {
+        File serviceDir = new File(javaDir,"service");
+        if(!serviceDir.exists() && !serviceDir.mkdirs()) throw new BuildProjectException("服务层目录创建失败");
+        return serviceDir;
     }
 
     public static void buildEntityFiles(File entityDir,String packageName, List<ProjectEntityEntity> entityList) throws BuildProjectException {
@@ -113,6 +181,11 @@ public class ProjectUtil {
             String code = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
                     "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd\">\n" +
                     "    <modelVersion>4.0.0</modelVersion>\n" +
+                    "    <parent>\n" +
+                    "        <artifactId>spring-boot-parent</artifactId>\n" +
+                    "        <groupId>org.springframework.boot</groupId>\n" +
+                    "        <version>3.1.0</version>\n" +
+                    "    </parent>\n"+
                     "    <artifactId>"+project.getName()+"</artifactId>\n" +
                     dependenciesStr+
                     "    <build>\n" +
@@ -126,7 +199,7 @@ public class ProjectUtil {
                     "                </configuration>\n" +
                     "            </plugin>\n" +
                     "        </plugins>\n" +
-                    "    </build>"+
+                    "    </build>\n"+
                     "    <groupId>"+project.getPackageName()+"</groupId>\n" +
                     "    <version>1.0</version>\n" +
                     "    <name>"+project.getName()+"</name>\n" +
@@ -161,6 +234,44 @@ public class ProjectUtil {
                         entityEntity,
                         daoEntity,
                         daoFuncMap.get(daoEntity.getId()),
+                        true,
+                        true,
+                        17
+                );
+                String sign = MD5Utils.md5Hex(code.getBytes());
+                code = getHeadCommentOfJava(sign)+"\n\n"+code;
+                FileWriter fileWriter = new FileWriter(javaFile);
+                fileWriter.write(code);
+                fileWriter.close();
+            } catch (IOException | NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void buildServiceFiles(
+            File serviceDir,
+            String packageName,
+            List<ProjectServiceEntity> serviceList,
+            Map<Long,ProjectEntityEntity> entityMap,
+            Map<Long,ProjectDaoEntity> daoMap,
+            Map<Long, List<ProjectServiceFuncEntity>> serviceFunctionsMap
+    ) throws BuildProjectException {
+        for (ProjectServiceEntity serviceEntity : serviceList) {
+            String javaFileName = ProjectServiceUtil.formatServiceName(serviceEntity.getName())+".java";
+            File javaFile = new File(serviceDir,javaFileName);
+            try {
+                if(!javaFile.exists() && !javaFile.createNewFile()){
+                    throw new BuildProjectException("文件创建失败");
+                }
+                ProjectEntityEntity entityEntity = entityMap.get(serviceEntity.getEntityId());
+                if(entityEntity == null) throw new BuildProjectException("引用了一个不存在的实体");
+                String code = ProjectServiceUtil.generateJava(
+                        packageName,
+                        entityEntity,
+                        daoMap.get(serviceEntity.getDaoId()),
+                        serviceEntity,
+                        serviceFunctionsMap.get(serviceEntity.getId()),
                         true,
                         true,
                         17

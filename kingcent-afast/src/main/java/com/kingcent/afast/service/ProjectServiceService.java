@@ -20,4 +20,6 @@ public interface ProjectServiceService extends IService<ProjectServiceEntity> {
     Result<?> save(Long userId, Long projectId, ProjectServiceDto service);
 
     Result<?> delete(Long userId, Long projectId, Long entityId);
+
+    Result<?> generateJava(Long userId, Long projectId, Long serviceId);
 }

@@ -16,6 +16,7 @@ public class ProjectServiceEntity {
     private String name;
     private Long projectId;
     private Long entityId;
+    private Long daoId;
     private String description;
     private LocalDateTime createTime;
 }

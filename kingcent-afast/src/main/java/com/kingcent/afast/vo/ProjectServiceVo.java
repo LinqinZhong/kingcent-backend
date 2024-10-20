@@ -14,7 +14,9 @@ public class ProjectServiceVo {
     private String name;
     private Long projectId;
     private String entityName;
+    private String daoName;
     private Long entityId;
+    private Long daoId;
     private Integer countMethod;
     private String description;
     private LocalDateTime createTime;

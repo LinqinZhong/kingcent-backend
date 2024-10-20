@@ -26,10 +26,10 @@ import java.util.Map;
 @Service
 public class ProjectServiceFuncServiceImpl extends ServiceImpl<ProjectServiceFuncMapper, ProjectServiceFuncEntity> implements ProjectServiceFuncService {
     @Override
-    public Result<Page<ProjectServiceFuncEntity>> list(Long userId, Long projectId, Long serviceId, Long pageSize, Long pageNum) {
+    public Result<Page<ProjectServiceFuncEntity>> list(Long userId, Long projectId, Long serviceId, Long pageNum, Long pageSize) {
         LambdaQueryWrapper<ProjectServiceFuncEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProjectServiceFuncEntity::getProjectId, projectId);
-        wrapper.eq(ProjectServiceFuncEntity::getEntityId, serviceId);
+        wrapper.eq(ProjectServiceFuncEntity::getServiceId, serviceId);
         return Result.success(page(new Page<>(pageNum,pageSize),wrapper));
     }
 

@@ -10,10 +10,13 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -63,7 +66,11 @@ public class AuthenticationFilter implements WebFilter, Ordered {
         ServerHttpResponse httpResponse = exchange.getResponse();
         HttpHeaders headers = httpResponse.getHeaders();
 
-        log.info("{},{}",String.valueOf(headers), request.getPath());
+        headers.add("Access-control-allow-origin","http://localhost");
+        headers.add("Access-control-allow-methods","*");
+        headers.add("Access-control-allow-headers","*");
+        headers.add("Access-control-allow-credentials","true");
+
 
         //处理预检
         if (request.getMethod().equals(HttpMethod.OPTIONS)) {

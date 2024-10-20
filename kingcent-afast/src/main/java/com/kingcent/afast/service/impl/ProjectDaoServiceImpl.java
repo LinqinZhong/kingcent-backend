@@ -39,9 +39,10 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
     private ProjectDaoFuncService projectDaoFuncService;
 
     @Override
-    public Result<Page<ProjectDaoVo>> list(Long userId, Long projectId, Long pageSize, Long pageNum) {
+    public Result<Page<ProjectDaoVo>> list(Long userId, Long projectId, Long pageSize, Long pageNum, Long entityId) {
         LambdaQueryWrapper<ProjectDaoEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProjectDaoEntity::getProjectId, projectId);
+        if(entityId != null) wrapper.eq(ProjectDaoEntity::getEntityId, entityId);
         Page<ProjectDaoEntity> page = page(new Page<>(pageNum, pageSize), wrapper);
         Page<ProjectDaoVo> resPage = new Page<>();
         resPage.setTotal(page.getTotal());
@@ -150,5 +151,18 @@ public class ProjectDaoServiceImpl extends ServiceImpl<ProjectDaoMapper, Project
         daoVo.setDescription(dao.getDescription());
         daoVo.setProjectId(dao.getProjectId());
         return Result.success(daoVo);
+    }
+
+    @Override
+    public Map<Long, String> getNameMap(Set<Long> daoIds) {
+        Map<Long,String> names = new HashMap<>();
+        if (daoIds.size() == 0) return names;
+        LambdaQueryWrapper<ProjectDaoEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(ProjectDaoEntity::getId, daoIds);
+        List<ProjectDaoEntity> list = list(wrapper);
+        for (ProjectDaoEntity daoEntity : list) {
+            names.put(daoEntity.getId(), daoEntity.getName());
+        }
+        return names;
     }
 }

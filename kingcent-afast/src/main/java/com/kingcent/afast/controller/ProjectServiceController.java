@@ -55,4 +55,13 @@ public class ProjectServiceController {
     ){
         return projectServiceService.delete(RequestUtil.getUserId(request),projectId, serviceId);
     }
+
+    @GetMapping("/toJava/{projectId}/{serviceId}")
+    public Result<?> toJava(
+            HttpServletRequest request,
+            @PathVariable Long projectId,
+            @PathVariable Long serviceId
+    ){
+        return projectServiceService.generateJava(RequestUtil.getUserId(request),projectId, serviceId);
+    }
 }
