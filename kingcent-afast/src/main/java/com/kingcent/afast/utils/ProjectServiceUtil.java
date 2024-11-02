@@ -156,6 +156,6 @@ public class ProjectServiceUtil {
     }
 
     public static String formatServiceName(String name) {
-        return name+"Service";
+        return name;
     }
 }

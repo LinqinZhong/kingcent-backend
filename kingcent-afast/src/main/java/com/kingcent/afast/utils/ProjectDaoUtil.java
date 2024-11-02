@@ -178,6 +178,6 @@ public class ProjectDaoUtil {
     }
 
     public static String formatDaoName(String name) {
-        return name+"Dao";
+        return name;
     }
 }

@@ -20,7 +20,7 @@ public class ProjectEntityUtil {
 
 
     public static String formatEntityName(String name){
-        return name+"Entity";
+        return name;
     }
 
     //获取字段类型对应sql的类型
@@ -100,7 +100,7 @@ public class ProjectEntityUtil {
                 " */\n" +
                 "@Data\n" +
                 tableName+
-                "public class "+className+"Entity {\n" +
+                "public class "+className+" {\n" +
                 String.join("\n",fields)+
                 "\n}\n";
     }
