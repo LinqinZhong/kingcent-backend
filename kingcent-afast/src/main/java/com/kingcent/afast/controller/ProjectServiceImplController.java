@@ -23,13 +23,14 @@ public class ProjectServiceImplController {
     @Autowired
     private ProjectServiceImplService projectServiceImplService;
 
-    @PostMapping("/create/{projectId}")
+    @PostMapping("/create/{projectId}/{serviceId}")
     public Result<?> create(
             HttpServletRequest request,
             @PathVariable Long projectId,
+            @PathVariable Long serviceId,
             @RequestBody ProjectServiceImplEntity serviceImpl
     ){
-        return projectServiceImplService.save(RequestUtil.getUserId(request),projectId,serviceImpl);
+        return projectServiceImplService.save(RequestUtil.getUserId(request),projectId,serviceId,serviceImpl);
     }
 
     @GetMapping("/list/{projectId}/{serviceId}")

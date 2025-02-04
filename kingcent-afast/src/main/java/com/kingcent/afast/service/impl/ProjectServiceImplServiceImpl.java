@@ -36,6 +36,7 @@ public class ProjectServiceImplServiceImpl extends ServiceImpl<ProjectServiceImp
     @Autowired
     private ProjectServiceService projectServiceService;
 
+
     @Override
     public Result<List<ProjectServiceImplEntity>> list(Long userId, Long projectId, Long serviceId) {
         LambdaQueryWrapper<ProjectServiceImplEntity> wrapper = new LambdaQueryWrapper<>();
@@ -45,10 +46,14 @@ public class ProjectServiceImplServiceImpl extends ServiceImpl<ProjectServiceImp
     }
 
     @Override
-    public Result<?> save(Long userId, Long projectId, ProjectServiceImplEntity serviceImplEntity) {
+    public Result<?> save(Long userId, Long projectId,Long serviceId, ProjectServiceImplEntity serviceImplEntity) {
         if (serviceImplEntity.getId() != null){
             //修改时不允许修改绑定的服务
             serviceImplEntity.setServiceId(null);
+            serviceImplEntity.setProjectId(null);
+        }else {
+            serviceImplEntity.setProjectId(projectId);
+            serviceImplEntity.setServiceId(serviceId);
         }
         saveOrUpdate(serviceImplEntity);
         return Result.success("保存成功");

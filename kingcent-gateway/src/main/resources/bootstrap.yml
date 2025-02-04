@@ -76,6 +76,14 @@ spring:
           - StripPrefix=1
           - PrefixPath=/aaaaaaa
 
+      # 种植
+      - id: plant
+        uri: lb://kingcent-plant
+        predicates:
+          - Path=/plant/**
+        filters:
+          - StripPrefix=1
+
 
 # 鉴权配置
 auth:

@@ -17,7 +17,7 @@ import java.util.List;
 public interface ProjectServiceImplService extends IService<ProjectServiceImplEntity> {
     Result<List<ProjectServiceImplEntity>> list(Long userId, Long projectId, Long serviceId);
 
-    Result<?> save(Long userId, Long projectId, ProjectServiceImplEntity serviceImplEntity);
+    Result<?> save(Long userId, Long projectId,Long serviceId, ProjectServiceImplEntity serviceImplEntity);
 
     Result<?> delete(Long userId, Long projectId, Long entityId);
 }
