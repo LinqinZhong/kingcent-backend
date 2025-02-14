@@ -9,7 +9,7 @@ import com.kingcent.afast.mapper.ProjectServiceImplFuncMapper;
 import com.kingcent.afast.service.ProjectServiceFuncService;
 import com.kingcent.afast.service.ProjectServiceImplFuncService;
 import com.kingcent.afast.service.ProjectServiceImplService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -18,7 +18,7 @@ import com.kingcent.afast.service.ProjectDaoService;
 import com.kingcent.afast.service.ProjectEntityService;
 import com.kingcent.afast.utils.ProjectDaoUtil;
 import com.kingcent.afast.vo.ProjectDaoVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,7 @@
 package com.kingcent.admin.controller;
 
 import com.kingcent.admin.service.ShopService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.ShopEntity;
 import com.kingcent.common.shop.entity.vo.shop.ShopNameVo;

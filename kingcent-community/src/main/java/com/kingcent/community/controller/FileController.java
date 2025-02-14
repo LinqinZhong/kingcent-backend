@@ -1,7 +1,7 @@
 package com.kingcent.community.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;

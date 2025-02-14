@@ -10,7 +10,7 @@ import com.kingcent.admin.service.OrderRefundMapService;
 import com.kingcent.admin.service.OrderGoodsService;
 import com.kingcent.admin.service.OrderRefundService;
 import com.kingcent.admin.service.OrderService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.constant.RefundReasons;
 import com.kingcent.common.shop.constant.RefundStatus;

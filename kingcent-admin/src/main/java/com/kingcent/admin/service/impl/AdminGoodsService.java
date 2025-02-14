@@ -6,7 +6,7 @@ import com.kingcent.admin.service.CategoryService;
 import com.kingcent.admin.service.GoodsCategoryService;
 import com.kingcent.admin.service.GoodsService;
 import com.kingcent.admin.service.ShopService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.GoodsCategoryEntity;
 import com.kingcent.common.shop.entity.GoodsEntity;
 import com.kingcent.common.shop.entity.vo.goods.GoodsInfoVo;

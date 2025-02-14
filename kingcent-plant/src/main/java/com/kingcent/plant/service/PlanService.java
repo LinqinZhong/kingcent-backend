@@ -2,8 +2,7 @@ package com.kingcent.plant.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.kingcent.common.entity.result.Result;
-import com.kingcent.plant.entity.LandEntity;
+import com.kingcent.common.result.Result;
 import com.kingcent.plant.entity.PlanEntity;
 
 /**
@@ -12,5 +11,7 @@ import com.kingcent.plant.entity.PlanEntity;
  */
 public interface PlanService extends IService<PlanEntity> {
     Page<PlanEntity> getPage(Integer pageNum, Integer pageSize);
-    Result<?> add(PlanEntity planEntity);
+    Result<?> addOrUpdate(PlanEntity planEntity);
+
+    Result<?> delete(Long planId);
 }

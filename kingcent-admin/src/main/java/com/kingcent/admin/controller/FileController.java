@@ -1,7 +1,7 @@
 package com.kingcent.admin.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

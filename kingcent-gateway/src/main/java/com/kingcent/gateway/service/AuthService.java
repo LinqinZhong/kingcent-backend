@@ -23,7 +23,7 @@ public class AuthService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public Long check(Long lid, String sign, String path, String data, LoginType loginType){
+    public Long check(String lid, String sign, String path, String data, LoginType loginType){
         Long[] success = {null};
         try {
             //开启新线程，防止阻塞

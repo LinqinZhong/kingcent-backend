@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.admin.service.CarrierService;
 import com.kingcent.admin.service.OrderGoodsService;
 import com.kingcent.admin.service.OrderService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.OrderEntity;
 import com.kingcent.common.shop.mapper.OrderMapper;

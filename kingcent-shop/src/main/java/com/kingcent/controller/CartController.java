@@ -1,7 +1,7 @@
 package com.kingcent.controller;
 
 import com.kingcent.common.shop.entity.CartGoodsEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.vo.cart.CartCheckVo;
 import com.kingcent.common.shop.entity.vo.cart.CartVo;
 import com.kingcent.common.shop.entity.vo.purchase.PutCartGoodsVo;

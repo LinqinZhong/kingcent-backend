@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.service.SiteService;
 import com.kingcent.common.shop.entity.vo.site.SiteLocationVo;

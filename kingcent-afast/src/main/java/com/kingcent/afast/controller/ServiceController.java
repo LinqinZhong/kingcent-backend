@@ -5,7 +5,7 @@ import com.kingcent.afast.entity.EcologyEntity;
 import com.kingcent.afast.entity.ServiceEntity;
 import com.kingcent.afast.service.EcologyService;
 import com.kingcent.afast.service.ServiceService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

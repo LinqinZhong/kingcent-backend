@@ -6,7 +6,7 @@ import com.kingcent.afast.entity.ProjectEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.service.ProjectEntityService;
 import com.kingcent.afast.service.ProjectService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -23,7 +23,7 @@ spring:
   datasource:
     username: root
     password: 123456
-    url: jdbc:mysql://localhost:3306/kingcent_campus?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
+    url: jdbc:mysql://localhost:3306/kingcent?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull
     #    username: kc
     #    password: 38d58FdcsjHKsS7N
     #    url: jdbc:mysql://175.178.186.82:3306/kc?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&zeroDateTimeBehavior=convertToNull

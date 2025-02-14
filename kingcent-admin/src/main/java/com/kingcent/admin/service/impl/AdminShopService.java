@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.admin.service.ShopService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.ShopEntity;
 import com.kingcent.common.shop.entity.vo.shop.ShopNameVo;

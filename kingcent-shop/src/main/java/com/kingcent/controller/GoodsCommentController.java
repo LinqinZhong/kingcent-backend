@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.service.GoodsCommentService;
 import com.kingcent.common.shop.entity.vo.goods.GoodsDetailsCommentsPreviewVo;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package com.kingcent.user.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.entity.UserInfoEntity;
 import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.user.service.UserInfoService;

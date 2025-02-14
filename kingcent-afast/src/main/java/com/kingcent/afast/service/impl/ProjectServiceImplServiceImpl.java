@@ -10,7 +10,7 @@ import com.kingcent.afast.mapper.ProjectServiceMapper;
 import com.kingcent.afast.service.*;
 import com.kingcent.afast.utils.ProjectServiceUtil;
 import com.kingcent.afast.vo.ProjectServiceVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

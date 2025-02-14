@@ -1,4 +1,4 @@
-package com.kingcent.common.entity.result;
+package com.kingcent.common.result;
 
 import lombok.Data;
 

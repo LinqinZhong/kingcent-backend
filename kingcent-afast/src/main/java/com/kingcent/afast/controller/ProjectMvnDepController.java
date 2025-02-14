@@ -3,7 +3,7 @@ package com.kingcent.afast.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.afast.entity.ProjectMvnDepEntity;
 import com.kingcent.afast.service.ProjectMvnDepService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

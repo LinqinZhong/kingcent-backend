@@ -7,7 +7,7 @@ import com.kingcent.afast.dto.ProjectEntityDto;
 import com.kingcent.afast.entity.ProjectDaoEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.vo.ProjectDaoVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.util.Map;
 import java.util.Set;

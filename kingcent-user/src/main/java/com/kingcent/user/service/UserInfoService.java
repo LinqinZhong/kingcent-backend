@@ -1,7 +1,7 @@
 package com.kingcent.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.entity.UserInfoEntity;
 
 import java.util.Collection;

@@ -1,4 +1,4 @@
-package com.kingcent.auth.entity.vo;
+package com.kingcent.auth.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

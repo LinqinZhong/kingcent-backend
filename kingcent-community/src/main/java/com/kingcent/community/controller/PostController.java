@@ -1,6 +1,6 @@
 package com.kingcent.community.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.community.dto.CreatePostDto;
 import com.kingcent.community.service.PostService;

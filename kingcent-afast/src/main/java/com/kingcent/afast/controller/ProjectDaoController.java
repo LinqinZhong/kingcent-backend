@@ -7,7 +7,7 @@ import com.kingcent.afast.entity.ProjectDaoEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.service.ProjectDaoService;
 import com.kingcent.afast.vo.ProjectDaoVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

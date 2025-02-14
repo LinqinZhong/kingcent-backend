@@ -1,7 +1,7 @@
 package com.kingcent.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.entity.UserInfoEntity;
 import com.kingcent.common.shop.entity.OrderEntity;
 import com.kingcent.common.shop.entity.vo.UserCenterVo;

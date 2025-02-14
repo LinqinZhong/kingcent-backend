@@ -1,7 +1,7 @@
 package com.kingcent.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.GoodsEntity;
 import com.kingcent.common.shop.entity.vo.goods.GoodsInfoVo;
 

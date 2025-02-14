@@ -22,6 +22,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -85,8 +86,14 @@ public class AuthenticationFilter implements WebFilter, Ordered {
                 return chain.filter(exchange);
             }
         }
+
+        String lid = request.getHeaders().getFirst("lid");
+        String authorization = request.getHeaders().getFirst("authorization");
+        if(lid == null || authorization == null) return unAuthentication(exchange);
+
         AtomicReference<ServerWebExchange> mutableExchange = new AtomicReference<>();
         Thread t = new Thread(()->{
+//            authService.check(lid,authorization,path,);
             ServerHttpRequest mutableReq = request.mutate()
                     .header("uid", "1")
                     .build();

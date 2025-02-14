@@ -8,7 +8,7 @@ import com.kingcent.afast.entity.ProjectDaoEntity;
 import com.kingcent.afast.entity.ProjectServiceEntity;
 import com.kingcent.afast.vo.ProjectDaoVo;
 import com.kingcent.afast.vo.ProjectServiceVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 /**
  * @author rainkyzhong

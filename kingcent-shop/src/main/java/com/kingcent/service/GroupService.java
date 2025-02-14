@@ -2,7 +2,7 @@ package com.kingcent.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.GroupEntity;
 import com.kingcent.common.shop.entity.vo.group.GroupLocationVo;
 

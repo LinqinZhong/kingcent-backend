@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.admin.dto.EditGoodsDiscountDto;
 import com.kingcent.admin.service.GoodsDiscountService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.GoodsDiscountEntity;
 import com.kingcent.common.shop.mapper.GoodsDiscountMapper;

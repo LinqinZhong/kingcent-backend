@@ -1,13 +1,11 @@
 package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.plant.entity.LandEntity;
 import com.kingcent.plant.service.LandService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 
 /**
  * @author rainkyzhong
@@ -32,7 +30,12 @@ public class LandController {
     };
 
     @PostMapping
-    public Result<?> add(@RequestBody LandEntity landEntity){
-        return landService.add(landEntity);
+    public Result<?> addOrUpdate(@RequestBody LandEntity landEntity){
+        return landService.addOrUpdate(landEntity);
+    }
+
+    @DeleteMapping("/{landId}")
+    public Result<?> delete(@PathVariable Long landId){
+        return landService.delete(landId);
     }
 }

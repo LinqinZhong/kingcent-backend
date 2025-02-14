@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.admin.service.CategoryService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.CategoryEntity;
 import com.kingcent.common.shop.entity.vo.CategoryVo;
 import com.kingcent.common.shop.entity.vo.category.CreateCategoryVo;

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.afast.entity.ProjectMvnDepEntity;
 import com.kingcent.afast.mapper.ProjectMvnDepMapper;
 import com.kingcent.afast.service.ProjectMvnDepService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

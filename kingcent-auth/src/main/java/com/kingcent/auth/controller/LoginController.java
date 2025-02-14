@@ -1,18 +1,21 @@
 package com.kingcent.auth.controller;
 
 import cn.hutool.crypto.digest.MD5;
+import cn.hutool.jwt.JWTUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.kingcent.auth.dto.PasswordLoginDto;
 import com.kingcent.auth.entity.UserEntity;
 import com.kingcent.auth.entity.UserLoginEntity;
 import com.kingcent.auth.servcice.UserService;
-import com.kingcent.auth.entity.vo.AdminLoginVo;
-import com.kingcent.auth.entity.vo.WxLoginVo;
+import com.kingcent.auth.vo.PasswordLoginVo;
+import com.kingcent.auth.vo.PublicKeyVo;
+import com.kingcent.auth.vo.WxLoginVo;
 import com.kingcent.auth.servcice.UserLoginService;
 import com.kingcent.auth.utils.IpUtil;
 import com.kingcent.auth.utils.RSAUtil;
 import com.kingcent.auth.utils.SecretUtil;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.*;
 
 @RestController
 @RequestMapping("/login")
@@ -42,8 +46,13 @@ public class LoginController {
     @Value("759674b8d91f7c213483fcc1282b002f")
     private String WX_SECRET;
 
-    @Autowired
     private RestTemplate restTemplate;
+
+
+    @Autowired
+    public void setRestTemplate(RestTemplate restTemplate){
+        this.restTemplate = restTemplate;
+    }
 
 
     /**
@@ -55,14 +64,42 @@ public class LoginController {
     }
 
 
+    // 私钥，暂时存这里，应该用redis存
+    private final Map<UUID,String> privateKeys = new HashMap<>();
+
+    @GetMapping("/key")
+    public Result<PublicKeyVo> getPublicKey() throws NoSuchAlgorithmException {
+        String[] keys = RSAUtil.genKeyPair();
+        UUID uuid = UUID.randomUUID();
+        privateKeys.put(uuid, keys[1]);
+        return Result.success(new PublicKeyVo(uuid, keys[0]));
+    }
+
     @PostMapping("/password")
     @Transactional
-    public Result<AdminLoginVo> passwordLogin(
+    public Result<?> passwordLogin(
             HttpServletRequest request,
-            @RequestParam String username,
-            @RequestParam String password,
-            @RequestParam String key
-    ) throws Exception {
+            @RequestBody PasswordLoginDto loginDto
+            ) throws Exception {
+        String privateKey = privateKeys.get(loginDto.getUuid());
+        if(privateKey == null){
+            return Result.fail("系统错误");
+        }
+        String info = RSAUtil.decrypt(loginDto.getInfo(),privateKey);
+        String username = null;
+        String password = null;
+        String secret = null;
+        try{
+            JSONObject jsonObject = JSONObject.parseObject(info);
+            username = jsonObject.getString("username");
+            password = jsonObject.getString("password");
+            secret = jsonObject.getString("secret");
+
+        }catch (Exception e){
+            return Result.fail("系统错误");
+        }
+
+        log.info("password:{},username{}",password,username);
         UserEntity user = userService.getOne(new QueryWrapper<UserEntity>()
                 .eq("username", username)
         );
@@ -71,12 +108,9 @@ public class LoginController {
         if (user == null)
             return Result.fail("用户不存在");
         //验证密码
-        if((MD5.create().digestHex("password="+password+ "&salt="+ user.getPasswordSalt())).equals(user.getPassword())){
-            String code = MD5.create().digestHex(System.currentTimeMillis()+password);
-            //计算secret
-            String secret = SecretUtil.get(user.getId(), code);
-            //加密secret
-            String encryptedSecret = RSAUtil.encrypt(secret,key);
+        String realPassword = MD5.create().digestHex("password="+password+ "&salt="+ user.getPasswordSalt());
+        System.out.println(realPassword);
+        if(realPassword.equals(user.getPassword())){
             //保存登录记录
             UserLoginEntity login = new UserLoginEntity();
             login.setSecret(secret);
@@ -87,15 +121,7 @@ public class LoginController {
                 //TODO 这里应该抛出一个特定的异常
                 throw new RuntimeException("服务器错误");
             }
-
-            return Result.success(
-                    new AdminLoginVo(
-                            user.getId(),
-                            login.getId(),
-                            code,
-                            encryptedSecret
-                    )
-            );
+            return Result.success();
         }
         return Result.fail("密码错误");
     }

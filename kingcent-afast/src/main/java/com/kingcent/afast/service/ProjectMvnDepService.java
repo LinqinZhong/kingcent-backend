@@ -3,7 +3,7 @@ package com.kingcent.afast.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kingcent.afast.entity.ProjectMvnDepEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.util.List;
 

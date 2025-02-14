@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.admin.entity.vo.RefundOrderVo;
 import com.kingcent.admin.service.OrderRefundService;
 import com.kingcent.admin.service.OrderService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.OrderEntity;
 import jakarta.servlet.http.HttpServletRequest;

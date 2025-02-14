@@ -1,8 +1,7 @@
 package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kingcent.common.entity.result.Result;
-import com.kingcent.plant.entity.LandEntity;
+import com.kingcent.common.result.Result;
 import com.kingcent.plant.entity.PlanEntity;
 import com.kingcent.plant.service.PlanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,12 @@ public class PlanController {
 
     @PostMapping
     public Result<?> add(@RequestBody PlanEntity planEntity){
-        return planService.add(planEntity);
+        return planService.addOrUpdate(planEntity);
+    }
+
+
+    @DeleteMapping("/{planId}")
+    public Result<?> delete(@PathVariable Long planId){
+        return planService.delete(planId);
     }
 }

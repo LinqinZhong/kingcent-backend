@@ -16,27 +16,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RSAUtil {
-    private static Map<Integer, String> keyMap = new HashMap<>();
-
     /**
      * 随机生成密钥对
      * @throws NoSuchAlgorithmException
      */
-    public static void genKeyPair() throws NoSuchAlgorithmException {
-        // KeyPairGenerator类用于生成公钥和私钥对，基于RSA算法生成对象
+    public static String[] genKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
-        // 初始化密钥对生成器，密钥大小为96-1024位
         keyPairGen.initialize(1024,new SecureRandom());
-        // 生成一个密钥对，保存在keyPair中
         KeyPair keyPair = keyPairGen.generateKeyPair();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();   // 得到私钥
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();  // 得到公钥
         String publicKeyString = new String(Base64.encodeBase64(publicKey.getEncoded()));
-        // 得到私钥字符串
         String privateKeyString = new String(Base64.encodeBase64((privateKey.getEncoded())));
-        // 将公钥和私钥保存到Map
-        keyMap.put(0,publicKeyString);  //0表示公钥
-        keyMap.put(1,privateKeyString);  //1表示私钥
+        return new String[]{publicKeyString,privateKeyString};
     }
     /**
      * RSA公钥加密

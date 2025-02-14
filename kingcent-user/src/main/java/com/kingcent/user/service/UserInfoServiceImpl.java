@@ -1,7 +1,7 @@
 package com.kingcent.user.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.entity.UserInfoEntity;
 import com.kingcent.common.user.mapper.UserInfoMapper;
 import org.springframework.stereotype.Service;

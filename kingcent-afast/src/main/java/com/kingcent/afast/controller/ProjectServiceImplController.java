@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.afast.entity.ProjectServiceImplEntity;
 import com.kingcent.afast.service.ProjectServiceImplService;
 import com.kingcent.afast.vo.ProjectServiceVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

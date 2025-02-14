@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.vo.CategoryVo;
 import com.kingcent.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;

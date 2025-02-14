@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.afast.entity.ServiceEntity;
 import com.kingcent.afast.mapper.ServiceMapper;
 import com.kingcent.afast.service.ServiceService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.stereotype.Service;
 
 /**

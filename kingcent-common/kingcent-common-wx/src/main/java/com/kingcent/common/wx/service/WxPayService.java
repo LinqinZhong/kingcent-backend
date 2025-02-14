@@ -2,7 +2,7 @@ package com.kingcent.common.wx.service;
 
 import cn.hutool.core.util.XmlUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.wx.config.WxConfig;
 import com.kingcent.common.wx.util.WxPayUtil;
 import com.kingcent.common.wx.entity.vo.WxPaymentInfoVo;

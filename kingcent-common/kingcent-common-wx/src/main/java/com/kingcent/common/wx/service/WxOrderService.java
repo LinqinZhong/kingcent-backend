@@ -1,7 +1,7 @@
 package com.kingcent.common.wx.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

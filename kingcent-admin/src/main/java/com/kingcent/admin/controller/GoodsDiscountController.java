@@ -3,7 +3,7 @@ package com.kingcent.admin.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kingcent.admin.dto.EditGoodsDiscountDto;
 import com.kingcent.admin.service.GoodsDiscountService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.GoodsDiscountEntity;
 import org.springframework.beans.factory.annotation.Autowired;

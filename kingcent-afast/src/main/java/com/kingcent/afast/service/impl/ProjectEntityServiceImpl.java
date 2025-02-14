@@ -11,7 +11,7 @@ import com.kingcent.afast.entity.ProjectEntityEntity;
 import com.kingcent.afast.mapper.ProjectEntityMapper;
 import com.kingcent.afast.service.ProjectEntityService;
 import com.kingcent.afast.utils.ProjectEntityUtil;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

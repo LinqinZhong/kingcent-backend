@@ -6,7 +6,7 @@ import com.kingcent.afast.dto.ProjectServiceDto;
 import com.kingcent.afast.entity.ProjectServiceEntity;
 import com.kingcent.afast.entity.ProjectServiceImplEntity;
 import com.kingcent.afast.vo.ProjectServiceVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.util.List;
 

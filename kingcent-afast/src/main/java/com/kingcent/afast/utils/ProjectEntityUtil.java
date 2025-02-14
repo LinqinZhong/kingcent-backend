@@ -5,7 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.shaded.io.grpc.netty.shaded.io.netty.util.internal.StringUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.kingcent.afast.entity.ProjectEntityEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;

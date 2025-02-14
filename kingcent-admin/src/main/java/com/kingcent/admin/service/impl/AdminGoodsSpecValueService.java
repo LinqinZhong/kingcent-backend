@@ -10,7 +10,7 @@ import com.kingcent.admin.service.GoodsService;
 import com.kingcent.admin.service.GoodsSkuService;
 import com.kingcent.admin.service.GoodsSpecService;
 import com.kingcent.admin.service.GoodsSpecValueService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.GoodsSkuEntity;
 import com.kingcent.common.shop.entity.GoodsSpecEntity;
 import com.kingcent.common.shop.entity.GoodsSpecValueEntity;

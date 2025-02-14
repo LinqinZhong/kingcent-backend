@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.service.WantKeywordService;
 import com.kingcent.service.WantService;
 import com.kingcent.common.shop.entity.vo.want.WantKeywordVo;

@@ -9,7 +9,7 @@ import com.kingcent.afast.mapper.RepositoryMapper;
 import com.kingcent.afast.service.RepositoryService;
 import com.kingcent.afast.utils.GitUtil;
 import com.kingcent.afast.vo.RepositoryBranchVo;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import org.eclipse.jgit.lib.Ref;
 import org.springframework.stereotype.Service;
 

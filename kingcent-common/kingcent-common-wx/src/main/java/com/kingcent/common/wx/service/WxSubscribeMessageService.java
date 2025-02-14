@@ -1,7 +1,7 @@
 package com.kingcent.common.wx.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.wx.config.WxConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package com.kingcent.service;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.vo.purchase.CheckPurchaseVo;
 import com.kingcent.common.shop.entity.vo.purchase.PurchaseInfoVo;
 

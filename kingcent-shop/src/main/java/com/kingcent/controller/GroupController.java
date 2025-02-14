@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.service.GroupService;
 import com.kingcent.common.shop.entity.vo.group.GroupLocationVo;
 import org.springframework.beans.factory.annotation.Autowired;

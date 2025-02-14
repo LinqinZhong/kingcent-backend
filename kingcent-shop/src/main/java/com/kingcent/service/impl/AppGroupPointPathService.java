@@ -2,7 +2,7 @@ package com.kingcent.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.GroupPointPathEntity;
 import com.kingcent.common.shop.mapper.GroupPointPathMapper;
 import com.kingcent.service.GroupPointPathService;

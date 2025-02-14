@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.kingcent.afast.dto.ProjectEntityDto;
 import com.kingcent.afast.entity.ProjectEntity;
 import com.kingcent.afast.entity.ProjectEntityEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 import java.util.Map;
 import java.util.Set;

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kingcent.afast.entity.ProjectDaoFuncEntity;
 import com.kingcent.afast.entity.ProjectServiceFuncEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 
 /**
  * @author rainkyzhong

@@ -4,7 +4,7 @@ import com.kingcent.admin.entity.vo.EditSpecValVo;
 import com.kingcent.admin.entity.vo.EditSpecVo;
 import com.kingcent.admin.service.GoodsSpecService;
 import com.kingcent.admin.service.GoodsSpecValueService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.vo.goods.GoodsSpecVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;

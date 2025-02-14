@@ -4,7 +4,7 @@ import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.utils.MD5Utils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.*;
 import com.kingcent.common.shop.entity.vo.cart.*;
 import com.kingcent.common.shop.entity.vo.purchase.PurchaseConfirmGoodsVo;

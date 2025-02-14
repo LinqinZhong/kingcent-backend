@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.service.GoodsService;
 import com.kingcent.common.shop.constant.GoodsSortType;
 import com.kingcent.common.shop.entity.vo.goods.GoodsDetailsVo;

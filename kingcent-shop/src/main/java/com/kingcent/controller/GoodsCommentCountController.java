@@ -1,7 +1,7 @@
 package com.kingcent.controller;
 
 import com.kingcent.common.shop.entity.GoodsCommentCountEntity;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.service.GoodsCommentCountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

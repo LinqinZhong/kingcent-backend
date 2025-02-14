@@ -1,6 +1,6 @@
 package com.kingcent.controller;
 
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.shop.entity.vo.goods.GoodsListTypeVo;
 import com.kingcent.common.shop.entity.vo.HomeInfoVo;
 import org.springframework.web.bind.annotation.GetMapping;

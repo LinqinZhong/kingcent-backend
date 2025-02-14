@@ -2,7 +2,7 @@ package com.kingcent.admin.controller;
 
 import com.kingcent.admin.entity.vo.EditSkuVo;
 import com.kingcent.admin.service.GoodsSkuService;
-import com.kingcent.common.entity.result.Result;
+import com.kingcent.common.result.Result;
 import com.kingcent.common.entity.vo.VoList;
 import com.kingcent.common.shop.entity.GoodsSkuEntity;
 import org.springframework.beans.factory.annotation.Autowired;
