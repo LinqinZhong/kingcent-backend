@@ -23,7 +23,7 @@ public class AuthService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public Long check(String lid, String sign, String path, String data, LoginType loginType){
+    public Long check(String token){
         Long[] success = {null};
         try {
             //开启新线程，防止阻塞
@@ -33,13 +33,7 @@ public class AuthService {
                     return;
                 }
                 String url = String.format("http://%s:%s/login/check", instance.getHost(), instance.getPort());
-                JSONObject info = new JSONObject();
-                info.put("lid", lid);
-                info.put("sign", sign);
-                info.put("path",path);
-                info.put("data", data);
-                info.put("login-type", loginType);
-                success[0] = restTemplate.postForObject(url, info, Long.class);
+                success[0] = restTemplate.postForObject(url, token, Long.class);
             });
             t.start();
             t.join();

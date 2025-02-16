@@ -1,8 +1,9 @@
 package com.kingcent.auth.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.kingcent.auth.entity.UserEntity;
 import com.kingcent.auth.servcice.UserService;
+import com.kingcent.common.result.Result;
+import com.kingcent.common.user.entity.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,11 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @PostMapping("/create")
+    public Result<UserEntity> create(@RequestBody UserEntity userEntity){
+        return userService.create(userEntity);
+    }
 
     /**
      * 获取微信用户的openid

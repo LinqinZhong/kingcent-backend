@@ -5,16 +5,12 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.common.result.Result;
-import com.kingcent.plant.entity.LandEntity;
-import com.kingcent.plant.entity.PlanEntity;
-import com.kingcent.plant.entity.TaskEntity;
-import com.kingcent.plant.entity.TaskLandEntity;
+import com.kingcent.common.user.entity.UserEntity;
+import com.kingcent.plant.entity.*;
 import com.kingcent.plant.mapper.PlanMapper;
 import com.kingcent.plant.mapper.TaskMapper;
-import com.kingcent.plant.service.LandService;
-import com.kingcent.plant.service.PlanService;
-import com.kingcent.plant.service.TaskLandService;
-import com.kingcent.plant.service.TaskService;
+import com.kingcent.plant.mapper.TaskMemberMapper;
+import com.kingcent.plant.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,10 +29,16 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
     private TaskLandService taskLandService;
 
     @Autowired
+    private TaskMemberService taskMemberService;
+
+    @Autowired
     private PlanService planService;
 
     @Autowired
     private LandService landService;
+
+    @Autowired
+    private MemberService memberService;
 
     @Override
     public Page<TaskEntity> getPage(Integer pageNum, Integer pageSize){
@@ -82,6 +84,40 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
                 });
 
+                List<TaskMemberEntity> memberOfTask = taskMemberService.list(new LambdaQueryWrapper<TaskMemberEntity>().in(TaskMemberEntity::getTaskId, taskIds));
+                if (!memberOfTask.isEmpty()) {
+                    Set<Long> totalMemberIds = new HashSet<>();
+                    Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
+                    for (TaskMemberEntity taskMemberEntity : memberOfTask) {
+                        List<Long> landIds = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
+                        totalMemberIds.add(taskMemberEntity.getMemberId());
+                        landIds.add(taskMemberEntity.getMemberId());
+                    }
+                    Map<Long, MemberEntity> memberEntityMap = new HashMap<>();
+                    List<MemberEntity> memberList = memberService.list(new LambdaQueryWrapper<MemberEntity>().in(MemberEntity::getId, totalMemberIds));
+                    for (MemberEntity member : memberList) {
+                        memberEntityMap.put(member.getId(), member);
+                    }
+                    page.getRecords().forEach(task -> {
+                        List<String> memberNames = new ArrayList<>();
+                        List<String> memberIds = new ArrayList<>();
+                        List<Long> memberIdList = memberOfTaskMap.get(task.getId());
+                        if (memberIdList != null) {
+                            for (Long memberId : memberIdList) {
+                                MemberEntity member = memberEntityMap.get(memberId);
+                                if (member != null) {
+                                    memberNames.add(member.getName());
+                                    memberIds.add(memberId + "");
+                                }
+                            }
+                        }
+
+                        task.setMemberNames(String.join(",", memberNames));
+                        task.setMemberIds(String.join(",", memberIds));
+
+                    });
+
+                }
             }
         }
 
@@ -102,25 +138,45 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
     @Override
     @Transactional
-    public Result<?> addOrUpdate(TaskEntity taskEntity){
+    public Result<?> addOrUpdate(Long userId, TaskEntity taskEntity){
+
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            return memberResult;
+        }
+
         boolean isUpdate = taskEntity.getId() != null;
-        if(!isUpdate) taskEntity.setCreateTime(LocalDateTime.now());
+        if(!isUpdate) {
+            taskEntity.setStatus(0);
+            taskEntity.setCreateTime(LocalDateTime.now());
+            taskEntity.setCreatorMemberId(memberResult.getData().getId());
+        }
         taskEntity.setUpdateTime(LocalDateTime.now());
         saveOrUpdate(taskEntity);
 
 
         Set<Long> currentLandIds = new HashSet<>();
         Set<Long> deletedLandIds = new HashSet<>();
+        Set<Long> currentMemberIds = new HashSet<>();
+        Set<Long> deletedMemberIds = new HashSet<>();
         LambdaQueryWrapper<TaskLandEntity> currentLandsWrapper = new LambdaQueryWrapper<TaskLandEntity>()
                 .eq(TaskLandEntity::getTaskId, taskEntity.getId());
 
+        LambdaQueryWrapper<TaskMemberEntity> currentMemberWrapper = new LambdaQueryWrapper<TaskMemberEntity>()
+                .eq(TaskMemberEntity::getTaskId, taskEntity.getId());
 
-        // 将所有土地记录为删除的土地
+
         if(isUpdate) {
             List<TaskLandEntity> currentLands = taskLandService.list(currentLandsWrapper);
             for (TaskLandEntity currentLand : currentLands) {
                 deletedLandIds.add(currentLand.getLandId());
                 currentLandIds.add(currentLand.getLandId());
+            }
+
+            List<TaskMemberEntity> currentMembers = taskMemberService.list(currentMemberWrapper);
+            for (TaskMemberEntity taskMemberEntity : currentMembers) {
+                deletedMemberIds.add(taskMemberEntity.getMemberId());
+                currentMemberIds.add(taskMemberEntity.getMemberId());
             }
         }
 
@@ -149,9 +205,40 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
         }
 
+        // 新增成员
+        if(taskEntity.getMemberIds() != null) {
+            String[] memberIds = taskEntity.getMemberIds().split(",");
+
+            // 仍然保留的成员不用删除
+            for (String memberId : memberIds) deletedMemberIds.remove(Long.parseLong(memberId));
+
+
+            if (memberIds.length > 0) {
+                List<TaskMemberEntity> taskMemberEntityList = new ArrayList<>();
+                for (String memberId0 : memberIds) {
+                    Long memberId = Long.parseLong(memberId0);
+                    // 新增的时候排除有的
+                    if(currentMemberIds.contains(memberId)){
+                        continue;
+                    }
+                    taskMemberEntityList.add(
+                            new TaskMemberEntity(taskEntity.getId(), memberId)
+                    );
+                }
+                taskMemberService.saveBatch(taskMemberEntityList);
+            }
+
+        }
+
+
         // 删除不存在的土地
         if(!deletedLandIds.isEmpty()) {
             taskLandService.remove(currentLandsWrapper.in(TaskLandEntity::getLandId, deletedLandIds));
+        }
+
+        // 删除不存在的成员
+        if(!deletedMemberIds.isEmpty()) {
+            taskMemberService.remove(currentMemberWrapper.in(TaskMemberEntity::getMemberId, deletedMemberIds));
         }
         return Result.success();
     }

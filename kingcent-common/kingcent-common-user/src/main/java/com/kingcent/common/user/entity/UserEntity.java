@@ -1,4 +1,4 @@
-package com.kingcent.auth.entity;
+package com.kingcent.common.user.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
@@ -17,6 +18,8 @@ public class UserEntity {
      */
     @TableId(type = IdType.AUTO)
     private Long id;
+
+    private String username;
 
     /**
      * wx_openid
@@ -36,12 +39,12 @@ public class UserEntity {
     /**
      * create_time
      */
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * update_time
      */
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     /**
      * is_deleted

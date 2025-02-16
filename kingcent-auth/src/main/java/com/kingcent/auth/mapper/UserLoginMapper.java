@@ -1,7 +1,7 @@
 package com.kingcent.auth.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.kingcent.auth.entity.UserLoginEntity;
+import com.kingcent.common.user.entity.UserLoginEntity;
 import org.springframework.stereotype.Repository;
 
 @Repository

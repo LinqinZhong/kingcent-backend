@@ -87,15 +87,15 @@ public class AuthenticationFilter implements WebFilter, Ordered {
             }
         }
 
-        String lid = request.getHeaders().getFirst("lid");
         String authorization = request.getHeaders().getFirst("authorization");
-        if(lid == null || authorization == null) return unAuthentication(exchange);
+        if(authorization == null) return unAuthentication(exchange);
+        Long uid = authService.check(authorization);
+        if(uid == -1L) return unAuthentication(exchange);
 
         AtomicReference<ServerWebExchange> mutableExchange = new AtomicReference<>();
         Thread t = new Thread(()->{
-//            authService.check(lid,authorization,path,);
             ServerHttpRequest mutableReq = request.mutate()
-                    .header("uid", "1")
+                    .header("uid", uid+"")
                     .build();
             mutableExchange.set(exchange.mutate().request(mutableReq).build());
         });

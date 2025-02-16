@@ -1,7 +1,7 @@
 package com.kingcent.auth.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.kingcent.auth.entity.UserEntity;
+import com.kingcent.common.user.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

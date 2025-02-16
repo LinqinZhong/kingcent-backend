@@ -2,8 +2,10 @@ package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.result.Result;
+import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.plant.entity.TaskEntity;
 import com.kingcent.plant.service.TaskService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,8 +32,9 @@ public class TaskController {
     };
 
     @PostMapping
-    public Result<?> add(@RequestBody TaskEntity taskEntity){
-        return taskService.addOrUpdate(taskEntity);
+    public Result<?> add(HttpServletRequest request, @RequestBody TaskEntity taskEntity){
+        Long userId = RequestUtil.getUserId(request);
+        return taskService.addOrUpdate(userId,taskEntity);
     }
 
 

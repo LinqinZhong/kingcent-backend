@@ -22,11 +22,15 @@ public class TaskEntity {
     private String name;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Long respId;
     private Long planId;
 
     @TableField(exist = false)
     private String planName;
+
+    private Long creatorMemberId;
+
+    @TableField(exist = false)
+    private String creatorMemberName;
 
     private Integer status;
     private LocalDateTime createTime;
@@ -35,10 +39,17 @@ public class TaskEntity {
     @TableField(exist = false)
     private String landIds;
 
+    @TableField(exist = false)
+    private String memberIds;
+
     private Integer type;
 
     private String content;
 
     @TableField(exist = false)
     private String landNames;
+
+    @TableField(exist = false)
+    private String memberNames;
+
 }

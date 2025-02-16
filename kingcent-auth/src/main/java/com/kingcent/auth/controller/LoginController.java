@@ -1,13 +1,13 @@
 package com.kingcent.auth.controller;
 
 import cn.hutool.crypto.digest.MD5;
-import cn.hutool.jwt.JWTUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.common.utils.MD5Utils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.kingcent.auth.config.LoginConfig;
 import com.kingcent.auth.dto.PasswordLoginDto;
-import com.kingcent.auth.entity.UserEntity;
-import com.kingcent.auth.entity.UserLoginEntity;
 import com.kingcent.auth.servcice.UserService;
+import com.kingcent.auth.utils.DESUtil;
 import com.kingcent.auth.vo.PasswordLoginVo;
 import com.kingcent.auth.vo.PublicKeyVo;
 import com.kingcent.auth.vo.WxLoginVo;
@@ -16,6 +16,8 @@ import com.kingcent.auth.utils.IpUtil;
 import com.kingcent.auth.utils.RSAUtil;
 import com.kingcent.auth.utils.SecretUtil;
 import com.kingcent.common.result.Result;
+import com.kingcent.common.user.entity.UserEntity;
+import com.kingcent.common.user.entity.UserLoginEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,9 @@ import java.util.*;
 @Slf4j
 public class LoginController {
 
+
+    @Autowired
+    private LoginConfig loginConfig;
 
     @Autowired
     private UserService userService;
@@ -59,8 +64,8 @@ public class LoginController {
      * 验证用户身份，验证成功返回用户id，失败返回null
      */
     @PostMapping("/check")
-    public Long check(@RequestBody JSONObject object){
-        return userLoginService.check(object);
+    public Long check(@RequestBody String token){
+        return userLoginService.check(token);
     }
 
 
@@ -77,7 +82,7 @@ public class LoginController {
 
     @PostMapping("/password")
     @Transactional
-    public Result<?> passwordLogin(
+    public Result<PasswordLoginVo> passwordLogin(
             HttpServletRequest request,
             @RequestBody PasswordLoginDto loginDto
             ) throws Exception {
@@ -86,18 +91,19 @@ public class LoginController {
             return Result.fail("系统错误");
         }
         String info = RSAUtil.decrypt(loginDto.getInfo(),privateKey);
-        String username = null;
-        String password = null;
-        String secret = null;
+        String username;
+        String password;
+        String key;
         try{
             JSONObject jsonObject = JSONObject.parseObject(info);
             username = jsonObject.getString("username");
             password = jsonObject.getString("password");
-            secret = jsonObject.getString("secret");
+            key = jsonObject.getString("key");
 
         }catch (Exception e){
             return Result.fail("系统错误");
         }
+
 
         log.info("password:{},username{}",password,username);
         UserEntity user = userService.getOne(new QueryWrapper<UserEntity>()
@@ -109,19 +115,29 @@ public class LoginController {
             return Result.fail("用户不存在");
         //验证密码
         String realPassword = MD5.create().digestHex("password="+password+ "&salt="+ user.getPasswordSalt());
-        System.out.println(realPassword);
+        String secret = MD5Utils.md5Hex((System.currentTimeMillis()+"").getBytes());
         if(realPassword.equals(user.getPassword())){
             //保存登录记录
             UserLoginEntity login = new UserLoginEntity();
-            login.setSecret(secret);
             login.setCreateTime(LocalDateTime.now());
             login.setUserId(user.getId());
+            login.setSecret(secret);
             login.setIp(IpUtil.getIpAddress(request));
+            login.setIsDeleted(false);
             if(!userLoginService.save(login)) {
                 //TODO 这里应该抛出一个特定的异常
                 throw new RuntimeException("服务器错误");
             }
-            return Result.success();
+
+            JSONObject tokenInfo = new JSONObject();
+            tokenInfo.put("uid", user.getId());
+            tokenInfo.put("lid", login.getId());
+            tokenInfo.put("type", "password");
+            tokenInfo.put("secret",secret);
+            tokenInfo.put("expired",System.currentTimeMillis()+864000000);
+            String token = DESUtil.encrypt(loginConfig.TOKEN_KEY,tokenInfo.toJSONString());
+            System.out.println(token);
+            return Result.success(new PasswordLoginVo(DESUtil.encrypt(key,token)));
         }
         return Result.fail("密码错误");
     }
@@ -146,11 +162,11 @@ public class LoginController {
             if(userEntity == null){
                 //用户不存在，创建用户
                 userEntity = new UserEntity();
-                userEntity.setCreateTime(new Date());
+                userEntity.setCreateTime(LocalDateTime.now());
                 userEntity.setWxOpenid(openid);
             }
             //更新
-            userEntity.setUpdateTime(new Date());
+            userEntity.setUpdateTime(LocalDateTime.now());
             userService.saveOrUpdate(userEntity);
             //计算secret
             String secret = SecretUtil.get(userEntity.getId(), code);

@@ -1,5 +1,7 @@
 package com.kingcent.plant.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -16,4 +18,20 @@ public class MemberEntity {
     private Long id;
     private Long userId;
     private String name;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
+    private String username;
+    private String mobile;
+    private String email;
+    @TableLogic
+    private Boolean isDeleted;
+    private Integer status;
+
+    private String no;
+
+    @TableField(exist = false)
+    private String password;
+    @TableField(exist = false)
+    private String passwordSalt;
+
 }

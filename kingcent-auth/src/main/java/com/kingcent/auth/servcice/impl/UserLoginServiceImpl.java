@@ -3,17 +3,15 @@ package com.kingcent.auth.servcice.impl;
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.kingcent.auth.entity.UserLoginEntity;
+import com.kingcent.auth.config.LoginConfig;
 import com.kingcent.auth.mapper.UserLoginMapper;
 import com.kingcent.auth.servcice.UserLoginService;
-import com.kingcent.common.entity.constant.LoginType;
+import com.kingcent.auth.utils.DESUtil;
+import com.kingcent.common.user.entity.UserLoginEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -23,57 +21,32 @@ public class UserLoginServiceImpl extends ServiceImpl<UserLoginMapper, UserLogin
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private LoginConfig loginConfig;
+
     @Override
-    public Long check(JSONObject object) {
-        String sign = object.getString("sign");
-        String path = object.getString("path");
-        String data = object.getString("data");
-        LoginType loginType = object.getObject("login-type", LoginType.class);
-        Long lid = object.getLong("lid");
-
-        if(loginType == null) return -1L;
-
-        switch (loginType){
-            case ADMIN -> {
-                UserLoginEntity login = getById(lid);
-                //TODO 鉴权
-                return login.getId();
+    public Long check(String token) {
+        try{
+            String decrypt = DESUtil.decrypt(loginConfig.TOKEN_KEY, token);
+            JSONObject tokenObj = JSONObject.parseObject(decrypt);
+            Long lid = tokenObj.getLong("lid");
+            String secret = tokenObj.getString("secret");
+            String type = tokenObj.getString("type");
+            Long uid = tokenObj.getLong("uid");
+            Long expired = tokenObj.getLong("expired");
+            if(expired < System.currentTimeMillis()) return -1L;
+            if(type.equals("password")){
+                UserLoginEntity loginEntity = getById(lid);
+                if(
+                        !loginEntity.getUserId().equals(uid)
+                                && !loginEntity.getSecret().equals(secret)
+                ) return -1L;
+                return uid;
             }
-            case CUSTOMER -> {
-
-                //读取redis中的secret
-                ValueOperations<String, String> ops = redisTemplate.opsForValue();
-                String cache = ops.get(PREFIX_OF_CUSTOMER_LOGIN_KEY+"_"+lid);
-                String secret;
-                Long uid;
-                if (cache == null){
-                    //读取数据库中的secret
-                    UserLoginEntity userLoginEntity = getById(lid);
-                    if (userLoginEntity == null){
-                        return -1L;
-                    }
-                    secret = userLoginEntity.getSecret();
-                    uid = userLoginEntity.getUserId();
-                    //写入redis缓存
-                    ops.set(PREFIX_OF_CUSTOMER_LOGIN_KEY+"_"+lid, uid+","+secret, 1, TimeUnit.HOURS);
-                }else{
-                    String[] info = cache.split(",");
-                    uid = Long.valueOf(info[0]);
-                    secret = info[1];
-                }
-
-                long timestamp = System.currentTimeMillis()/60000;
-                for (int i = -1; i < 1; i++){
-                    if (sign.equals(getSign(uid,secret,path,timestamp+i,data)))
-                        return uid;
-                }
-
-                return -1L;
-            }
-            default -> {
-                return -1L;
-            }
+        }catch (Exception e){
+            return -1L;
         }
+        return -1L;
     }
 
     /**

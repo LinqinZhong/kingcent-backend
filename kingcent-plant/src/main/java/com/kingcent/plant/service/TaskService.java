@@ -11,6 +11,6 @@ import com.kingcent.plant.entity.TaskEntity;
  */
 public interface TaskService extends IService<TaskEntity> {
     Page<TaskEntity> getPage(Integer pageNum, Integer pageSize);
-    Result<?> addOrUpdate(TaskEntity taskEntity);
+    Result<?> addOrUpdate(Long userId, TaskEntity taskEntity);
     Result<?> delete(Long id);
 }
