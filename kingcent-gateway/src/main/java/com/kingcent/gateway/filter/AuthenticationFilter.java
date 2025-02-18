@@ -67,7 +67,7 @@ public class AuthenticationFilter implements WebFilter, Ordered {
         ServerHttpResponse httpResponse = exchange.getResponse();
         HttpHeaders headers = httpResponse.getHeaders();
 
-        headers.add("Access-control-allow-origin","http://localhost");
+        headers.add("Access-control-allow-origin","*");
         headers.add("Access-control-allow-methods","*");
         headers.add("Access-control-allow-headers","*");
         headers.add("Access-control-allow-credentials","true");
