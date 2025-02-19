@@ -6,4 +6,6 @@ public interface Response{
     void send(byte[] data) throws IOException;
 
     void close();
+
+    void await(HandMessageHead head);
 }

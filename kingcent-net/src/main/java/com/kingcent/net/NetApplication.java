@@ -1,16 +1,16 @@
 package com.kingcent.net;
 
-import org.mybatis.spring.annotation.MapperScan;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.kingcent.net.server.P1;
+
+import java.io.IOException;
 
 
-@MapperScan("com.kingcent.net.mapper")
-@SpringBootApplication
+//@MapperScan("com.kingcent.net.mapper")
+//@SpringBootApplication
 public class NetApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(NetApplication.class, args);
+    public static void main(String[] args) throws IOException {
+        new P1().start();
     }
 
 }

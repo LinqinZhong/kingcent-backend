@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class P2 {
@@ -19,6 +20,8 @@ public class P2 {
     private final Map<String, Socket> socketMap = new HashMap<>();
     private final Set<String> readingSockets = new HashSet<>();
 
+
+    private Map<String,Integer> sending = new HashMap<>();
 
     /**
      * 接收消息
@@ -35,6 +38,7 @@ public class P2 {
             messageHandler.onHandMessage(head, buffer, new Response() {
                 @Override
                 public void send(byte[] data) throws IOException {
+                    sending.put(head.clientName, sending.getOrDefault(head.clientName,0)+1);
                     // 回复
                     HandMessageHead handMessageHead = new HandMessageHead(
                             head.getUuid(),
@@ -45,23 +49,37 @@ public class P2 {
                             head.getClientName()
                     );
                     OutputStream outputStream = socket.getOutputStream();
-                    outputStream.write(DataUtil.concatBytes(handMessageHead.getBytes(), data));
+                    System.out.println("发送");
+                    byte[] bytes = DataUtil.concatBytes(handMessageHead.getBytes(), data);
+                    outputStream.write(bytes);
+                    sending.put(head.clientName, sending.getOrDefault(head.clientName,0)-1);
+                    System.out.println("send:"+sending.get(head.clientName));
                 }
 
                 @Override
                 public void close() {
-                    try{
-                        OutputStream outputStream = socket.getOutputStream();
-                        outputStream.write(new HandMessageHead(
-                                head.getUuid(),
-                                0,
-                                head.host,
-                                head.port,
-                                HandMessageHead.Type.SERVER_CLOSE,
-                                head.clientName
-                        ).getBytes());
-                    }catch (IOException ex) {
-                        throw new RuntimeException(ex);
+//                    System.out.println("关闭");
+//                    try{
+//                        OutputStream outputStream = socket.getOutputStream();
+//                        outputStream.write(new HandMessageHead(
+//                                head.getUuid(),
+//                                0,
+//                                head.host,
+//                                head.port,
+//                                HandMessageHead.Type.SERVER_CLOSE,
+//                                head.clientName
+//                        ).getBytes());
+//                    }catch (IOException ex) {
+//                        throw new RuntimeException(ex);
+//                    }
+                }
+
+                @Override
+                public void await(HandMessageHead head) {
+                    try {
+                        Thread.sleep(100000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             });
@@ -79,7 +97,6 @@ public class P2 {
                     byte[] data = new byte[HandMessageHead.SIZE];
                     int read = socket.getInputStream().read(data);
                     if(read == -1) {
-                        System.out.println("服务关闭");
                         break;
                     }
                     HandMessageHead handMessageHead = HandMessageHead.parseHead(data);
@@ -91,6 +108,7 @@ public class P2 {
                 }
             }
         }).start();
+        while (!socket.isClosed());
     }
 
     /**
@@ -98,7 +116,7 @@ public class P2 {
      */
     public void connect() throws IOException {
         Logger.logo();
-        Socket socket = new Socket("localhost", 10000);
+        Socket socket = new Socket("119.29.76.76", 10000);
         // 发送连接请求数据包
         HandMessageHead handMessageHead = new HandMessageHead(
                 UUID.randomUUID(),
@@ -119,7 +137,7 @@ public class P2 {
                 System.out.println(head.clientName +"->"+endPoint);
                 Socket server = socketMap.computeIfAbsent(head.clientName, (r) -> {
                     try {
-                        return new Socket(head.getHost(), head.getPort());
+                        return new Socket(head.getHost(), 8089);
                     } catch (IOException e) {
                         e.printStackTrace(System.out);
                         return null;
@@ -143,21 +161,23 @@ public class P2 {
                         try{
                             InputStream inputStream = server.getInputStream();
                             while (true) {
-                                byte[] buffer = new byte[10240];
+                                byte[] buffer = new byte[1024];
                                 int len = inputStream.read(buffer);
-                                if(len == -1) throw new IOException("服务器关闭");
+                                if(len == -1) throw new IOException("关闭");
                                 byte[] d = new byte[len];
                                 System.arraycopy(buffer, 0, d, 0, len);
                                 System.out.println("------ 回复["+head.uuid+"] -----------");
                                 System.out.println(endPoint+"->"+head.clientName);
+//                                DataUtil.displayBytes(d);
                                 System.out.println("======================================");
                                 response.send(d);
                             }
                         }catch (IOException e){
                             Logger.blue("服务器断开："+server.getInetAddress());
                             System.out.println(endPoint+"->"+head.clientName);
+                            response.await(head);
                             response.close();
-                        }finally {
+                        } finally {
                             readingSockets.remove(head.clientName);
                         }
                     }).start();

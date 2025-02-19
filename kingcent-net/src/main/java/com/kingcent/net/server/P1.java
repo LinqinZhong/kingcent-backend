@@ -7,22 +7,23 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class P1 {
 
 
-    private static final ConnectionPool connections = new ConnectionPool();
+    private final ConnectionPool connections = new ConnectionPool();
 
-    private static final Map<UUID, Socket> waitResponseSocket = new HashMap<>();
+    private final Map<UUID, Socket> waitResponseSocket = new HashMap<>();
 
-    private static String getAddress(Socket socket){
+    private String getAddress(Socket socket){
         return socket.getInetAddress().getHostAddress()+";"+socket.getPort();
     }
 
 
-    public static void main(String[] args) throws IOException {
+    public void start() throws IOException {
         try (ServerSocket socket = new ServerSocket(10000)) {
             Logger.logo();
             Logger.greenBold("P1 is running.\n\n\n");
@@ -100,7 +101,7 @@ public class P1 {
         }
     }
 
-    private static void watch(Socket socket, MessageHandler messageHandler){
+    private void watch(Socket socket, MessageHandler messageHandler){
         new Thread(() -> {
             while (!socket.isClosed()){
                 try {
@@ -113,7 +114,7 @@ public class P1 {
                     byte[] data = new byte[len];
                     System.arraycopy(buffer,0,data,0,len);
                     // 打印所有接收的数据包，调试用
-                    // System.out.println(new String(data));
+//                     System.out.println(new String(data, StandardCharsets.UTF_8));
                     HandMessageHead handMessageHead = HandMessageHead.parseHead(data);
                     if(handMessageHead != null){
                         switch (handMessageHead.type){
@@ -124,10 +125,12 @@ public class P1 {
                                那么接下来就要接入head.length字节的数据，并和头一起派发给onHandMessage事件
                             */
                             case TYPE_RESPONSE -> {
+                                Logger.greenBold("开始接收"+handMessageHead.length);
                                 byte[] realData = new byte[handMessageHead.length];
                                 InputStream inputStream1 = socket.getInputStream();
                                 inputStream1.read(realData);
                                 messageHandler.onHandMessage(handMessageHead, realData, null);
+                                System.out.println("接收完成:"+realData.length);
                             }
                             // 服务器关闭
                             case SERVER_CLOSE -> messageHandler.onServerClose(handMessageHead);
@@ -155,7 +158,7 @@ public class P1 {
         }).start();
     }
 
-    private static void request(String clientName, String destHost, int destPort, UUID uuid, Socket socket, byte[] data) {
+    private void request(String clientName, String destHost, int destPort, UUID uuid, Socket socket, byte[] data) {
         OutputStream outputStream;
         try {
             outputStream = socket.getOutputStream();

@@ -5,6 +5,7 @@ package com.kingcent.net;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Data
@@ -77,7 +78,7 @@ public class HandMessageHead {
      */
     public byte[] getBytes(){
         byte[] buffer = new byte[SIZE];
-        byte[] s =("KING-NET/1.0\n"+this.uuid+"\n"+this.length+"\n"+this.host +"\n"+this.port+"\n"+this.type.value+"\n"+this.clientName +"\n").getBytes();
+        byte[] s =("KING-NET/1.0\n"+this.uuid+"\n"+this.length+"\n"+this.host +"\n"+this.port+"\n"+this.type.value+"\n"+this.clientName +"\n").getBytes(StandardCharsets.UTF_8);
         System.arraycopy(s, 0, buffer, 0, s.length);
         return buffer;
     }
