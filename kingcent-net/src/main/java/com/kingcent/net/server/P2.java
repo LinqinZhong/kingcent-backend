@@ -1,8 +1,7 @@
 package com.kingcent.net.server;
 
-import com.kingcent.net.HandMessageHead;
-import com.kingcent.net.MessageHandler;
-import com.kingcent.net.Response;
+import com.kingcent.net.*;
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +12,7 @@ import java.util.*;
 public class P2 {
 
     public static void main(String[] args) throws IOException {
-        new P2().start();
+        new P2().connect();
     }
 
 
@@ -24,7 +23,7 @@ public class P2 {
     /**
      * 接收消息
      */
-    private void receiveMessage(Socket socket, HandMessageHead head, MessageHandler messageHandler) throws IOException {
+    private void receiveMessage(Socket socket, HandMessageHead head, MessageFromP1Handler messageHandler) throws IOException {
         byte[] buffer = new byte[head.getLength()];
         int read = socket.getInputStream().read(buffer);
         if(read == -1){
@@ -33,19 +32,38 @@ public class P2 {
             // TODO
         }
         try {
-            messageHandler.onHandMessage(head, buffer, (byte[] data) -> {
-                // 回复
-                HandMessageHead handMessageHead = new HandMessageHead(
-                        head.getUuid(),
-                        data.length,
-                        head.host,
-                        head.port,
-                        HandMessageHead.TYPE_RESPONSE,
-                        head.getClientName()
-                );
-                OutputStream outputStream = socket.getOutputStream();
-                outputStream.write(handMessageHead.getBytes());
-                outputStream.write(data);
+            messageHandler.onHandMessage(head, buffer, new Response() {
+                @Override
+                public void send(byte[] data) throws IOException {
+                    // 回复
+                    HandMessageHead handMessageHead = new HandMessageHead(
+                            head.getUuid(),
+                            data.length,
+                            head.host,
+                            head.port,
+                            HandMessageHead.Type.TYPE_RESPONSE,
+                            head.getClientName()
+                    );
+                    OutputStream outputStream = socket.getOutputStream();
+                    outputStream.write(DataUtil.concatBytes(handMessageHead.getBytes(), data));
+                }
+
+                @Override
+                public void close() {
+                    try{
+                        OutputStream outputStream = socket.getOutputStream();
+                        outputStream.write(new HandMessageHead(
+                                head.getUuid(),
+                                0,
+                                head.host,
+                                head.port,
+                                HandMessageHead.Type.SERVER_CLOSE,
+                                head.clientName
+                        ).getBytes());
+                    }catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -53,7 +71,7 @@ public class P2 {
     }
 
 
-    private void watch(Socket socket, MessageHandler messageHandler){
+    private void watch(Socket socket, MessageFromP1Handler messageHandler){
         System.out.println("开始监听");
         new Thread(() -> {
             while (!socket.isClosed()){
@@ -67,7 +85,7 @@ public class P2 {
                     HandMessageHead handMessageHead = HandMessageHead.parseHead(data);
                     if(handMessageHead != null){
                         receiveMessage(socket,handMessageHead, messageHandler);
-                    };
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -78,71 +96,76 @@ public class P2 {
     /**
      * 启动
      */
-    public void start() throws IOException {
+    public void connect() throws IOException {
+        Logger.logo();
         Socket socket = new Socket("localhost", 10000);
-        // 发送连接报文
+        // 发送连接请求数据包
         HandMessageHead handMessageHead = new HandMessageHead(
                 UUID.randomUUID(),
                 0,
                 "www.baidu.com",
                 0,
-                HandMessageHead.TYPE_HELLO,
+                HandMessageHead.Type.TYPE_HELLO,
                 "0"
         );
         socket.getOutputStream().write(handMessageHead.getBytes());
+        Logger.greenBold("P2 is running.");
 
-        watch(socket, new MessageHandler() {
+        watch(socket, new MessageFromP1Handler() {
             @Override
-            public void onHandMessage(HandMessageHead head, byte[] data, Response response) throws IOException {
+            public void onHandMessage(HandMessageHead head, byte[] data, Response response) {
                 String endPoint = head.getHost()+":"+head.getPort();
                 System.out.println("------ 转发["+head.uuid+"] -----------");
                 System.out.println(head.clientName +"->"+endPoint);
-//                System.out.println(new String(data));
-                Socket localhost = socketMap.computeIfAbsent(head.clientName, (r) -> {
+                Socket server = socketMap.computeIfAbsent(head.clientName, (r) -> {
                     try {
-                        return new Socket(head.getHost(),head.getPort() );
+                        return new Socket(head.getHost(), head.getPort());
                     } catch (IOException e) {
+                        e.printStackTrace(System.out);
                         return null;
                     }
                 });
-                OutputStream outputStream = localhost.getOutputStream();
-                outputStream.write(data);
-                System.out.println("======================================");
+                try {
+                    assert server != null;
+                    OutputStream outputStream = server.getOutputStream();
+                    outputStream.write(data);
+                    System.out.println("======================================");
+                }catch (IOException e){
+                    socketMap.remove(head.clientName);
+                    System.out.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+                }
 
                 if(!readingSockets.contains(head.clientName)){
-                    System.out.println("创建新的访问");
+                    Logger.green("Create new request for "+head.clientName);
                     readingSockets.add(head.clientName);
                     // 回复第一个数据包绑定的P1
                     new Thread(() -> {
                         try{
-                            InputStream inputStream = localhost.getInputStream();
+                            InputStream inputStream = server.getInputStream();
                             while (true) {
                                 byte[] buffer = new byte[10240];
                                 int len = inputStream.read(buffer);
-                                if(len == -1) break;
+                                if(len == -1) throw new IOException("服务器关闭");
                                 byte[] d = new byte[len];
                                 System.arraycopy(buffer, 0, d, 0, len);
                                 System.out.println("------ 回复["+head.uuid+"] -----------");
                                 System.out.println(endPoint+"->"+head.clientName);
-//                                System.out.println(new String(d));
                                 System.out.println("======================================");
                                 response.send(d);
                             }
-                            readingSockets.remove(head.clientName);
                         }catch (IOException e){
-
+                            Logger.blue("服务器断开："+server.getInetAddress());
+                            System.out.println(endPoint+"->"+head.clientName);
+                            response.close();
+                        }finally {
+                            readingSockets.remove(head.clientName);
                         }
                     }).start();
                 }
             }
 
             @Override
-            public void onMessage(byte[] data) {
-
-            }
-
-            @Override
-            public void onP2(String ip, Socket socket) {
+            public void onClientClose() {
 
             }
         });

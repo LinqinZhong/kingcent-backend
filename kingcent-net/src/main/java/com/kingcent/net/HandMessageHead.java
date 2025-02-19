@@ -11,11 +11,21 @@ import java.util.UUID;
 @AllArgsConstructor
 public class HandMessageHead {
 
+    public enum Type {
+        TYPE_HELLO("0"),
+        TYPE_REQUEST("1"),
+        TYPE_RESPONSE("2"),
+        TYPE_GOODBYE("3"),
+        SERVER_CLOSE("4"),
+        CLIENT_CLOSE("5");
+
+        public final String value;
+        Type(String value){
+            this.value = value;
+        }
+    }
+
     public static final int SIZE = 1024;
-    public static final String TYPE_HELLO = "0";
-    public static final String TYPE_REQUEST = "1";
-    public static final String TYPE_RESPONSE = "2";
-    public static final String TYPE_GOODBYE = "3";
 
     // 消息ID
     public UUID uuid;
@@ -26,9 +36,21 @@ public class HandMessageHead {
     // 转发到的端口
     public Integer port;
     // 消息类型
-    public String type;
+    public Type type;
     // 客户名称（IP:PORT）
     public String clientName;
+
+    private static Type parseType(String value) throws Exception {
+        return switch (value) {
+            case "0" -> Type.TYPE_HELLO;
+            case "1" -> Type.TYPE_REQUEST;
+            case "2" -> Type.TYPE_RESPONSE;
+            case "3" -> Type.TYPE_GOODBYE;
+            case "4" -> Type.SERVER_CLOSE;
+            case "5" -> Type.CLIENT_CLOSE;
+            default -> throw new Exception();
+        };
+    }
 
     public static HandMessageHead parseHead(byte[] data){
         String head = new String(data);
@@ -41,7 +63,7 @@ public class HandMessageHead {
                         Integer.parseInt(headInfo[2]),
                         headInfo[3],
                         Integer.parseInt(headInfo[4]),
-                        headInfo[5],
+                        parseType(headInfo[5]),
                         headInfo[6]
                 );
             }
@@ -55,7 +77,7 @@ public class HandMessageHead {
      */
     public byte[] getBytes(){
         byte[] buffer = new byte[SIZE];
-        byte[] s =("KING-NET/1.0\n"+this.uuid+"\n"+this.length+"\n"+this.host +"\n"+this.port+"\n"+this.type+"\n"+this.clientName +"\n").getBytes();
+        byte[] s =("KING-NET/1.0\n"+this.uuid+"\n"+this.length+"\n"+this.host +"\n"+this.port+"\n"+this.type.value+"\n"+this.clientName +"\n").getBytes();
         System.arraycopy(s, 0, buffer, 0, s.length);
         return buffer;
     }
