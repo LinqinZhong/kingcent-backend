@@ -48,18 +48,13 @@ public class CableServer {
             InputStream inputStream = client.getInputStream();
             // 先读取1kb数据，用于判断
             byte[] bytes = SocketUtil.readSync(inputStream, 1024);
-            if(bytes == null){
-                // 读取失败，关闭客户端
-                client.close();
-                return;
-            }
             // 转发信息
             String clientHost = client.getInetAddress().getHostAddress();
             int clientPort = client.getPort();
             String serverHost = "192.168.22.219";
             int serverPort = 8089;
             // 申请服务
-            connectionPool.useP2("shop", new P2Handler() {
+            connectionPool.useP2(clientHost,port,"shop", new P2Handler() {
                 @Override
                 public void onServiceNotFound() {
                     System.out.println("服务未找到");
@@ -95,7 +90,7 @@ public class CableServer {
                         );
                         System.out.println("转发");
                         System.out.println(new String(bytes));
-                        // 回复任务
+                        // 转发任务
                         Thread replyTask = new Thread(() -> {
                             try {
                                 // 同步读取剩余的数据

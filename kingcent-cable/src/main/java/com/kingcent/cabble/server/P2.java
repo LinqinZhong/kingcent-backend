@@ -1,6 +1,8 @@
 package com.kingcent.cabble.server;
 
+import com.kingcent.cabble.server.exception.CableMessageException;
 import com.kingcent.cabble.server.messge.CableMessage;
+import com.kingcent.cabble.server.messge.CableMessageHead;
 import com.kingcent.cabble.server.messge.HelloInfo;
 import com.kingcent.cabble.server.utils.SocketUtil;
 
@@ -18,8 +20,30 @@ public class P2 {
         Socket socket = new Socket("119.29.76.76",8889);
         socket.getOutputStream().write(helloMsg.getBytes());
         InputStream inputStream = socket.getInputStream();
-        SocketUtil.read(inputStream,(r) -> {
-            System.out.println(new String(r,StandardCharsets.UTF_8));
-        });
+        while (true){
+            SocketUtil.read(inputStream, CableMessageHead.SIZE,(h) -> {
+                System.out.println("-------------------------------------");
+                System.out.println(new String(h,StandardCharsets.UTF_8));
+                System.out.println("-------------------------------------");
+                CableMessageHead cableMessageHead = null;
+                try {
+                    cableMessageHead = CableMessageHead.fromBytes(h);
+                    CableMessageHead finalCableMessageHead = cableMessageHead;
+                    SocketUtil.read(inputStream, cableMessageHead.getLength(),(data) -> {
+                    System.out.println("======================================");
+                    System.out.println("->->"+ finalCableMessageHead.getLength()+":"+data.length);
+                    System.out.println(new String(data, StandardCharsets.UTF_8));
+                    System.out.println("======================================");
+                    });
+//                    byte[] bytes = SocketUtil.readSync(inputStream, cableMessageHead.getLength());
+//                    if(bytes == null){
+//                        System.out.println("错误");
+//                        return;
+//                    }
+                } catch (CableMessageException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 }

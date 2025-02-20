@@ -13,8 +13,8 @@ public class ConnectionPool {
     // 可用的P2列表
     private final Map<String, LinkedBlockingQueue<Socket>> p2OfServices = new HashMap<>();
 
-    // P2正在服务的Handler
-    private final Map<Socket,P2Handler> handlersServedByP2 = new HashMap<>();
+    // 客户端绑定的P2Handler
+    private final Map<String,P2Handler> handlerOfClient = new HashMap<>();
 
     public static ConnectionPool getInstance(){
         ConnectionPool connectionPool = instance == null ? instance = new ConnectionPool() : instance;
@@ -35,11 +35,12 @@ public class ConnectionPool {
     }
 
     // 获取p2服务的handler
-    public P2Handler getHandlerOfP2(Socket p2){
-        return handlersServedByP2.get(p2);
+    public P2Handler getHandlerOfP2(String clientHost, int port){
+        return handlerOfClient.get(clientHost+":"+port);
     }
 
-    public void useP2(String serviceName, P2Handler p2Handler){
+    public void useP2(String clientHost, int port, String serviceName, P2Handler p2Handler){
+        String clientName = clientHost+":"+port;
         LinkedBlockingQueue<Socket> p2s = p2OfServices.get(serviceName);
         if(p2s == null) {
             // 服务未发现
@@ -50,7 +51,7 @@ public class ConnectionPool {
             // 取出一个P2
             Socket p2 = p2s.take();
             // 记录P2正在为当前p2Handler服务
-            handlersServedByP2.put(p2, p2Handler);
+            handlerOfClient.put(clientName, p2Handler);
             new Thread(() -> {
                 // 为调用者提供服务
                 p2Handler.onServiceProvide(p2);
@@ -68,7 +69,7 @@ public class ConnectionPool {
                     }
                 }
                 // 清除p2的服务
-                handlersServedByP2.remove(p2);
+                handlerOfClient.remove(clientName);
             }).start();
         } catch (InterruptedException e) {
             // 阻塞被打断（服务忙）
