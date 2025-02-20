@@ -5,6 +5,7 @@ import com.kingcent.cabble.server.messge.*;
 import com.kingcent.cabble.server.utils.SocketUtil;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -84,11 +85,12 @@ public class P1 {
     // 等待来自p2的招呼
     private HelloInfo requireHelloInfo(Socket p2){
         try {
-            byte[] bytes = SocketUtil.readSync(p2, CableMessageHead.SIZE);
+            InputStream inputStream = p2.getInputStream();
+            byte[] bytes = SocketUtil.readSync(inputStream, CableMessageHead.SIZE);
             if (bytes == null) return null;
             CableMessageHead cableMessageHead = CableMessageHead.fromBytes(bytes);
             if(cableMessageHead.getType() != CableMessageType.HELLO) return null;
-            byte[] body = SocketUtil.readSync(p2, cableMessageHead.getLength());
+            byte[] body = SocketUtil.readSync(inputStream, cableMessageHead.getLength());
            return HelloInfo.fromBytes(body);
         } catch (CableMessageException | IOException e) {
             e.printStackTrace(System.out);
@@ -99,8 +101,9 @@ public class P1 {
     // 监听来自p2的消息
     private void listen(Socket p2, CableMessageListener listener){
         try {
+            InputStream inputStream = p2.getInputStream();
             while (!p2.isClosed()){
-                byte[] bytes = SocketUtil.readSync(p2, CableMessageHead.SIZE);
+                byte[] bytes = SocketUtil.readSync(inputStream, CableMessageHead.SIZE);
                 if(bytes == null){
                     break;
                 }
@@ -108,7 +111,7 @@ public class P1 {
                 switch (cableMessageHead.getType()){
                     case FORWARD -> {
                         // 接收转发消息边读边回调
-                        SocketUtil.read(p2,cableMessageHead.getLength(), data -> listener.onForward(cableMessageHead,data));
+                        SocketUtil.read(inputStream,cableMessageHead.getLength(), data -> listener.onForward(cableMessageHead,data));
                         listener.onForwardCompleted();
                     }
                     case OUTER_CLOSE -> {

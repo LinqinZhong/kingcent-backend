@@ -2,7 +2,6 @@ package com.kingcent.cabble;
 
 import com.kingcent.cabble.server.CableServer;
 import com.kingcent.cabble.server.P1;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication

@@ -56,6 +56,7 @@ public class ConnectionPool {
                 p2Handler.onServiceProvide(p2);
                 // p2重新入队
                 try {
+                    System.out.println("入队");
                     p2s.put(p2);
                 } catch (InterruptedException e) {
                     // 入队失败，关闭p2

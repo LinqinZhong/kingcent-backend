@@ -8,7 +8,7 @@ import java.util.UUID;
 public class CableMessageHead {
 
     private static final String TAG = "KingCable/1.0";
-    public static final int SIZE = 216;
+    public static final int SIZE = 256;
 
     private UUID uuid;
     private CableMessageType type;

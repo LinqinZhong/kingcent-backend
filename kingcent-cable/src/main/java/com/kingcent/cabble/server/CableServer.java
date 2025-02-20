@@ -5,9 +5,11 @@ import com.kingcent.cabble.server.messge.CableMessageHead;
 import com.kingcent.cabble.server.utils.SocketUtil;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class CableServer {
@@ -43,8 +45,9 @@ public class CableServer {
 
     private void onClient(Socket client) {
         try{
+            InputStream inputStream = client.getInputStream();
             // 先读取1kb数据，用于判断
-            byte[] bytes = SocketUtil.readSync(client, 1024);
+            byte[] bytes = SocketUtil.readSync(inputStream, 1024);
             if(bytes == null){
                 // 读取失败，关闭客户端
                 client.close();
@@ -95,12 +98,19 @@ public class CableServer {
                         // 回复任务
                         Thread replyTask = new Thread(() -> {
                             try {
-                                System.out.println("继续读");
-                                SocketUtil.read(client, data -> {
-                                    System.out.println("转发");
-                                    System.out.println(new String(data));
+                                // 同步读取剩余的数据
+                                System.out.println("继续");
+                                SocketUtil.read(inputStream, data -> {
                                     try {
-                                        outputStream.write(data);
+                                        // 发送剩余的数据
+                                        outputStream.write(
+                                                new CableMessage(
+                                                        CableMessageHead.forward(data.length,clientHost,clientPort,serverHost,serverPort),
+                                                        data
+                                                ).getBytes()
+                                        );
+                                        System.out.println("转发");
+                                        System.out.println(new String(data));
                                     } catch (IOException e) {
                                         throw new RuntimeException(e);
                                     }
@@ -110,15 +120,6 @@ public class CableServer {
                             }
                         });
                         replyTask.start();
-                        // 同步读取数据
-                        SocketUtil.read(client, data -> {
-//                            try {
-//                                outputStream.write(data);
-//                            } catch (IOException e) {
-//                                throw new RuntimeException(e);
-//                            }
-                        });
-                        // 等待回复任务结束再终止服务
                         replyTask.join();
                     } catch (IOException | InterruptedException e) {
                         throw new RuntimeException(e);
