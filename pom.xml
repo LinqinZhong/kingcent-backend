@@ -37,6 +37,8 @@
     <module>kingcent-user</module>
     <module>kingcent-afast</module>
     <module>kingcent-plant</module>
+    <module>kingcent-cable</module>
+    <module>kingcent-net</module>
   </modules>
 
   <dependencyManagement>
