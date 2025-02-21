@@ -1,62 +1,60 @@
 package com.kingcent.cabble.server.utils;
 
 
-import com.kingcent.cabble.server.messge.CableMessageHead;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 
 public class SocketUtil {
 
     public interface ReadHandler{
-        void onRead(byte[] data);
+        void onRead(byte[] data) throws IOException;
     }
-
-    // 得到数据长度一定为len，需要等待，读满len停止
-    public static byte[] readSync(InputStream inputStream, int len) throws IOException {
+    public static byte[] readSync(Socket socket, int len) throws IOException {
         int off = 0;
+        InputStream inputStream = socket.getInputStream();
         byte[] buffer = new byte[len];
-        while (len > 0){
-            int read = inputStream.read(buffer,off, len);
-            if(read == -1) break;
-            len -= read;
+        while(len > 0){
+            int read = inputStream.read(buffer, off, len);
+            if(read == -1) return null;
             off += read;
+            len -= read;
         }
         return buffer;
     }
 
-    // 得到的数据长度不一定为len，有多个数据包，读满len为止
-    public static void read(InputStream inputStream, int len, ReadHandler handler) throws IOException {
+    public static void read(Socket socket, int len, ReadHandler handler) throws IOException {
+        InputStream inputStream = socket.getInputStream();
         while (len > 0){
-            int l = Math.min(len, 1024);
-            byte[] buffer = new byte[l];
+            int bufferLen = Math.min(len, 1024);
+            byte[] buffer = new byte[bufferLen];
             int read = inputStream.read(buffer);
             if(read == -1) break;
-            len -= read;
-            if(read < l){
-                byte[] data = new byte[read];
-                System.arraycopy(buffer,0,data,0,read);
-                handler.onRead(data);
-            }else{
+            if(read == bufferLen) {
                 handler.onRead(buffer);
+            } else {
+                byte[] data = new byte[read];
+                System.arraycopy(buffer, 0, data, 0, read);
+                handler.onRead(data);
             }
+            len -= read;
         }
     }
 
-    // 永无止境地读，直到流关闭
-    public static void read(InputStream inputStream, ReadHandler handler) throws IOException {
-        int SIZE = 8 * CableMessageHead.SIZE;
+    public static void read(Socket socket, ReadHandler handler) throws IOException {
+        InputStream inputStream = socket.getInputStream();
+        int bufferLen = 1024;
         while (true){
-            byte[] buffer = new byte[SIZE];
+            byte[] buffer = new byte[bufferLen];
             int read = inputStream.read(buffer);
             if(read == -1) return;
-            if(read < SIZE){
+            if(read == bufferLen){
+                handler.onRead(buffer);
+            } else {
                 byte[] data = new byte[read];
-                System.arraycopy(buffer,0,data,0,read);
+                System.arraycopy(buffer, 0, data, 0, read);
                 handler.onRead(data);
-                continue;
             }
-            handler.onRead(buffer);
         }
     }
 }

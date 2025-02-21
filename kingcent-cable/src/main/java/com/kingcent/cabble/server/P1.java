@@ -5,7 +5,6 @@ import com.kingcent.cabble.server.messge.*;
 import com.kingcent.cabble.server.utils.SocketUtil;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -47,22 +46,31 @@ public class P1 {
                 listen(p2, new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
-                        System.out.println(new String(data, StandardCharsets.UTF_8));
+                        Logger.info("onForward:"+head.getClientHost()+";"+head.getClientPort());
+                        P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
+                        if (handlerOfClient != null) {
+                            handlerOfClient.onReply(data);
+                        }
                     }
 
                     @Override
-                    public void onOuterClose() {
-
+                    public void onOuterClose(CableMessageHead head) {
+                        Logger.info("outer closed:"+head.getClientHost()+";"+head.getClientPort());
+                        P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
+                        Logger.info("..."+handlerOfClient);
+                        if (handlerOfClient != null) {
+                            handlerOfClient.onServerClosed();
+                        }
                     }
 
                     @Override
-                    public void onForwardCompleted() {
-
+                    public void onForwardCompleted(CableMessageHead head) {
+                        Logger.info("转发完成");
                     }
 
                     @Override
                     public void onListenEnd(){
-                        System.out.println("输入关闭");
+                        Logger.info("输入关闭");
                     }
                 });
             }
@@ -70,40 +78,39 @@ public class P1 {
     }
 
     private boolean buildSafetyConnection(Socket p2) {
-        HelloInfo helloInfo = requireHelloInfo(p2);
-        if (helloInfo == null) return false;
-        // TODO 把这块改成配置
-        if (helloInfo.getSecret().equals("11223344")) {
-            String serviceName = helloInfo.getServiceName();
-            connectionPool.addP2(serviceName,p2);
-            System.out.println("P2[" + helloInfo.getServiceName() + "][" + p2.getInetAddress().getHostAddress() + ":" + p2.getPort() + "] is connected");
-            return true;
+        try {
+            byte[] bytes = SocketUtil.readSync(p2, CableMessageHead.SIZE);
+            if (bytes == null) return false;
+            CableMessageHead cableMessageHead = CableMessageHead.fromBytes(bytes);
+            if(cableMessageHead.getType() != CableMessageType.HELLO) return false;
+            byte[] body = SocketUtil.readSync(p2, cableMessageHead.getLength());
+            HelloInfo helloInfo = HelloInfo.fromBytes(body);
+            if (helloInfo == null) return false;
+            // TODO 把这块改成配置
+            if (helloInfo.getSecret().equals("11223344")) {
+                String serviceName = helloInfo.getServiceName();
+                connectionPool.addP2(serviceName,p2);
+                byte[] ok = "OK".getBytes(StandardCharsets.UTF_8);
+                p2.getOutputStream().write(
+                        new CableMessage(CableMessageHead.reply(cableMessageHead,ok.length),ok).getBytes()
+                );
+                Logger.info("P2[" + helloInfo.getServiceName() + "][" + p2.getInetAddress().getHostAddress() + ":" + p2.getPort() + "] is connected");
+                return true;
+            }
+            return false;
+        } catch (CableMessageException | IOException e) {
+            e.printStackTrace(System.out);
         }
         return false;
     }
 
-    // 等待来自p2的招呼
-    private HelloInfo requireHelloInfo(Socket p2){
-        try {
-            InputStream inputStream = p2.getInputStream();
-            byte[] bytes = SocketUtil.readSync(inputStream, CableMessageHead.SIZE);
-            if (bytes == null) return null;
-            CableMessageHead cableMessageHead = CableMessageHead.fromBytes(bytes);
-            if(cableMessageHead.getType() != CableMessageType.HELLO) return null;
-            byte[] body = SocketUtil.readSync(inputStream, cableMessageHead.getLength());
-           return HelloInfo.fromBytes(body);
-        } catch (CableMessageException | IOException e) {
-            e.printStackTrace(System.out);
-        }
-        return null;
-    }
+
 
     // 监听来自p2的消息
     private void listen(Socket p2, CableMessageListener listener){
         try {
-            InputStream inputStream = p2.getInputStream();
             while (!p2.isClosed()){
-                byte[] bytes = SocketUtil.readSync(inputStream, CableMessageHead.SIZE);
+                byte[] bytes = SocketUtil.readSync(p2, CableMessageHead.SIZE);
                 if(bytes == null){
                     break;
                 }
@@ -111,12 +118,12 @@ public class P1 {
                 switch (cableMessageHead.getType()){
                     case FORWARD -> {
                         // 接收转发消息边读边回调
-                        SocketUtil.read(inputStream,cableMessageHead.getLength(), data -> listener.onForward(cableMessageHead,data));
-                        listener.onForwardCompleted();
+                        SocketUtil.read(p2,cableMessageHead.getLength(), data -> listener.onForward(cableMessageHead,data));
+                        listener.onForwardCompleted(cableMessageHead);
                     }
                     case OUTER_CLOSE -> {
                         // 关闭
-                        listener.onOuterClose();
+                        listener.onOuterClose(cableMessageHead);
                     }
                 }
             }

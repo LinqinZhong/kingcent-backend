@@ -9,7 +9,9 @@ public interface P2Handler {
 
     void onReply(byte[] data);
 
-    void onServiceEnd();
+    void onServerClosed();
 
     void onServiceProvide(Socket p2);
+
+    void onServiceReadyToEnd();
 }
