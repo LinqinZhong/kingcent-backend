@@ -7,9 +7,6 @@ import com.kingcent.cabble.server.utils.SocketUtil;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
 
 public class P2 {
 
@@ -70,7 +67,7 @@ public class P2 {
                         Logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                         Logger.info("=======================================\n");
                         String clientName = head.getClientHost() + ":" + head.getClientPort();
-                        serverRequester.send(clientName, head.getServerHost(), head.getServerPort(), data, new ServerRequestHandler() {
+                        serverRequester.send(clientName, "localhost", head.getServerPort(), data, new ServerRequestHandler() {
                             @Override
                             public void onReply(byte[] data) {
                                 Logger.info("\n=======================================");
@@ -121,7 +118,7 @@ public class P2 {
             }
         } catch (IOException e) {
             try {
-                Thread.sleep(retryTimes++* 1000L);
+                Thread.sleep(Math.max(retryTimes++* 1000L,20000L));
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
@@ -196,10 +193,11 @@ public class P2 {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
         } catch (CableMessageException e) {
             Logger.info("Receive an unknown message:"+ e.getMessage());
             throw new RuntimeException(e);
         }
+        System.out.println("Connection is broken, try reconnecting.");
+        handleStart();
     }
 }

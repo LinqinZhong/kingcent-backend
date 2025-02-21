@@ -26,7 +26,7 @@ public class SocketUtil {
     public static void read(Socket socket, int len, ReadHandler handler) throws IOException {
         InputStream inputStream = socket.getInputStream();
         while (len > 0){
-            int bufferLen = Math.min(len, 1024);
+            int bufferLen = Math.min(len, 4096);
             byte[] buffer = new byte[bufferLen];
             int read = inputStream.read(buffer);
             if(read == -1) break;
@@ -43,7 +43,7 @@ public class SocketUtil {
 
     public static void read(Socket socket, ReadHandler handler) throws IOException {
         InputStream inputStream = socket.getInputStream();
-        int bufferLen = 1024;
+        int bufferLen = 4096;
         while (true){
             byte[] buffer = new byte[bufferLen];
             int read = inputStream.read(buffer);

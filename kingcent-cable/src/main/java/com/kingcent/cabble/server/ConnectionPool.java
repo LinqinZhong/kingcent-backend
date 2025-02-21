@@ -17,6 +17,8 @@ public class ConnectionPool {
     // 可用的P2列表
     private final Map<String, LinkedBlockingQueue<Socket>> p2OfServices = new ConcurrentHashMap<>();
 
+    private final Map<Socket,LinkedBlockingQueue<Socket>> queueOfP2 = new ConcurrentHashMap<>();
+
     // 客户端绑定的P2Handler
     private final Map<String,P2Handler> handlerOfClient = new ConcurrentHashMap<>();
 
@@ -35,6 +37,7 @@ public class ConnectionPool {
             p2s = new LinkedBlockingQueue<>();
             p2OfServices.put(serviceName, p2s);
         }
+        queueOfP2.put(p2, p2s);
         p2s.add(p2);
     }
 
@@ -50,27 +53,6 @@ public class ConnectionPool {
             p2Handler.onServiceNotFound();
             return;
         }
-//        try {
-//
-//            Logger.info("重新入队");
-//            // p2重新入队
-//            try {
-//                p2s.put(p2);
-//            } catch (InterruptedException e) {
-//                // TODO 可能有bug
-//                // 入队失败，关闭p2
-//                Logger.info("关闭p2");
-//                try {
-//                    p2.close();
-//                } catch (IOException ex) {
-//                    throw new RuntimeException(ex);
-//                }
-//            }
-//        } catch (InterruptedException e) {
-//            // 阻塞被打断（服务忙）
-//            p2Handler.onServiceBusy();
-//        }
-
         // 取出一个P2
         Socket p2 = p2s.peek();
         // 记录client绑定的p2
@@ -84,5 +66,11 @@ public class ConnectionPool {
             // 清除p2的服务
             handlerOfClient.remove(clientName);
         }).start();
+    }
+
+    public boolean removeP2(Socket p2) {
+        LinkedBlockingQueue<Socket> sockets = queueOfP2.get(p2);
+        if(sockets != null) return sockets.remove(p2);
+        return false;
     }
 }

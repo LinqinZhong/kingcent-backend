@@ -46,7 +46,6 @@ public class P1 {
                 listen(p2, new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
-                        Logger.info("onForward:"+head.getClientHost()+";"+head.getClientPort());
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
                         if (handlerOfClient != null) {
                             handlerOfClient.onReply(data);
@@ -55,9 +54,7 @@ public class P1 {
 
                     @Override
                     public void onOuterClose(CableMessageHead head) {
-                        Logger.info("outer closed:"+head.getClientHost()+";"+head.getClientPort());
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
-                        Logger.info("..."+handlerOfClient);
                         if (handlerOfClient != null) {
                             handlerOfClient.onServerClosed();
                         }
@@ -70,7 +67,7 @@ public class P1 {
 
                     @Override
                     public void onListenEnd(){
-                        Logger.info("输入关闭");
+                        connectionPool.removeP2(p2);
                     }
                 });
             }
@@ -127,12 +124,8 @@ public class P1 {
                     }
                 }
             }
-            listener.onListenEnd();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (CableMessageException e) {
-            // TODO p2发了一个错误的头部数据，安全起见，断开与其的连接
-        }
+        } catch (CableMessageException | IOException ignored) {}
+        listener.onListenEnd();
     }
 
 }
