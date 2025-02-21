@@ -2,8 +2,8 @@ package com.kingcent.cabble.server.messge;
 
 
 public class CableMessage {
-    private CableMessageHead head;
-    private byte[] body;
+    private final CableMessageHead head;
+    private final byte[] body;
 
     public CableMessage(CableMessageHead head, byte[] body) {
         this.head = head;
@@ -21,5 +21,9 @@ public class CableMessage {
     public static CableMessage hello(HelloInfo helloInfo){
         byte[] body = helloInfo.getBytes();
         return new CableMessage(CableMessageHead.hello(body.length), body);
+    }
+
+    public static CableMessage outerClose(CableMessageHead head){
+        return new CableMessage(CableMessageHead.outerClose(head),new byte[0]);
     }
 }
