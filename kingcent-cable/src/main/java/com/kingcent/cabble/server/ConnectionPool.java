@@ -22,12 +22,12 @@ public class ConnectionPool {
 
     public static ConnectionPool getInstance(){
         ConnectionPool connectionPool = instance == null ? instance = new ConnectionPool() : instance;
-        System.out.println(connectionPool);
+        Logger.info(connectionPool+"");
         return connectionPool;
     }
 
     public void addP2(String serviceName, Socket p2){
-        System.out.println("add-p2: "+serviceName);
+        Logger.info("add-p2: "+serviceName);
         LinkedBlockingQueue<Socket> p2s;
         if(p2OfServices.containsKey(serviceName)){
             p2s = p2OfServices.get(serviceName);
@@ -52,14 +52,14 @@ public class ConnectionPool {
         }
 //        try {
 //
-//            System.out.println("重新入队");
+//            Logger.info("重新入队");
 //            // p2重新入队
 //            try {
 //                p2s.put(p2);
 //            } catch (InterruptedException e) {
 //                // TODO 可能有bug
 //                // 入队失败，关闭p2
-//                System.out.println("关闭p2");
+//                Logger.info("关闭p2");
 //                try {
 //                    p2.close();
 //                } catch (IOException ex) {

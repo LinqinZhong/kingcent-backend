@@ -46,7 +46,7 @@ public class P1 {
                 listen(p2, new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
-                        System.out.println("onForward:"+head.getClientHost()+";"+head.getClientPort());
+                        Logger.info("onForward:"+head.getClientHost()+";"+head.getClientPort());
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
                         if (handlerOfClient != null) {
                             handlerOfClient.onReply(data);
@@ -55,9 +55,9 @@ public class P1 {
 
                     @Override
                     public void onOuterClose(CableMessageHead head) {
-                        System.out.println("outer closed:"+head.getClientHost()+";"+head.getClientPort());
+                        Logger.info("outer closed:"+head.getClientHost()+";"+head.getClientPort());
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
-                        System.out.println("..."+handlerOfClient);
+                        Logger.info("..."+handlerOfClient);
                         if (handlerOfClient != null) {
                             handlerOfClient.onServerClosed();
                         }
@@ -65,12 +65,12 @@ public class P1 {
 
                     @Override
                     public void onForwardCompleted(CableMessageHead head) {
-                        System.out.println("转发完成");
+                        Logger.info("转发完成");
                     }
 
                     @Override
                     public void onListenEnd(){
-                        System.out.println("输入关闭");
+                        Logger.info("输入关闭");
                     }
                 });
             }
@@ -94,7 +94,7 @@ public class P1 {
                 p2.getOutputStream().write(
                         new CableMessage(CableMessageHead.reply(cableMessageHead,ok.length),ok).getBytes()
                 );
-                System.out.println("P2[" + helloInfo.getServiceName() + "][" + p2.getInetAddress().getHostAddress() + ":" + p2.getPort() + "] is connected");
+                Logger.info("P2[" + helloInfo.getServiceName() + "][" + p2.getInetAddress().getHostAddress() + ":" + p2.getPort() + "] is connected");
                 return true;
             }
             return false;

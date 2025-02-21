@@ -10,7 +10,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CableServer {
@@ -45,7 +48,7 @@ public class CableServer {
     }
 
     private void onClient(Socket client) {
-        System.out.println("on client "+client.getInetAddress().getHostAddress()+":"+client.getPort());
+        Logger.info("on client "+client.getInetAddress().getHostAddress()+":"+client.getPort());
         AtomicBoolean closeable = new AtomicBoolean(false);
         new Thread(() -> {
             try{
@@ -59,52 +62,60 @@ public class CableServer {
                     client.close();
                     return;
                 }
-                System.out.println("读到"+bytes.length+"字节");
+                Logger.info("读到"+bytes.length+"字节");
                 // 转发信息
                 String clientHost = client.getInetAddress().getHostAddress();
                 int clientPort = client.getPort();
                 String serverHost = "192.168.22.219";
                 int serverPort = 3000;
                 // 申请服务
+                // TODO 改成async
+                BlockingQueue<OutputStream> outputKeeper = new ArrayBlockingQueue<>(1);
+                outputKeeper.add(client.getOutputStream());
                 connectionPool.useP2(clientHost,clientPort,"shop", new P2Handler() {
                     @Override
                     public void onServiceNotFound() {
-                        System.out.println("服务未找到");
+                        Logger.info("服务未找到");
                     }
 
                     @Override
                     public void onServiceBusy() {
-                        System.out.println("服务忙");
+                        Logger.info("服务忙");
                     }
 
                     @Override
                     public void onReply(byte[] data){
-                        try {
-                            client.getOutputStream().write(data);
-                        } catch (IOException e) {
-                            System.out.println(e.getMessage());
-                        }
-//                        replayTask.start();
-                        System.out.println("转发");
-//                        taskList.add(replayTask);
+                        Thread replayTask = new Thread(() -> {
+                            try {
+                                OutputStream out = outputKeeper.take();
+                                out.write(data);
+                                outputKeeper.add(out);
+                            } catch (IOException | InterruptedException e) {
+                                Logger.info(e.getMessage());
+                            }
+                        });
+
+                        replayTask.start();
+                        Logger.info("转发");
+                        taskList.add(replayTask);
                     }
 
                     @Override
                     public void onServerClosed(){
-                        System.out.println("服务端关闭");
+                        Logger.info("服务端关闭");
                         // TODO 可能性能。。
                         new Thread(() -> {
-                            System.out.println("等待发送完成");
+                            Logger.info("等待发送完成");
                             // TODO 整合
                             for (Thread thread : taskList) {
                                 try {
                                     thread.join();
-                                    System.out.println("222......????");
+                                    Logger.info("222......????");
                                 } catch (InterruptedException e) {
                                     throw new RuntimeException(e);
                                 }
                             }
-                            System.out.println("关闭");
+                            Logger.info("关闭");
                             try {
                                 client.close();
                             } catch (IOException e) {
@@ -116,7 +127,7 @@ public class CableServer {
 
                     @Override
                     public void onServiceProvide(Socket p2) {
-                        System.out.println("接入服务");
+                        Logger.info("接入服务");
                         try {
                             // 获取输出流
                             OutputStream outputStream = p2.getOutputStream();
@@ -127,12 +138,12 @@ public class CableServer {
                                             bytes
                                     ).getBytes()
                             );
-                            System.out.println(new String(bytes));
+                            Logger.info(new String(bytes));
                             // 转发任务
                             Thread forwardTask = new Thread(() -> {
                                 try {
                                     SocketUtil.read(client, data -> {
-                                        System.out.println(new String(data));
+                                        Logger.info(new String(data));
                                         outputStream.write(
                                                 new CableMessage(
                                                         CableMessageHead.forward(data.length,clientHost,clientPort,serverHost,serverPort),
@@ -142,9 +153,9 @@ public class CableServer {
                                     });
                                 } catch (IOException e) {
                                     if(e.getMessage().equals("Socket closed")){
-                                        System.out.println("自己");
+                                        Logger.info("自己");
                                     }
-                                    System.out.println("关闭");
+                                    Logger.info("关闭");
                                 }
                             });
                             forwardTask.start();
@@ -152,9 +163,9 @@ public class CableServer {
                             forwardTask.join();
                         } catch (SocketException e) {
                             if(e.getMessage().equals("Socket closed")){
-                                System.out.println("自己");
+                                Logger.info("自己");
                             }
-                            System.out.println("关闭");
+                            Logger.info("关闭");
                         }
                         catch (IOException e) {
                             e.printStackTrace(System.out);
@@ -165,16 +176,16 @@ public class CableServer {
 
                     @Override
                     public void onServiceReadyToEnd() {
-                        System.out.println("开始阻塞");
+                        Logger.info("开始阻塞");
                         while (!closeable.get()){
                             try {
-                                System.out.println("阻塞....................");
+                                Logger.info("阻塞....................");
                                 Thread.sleep(1000);
                             } catch (InterruptedException e) {
                                 throw new RuntimeException(e);
                             }
                         }
-                        System.out.println("阻塞完成");
+                        Logger.info("阻塞完成");
                     }
                 });
             }catch (IOException e) {

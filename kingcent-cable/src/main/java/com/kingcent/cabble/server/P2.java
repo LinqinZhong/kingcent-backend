@@ -42,10 +42,10 @@ public class P2 {
     public void start(){
         retryTimes  = 0;
         if(starting != null){
-            System.out.println("P2 is already started");
+            Logger.info("P2 is already started");
             return;
         }
-        System.out.println("Starting p2...");
+        Logger.info("Starting p2...");
         starting = new Thread(this::handleStart);
         starting.start();
         try {
@@ -59,25 +59,25 @@ public class P2 {
         try {
             p1 = new Socket(serverAddress,serverPort);
             retryTimes  = 0;
-            System.out.println("Connected to p1.");
+            Logger.info("Connected to p1.");
             if(buildSafetyConnection()){
                 listen(new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
-                        System.out.println("\n=======================================");
-                        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-                        System.out.println(new String(data, StandardCharsets.UTF_8));;
-                        System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-                        System.out.println("=======================================\n");
+                        Logger.info("\n=======================================");
+                        Logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                        Logger.info(new String(data, StandardCharsets.UTF_8));;
+                        Logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+                        Logger.info("=======================================\n");
                         String clientName = head.getClientHost() + ":" + head.getClientPort();
                         serverRequester.send(clientName, head.getServerHost(), head.getServerPort(), data, new ServerRequestHandler() {
                             @Override
                             public void onReply(byte[] data) {
-                                System.out.println("\n=======================================");
-                                System.out.println("+++++++++++++++++++++++++++++++++++++++");
-                                System.out.println(new String(data, StandardCharsets.UTF_8));
-                                System.out.println("+++++++++++++++++++++++++++++++++++++++");
-                                System.out.println("=======================================\n");
+                                Logger.info("\n=======================================");
+                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
+                                Logger.info(new String(data, StandardCharsets.UTF_8));
+                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
+                                Logger.info("=======================================\n");
                                 // 向p1转发回复的消息
                                 try {
                                     p1.getOutputStream().write(
@@ -92,7 +92,7 @@ public class P2 {
 
                             @Override
                             public void onClose() {
-                                System.out.println("closed");
+                                Logger.info("closed");
                                 // 通知p1关闭
                                 try {
                                     p1.getOutputStream().write(CableMessage.outerClose(head).getBytes());
@@ -125,7 +125,7 @@ public class P2 {
             } catch (InterruptedException ex) {
                 throw new RuntimeException(ex);
             }
-            System.out.println(p1 == null ? "Cannot access to p1, retrying("+retryTimes+")..." : "Disconnect from p1, try to reconnect("+retryTimes+")...");
+            Logger.info(p1 == null ? "Cannot access to p1, retrying("+retryTimes+")..." : "Disconnect from p1, try to reconnect("+retryTimes+")...");
             handleStart();
         }
     }
@@ -145,26 +145,26 @@ public class P2 {
             p1.getOutputStream().write(helloMsg.getBytes());
             byte[] bytes = SocketUtil.readSync(p1, CableMessageHead.SIZE);
             if(bytes == null){
-                System.out.println("Fail to build a safety connection because the connection doesn't send any bytes.");
+                Logger.info("Fail to build a safety connection because the connection doesn't send any bytes.");
                 return false;
             }
             CableMessageHead cableMessageHead = CableMessageHead.fromBytes(bytes);
             if(cableMessageHead.getType() == CableMessageType.HELLO){
                 byte[] helloBytes = SocketUtil.readSync(p1, cableMessageHead.getLength());
                 if(helloBytes == null){
-                    System.out.println("Fail to build a safety connection with p1, connection closed.");
+                    Logger.info("Fail to build a safety connection with p1, connection closed.");
                     return false;
                 }
                 String helloRlyMsg = new String(helloBytes,StandardCharsets.UTF_8);
-                System.out.println("Built a safety connection with p1 successfully.");
-                System.out.println(helloRlyMsg);
+                Logger.info("Built a safety connection with p1 successfully.");
+                Logger.info(helloRlyMsg);
                 return true;
             }else{
-                System.out.println("Fail to build a safety connection, reject by p1.");
+                Logger.info("Fail to build a safety connection, reject by p1.");
                 return false;
             }
         } catch (IOException | CableMessageException e) {
-            System.out.println("Fail to build a safety connection due to the exception: "+e.getMessage()+".");
+            Logger.info("Fail to build a safety connection due to the exception: "+e.getMessage()+".");
             return false;
         }
     }
@@ -174,15 +174,15 @@ public class P2 {
      * @param listener You should offer a listener then you will catch the callback events of the listening
      */
     private void listen(CableMessageListener listener){
-        System.out.println("Listening CableMessage from p1");
+        Logger.info("Listening CableMessage from p1");
         try {
             while (!p1.isClosed()){
                 byte[] bytes = SocketUtil.readSync(p1, CableMessageHead.SIZE);
                 if(bytes == null) break;
 //                // If you want to see what the data p2 received is, release followed component.
-//                System.out.println("---------------------");
-//                System.out.println(new String(bytes, StandardCharsets.UTF_8));
-//                System.out.println("----------------------");
+//                Logger.info("---------------------");
+//                Logger.info(new String(bytes, StandardCharsets.UTF_8));
+//                Logger.info("----------------------");
                 CableMessageHead cableMessageHead = CableMessageHead.fromBytes(bytes);
                 switch (cableMessageHead.getType()){
                     case FORWARD -> {
@@ -198,7 +198,7 @@ public class P2 {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (CableMessageException e) {
-            System.out.println("Receive an unknown message:"+ e.getMessage());
+            Logger.info("Receive an unknown message:"+ e.getMessage());
             throw new RuntimeException(e);
         }
     }

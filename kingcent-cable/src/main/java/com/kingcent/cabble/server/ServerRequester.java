@@ -21,16 +21,16 @@ public class ServerRequester {
                 Objects.requireNonNull(serverMap.computeIfAbsent(clientName, (r) -> {
                     try {
                         Socket s = new Socket(host, port);
-                        System.out.println("创建=========" + clientName);
+                        Logger.info("创建=========" + clientName);
                         // 创建接收任务
                         readingTask.set(new Thread(() -> {
                             try {
                                 SocketUtil.read(s, handler::onReply);
                             } catch (IOException e) {
-                                System.out.println("读：服务端关闭");
+                                Logger.info("读：服务端关闭");
                             }
                             handler.onClose();
-                            System.out.println("关闭----------------");
+                            Logger.info("关闭----------------");
                         }));
                         readingTask.get().start();
                         return s;
@@ -39,7 +39,7 @@ public class ServerRequester {
                     }
                 })).getOutputStream().write(data);
             } catch (IOException e) {
-                System.out.println("写：服务端关闭");
+                Logger.info("写：服务端关闭");
             }
             // 发送完成后要阻塞等待接收线程完成
             if(readingTask.get() != null){
