@@ -1,6 +1,8 @@
 package com.kingcent.cabble.server.messge;
 
 
+import java.util.UUID;
+
 public class CableMessage {
     private final CableMessageHead head;
     private final byte[] body;
@@ -8,6 +10,13 @@ public class CableMessage {
     public CableMessage(CableMessageHead head, byte[] body) {
         this.head = head;
         this.body = body;
+    }
+
+    public static CableMessage pingPong() {
+        return new CableMessage(
+                new CableMessageHead(UUID.randomUUID(),CableMessageType.PING_PONG,0,"0",0,"0",0),
+                new byte[0]
+        );
     }
 
     public byte[] getBytes(){

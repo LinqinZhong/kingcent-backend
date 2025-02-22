@@ -16,6 +16,8 @@ public class P2 {
     private final int serverPort;
     private Thread starting = null;
 
+    private Thread pingTask = null;
+
     private Socket p1 = null;
 
     private int retryTimes = 0;
@@ -58,6 +60,8 @@ public class P2 {
             retryTimes  = 0;
             Logger.info("Connected to p1.");
             if(buildSafetyConnection()){
+
+                startPingTask();
                 listen(new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
@@ -114,14 +118,17 @@ public class P2 {
                     public void onListenEnd() {
 
                     }
+
+                    @Override
+                    public void onPingPong() {
+                        System.out.println("pong");
+                    }
                 });
             }
         } catch (IOException e) {
             try {
                 Thread.sleep(Math.max(retryTimes++* 1000L,20000L));
-            } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
+            } catch (InterruptedException ignored) {}
             Logger.info(p1 == null ? "Cannot access to p1, retrying("+retryTimes+")..." : "Disconnect from p1, try to reconnect("+retryTimes+")...");
             handleStart();
         }
@@ -190,6 +197,9 @@ public class P2 {
                     case OUTER_CLOSE -> {
                         listener.onOuterClose(cableMessageHead);
                     }
+                    case PING_PONG -> {
+                        listener.onPingPong();
+                    }
                 }
             }
         } catch (IOException e) {
@@ -199,5 +209,29 @@ public class P2 {
         }
         System.out.println("Connection is broken, try reconnecting.");
         handleStart();
+    }
+
+    private void startPingTask() {
+        if(pingTask != null){
+            pingTask.interrupt();
+        }
+        pingTask = new Thread(() -> {
+            while (!p1.isClosed()){
+                try {
+                    Thread.sleep(Config.PING_PONG_TIME);
+                } catch (InterruptedException ignored) {}
+                System.out.println("ping");
+                try {
+                    p1.getOutputStream().write(
+                            CableMessage.pingPong().getBytes()
+                    );
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    handleStart();
+                    return;
+                }
+            }
+        });
+        pingTask.start();
     }
 }

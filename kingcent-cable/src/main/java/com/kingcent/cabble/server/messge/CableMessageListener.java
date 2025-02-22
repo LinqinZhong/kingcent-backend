@@ -10,4 +10,6 @@ public interface CableMessageListener {
     void onForwardCompleted(CableMessageHead head);
 
     void onListenEnd();
+
+    void onPingPong();
 }

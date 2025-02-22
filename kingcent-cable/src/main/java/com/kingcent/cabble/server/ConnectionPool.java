@@ -1,20 +1,28 @@
 package com.kingcent.cabble.server;
 
-import cn.hutool.db.meta.Table;
+import com.kingcent.cabble.server.messge.CableMessage;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ConnectionPool {
 
+
+
     private static ConnectionPool instance;
 
-    // 可用的P2列表
+    // P2是否在范围时间内有心跳
+    private final Map<Socket,Boolean> isPinged = new ConcurrentHashMap<>();
+
+    // P2列表列表
+    private final List<Socket> p2List = new CopyOnWriteArrayList<>();
+
+    // 服务名对应的可用P2列表
     private final Map<String, LinkedBlockingQueue<Socket>> p2OfServices = new ConcurrentHashMap<>();
 
     private final Map<Socket,LinkedBlockingQueue<Socket>> queueOfP2 = new ConcurrentHashMap<>();
@@ -28,6 +36,10 @@ public class ConnectionPool {
         return connectionPool;
     }
 
+    public ConnectionPool(){
+        checkPing();
+    }
+
     public void addP2(String serviceName, Socket p2){
         Logger.info("add-p2: "+serviceName);
         LinkedBlockingQueue<Socket> p2s;
@@ -37,6 +49,7 @@ public class ConnectionPool {
             p2s = new LinkedBlockingQueue<>();
             p2OfServices.put(serviceName, p2s);
         }
+        p2List.add(p2);
         queueOfP2.put(p2, p2s);
         p2s.add(p2);
     }
@@ -68,9 +81,43 @@ public class ConnectionPool {
         }).start();
     }
 
-    public boolean removeP2(Socket p2) {
+    public void removeP2(Socket p2) {
         LinkedBlockingQueue<Socket> sockets = queueOfP2.get(p2);
-        if(sockets != null) return sockets.remove(p2);
-        return false;
+        if(sockets != null) {
+            p2List.remove(p2);
+            sockets.remove(p2);
+        }
+    }
+
+    // 检测心跳
+    private void checkPing(){
+        new Thread(() -> {
+            while (true){
+                for (Socket p2: p2List) {
+                    Boolean isPing = isPinged.get(p2);
+                    if(isPing == null || !isPing){
+                        System.out.println("P2 is dead");
+                        if(!p2.isClosed()){
+                            try {
+                                p2.close();
+                            } catch (IOException e) {
+                                e.printStackTrace(System.out);
+                            }
+                        }
+                        removeP2(p2);
+                    }
+                }
+                isPinged.clear();   // 重置
+                try {
+                    Thread.sleep(Config.PING_PONG_TIME*2);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
+
+    public void onPing(Socket p2) {
+        isPinged.put(p2,true);
     }
 }

@@ -69,6 +69,16 @@ public class P1 {
                     public void onListenEnd(){
                         connectionPool.removeP2(p2);
                     }
+
+                    @Override
+                    public void onPingPong() {
+                        connectionPool.onPing(p2);
+                        try {
+                            p2.getOutputStream().write(CableMessage.pingPong().getBytes());
+                        } catch (IOException e) {
+                            e.printStackTrace(System.out);
+                        }
+                    }
                 });
             }
         }).start();
@@ -121,6 +131,10 @@ public class P1 {
                     case OUTER_CLOSE -> {
                         // 关闭
                         listener.onOuterClose(cableMessageHead);
+                    }
+                    case PING_PONG -> {
+                        // 心跳
+                        listener.onPingPong();
                     }
                 }
             }

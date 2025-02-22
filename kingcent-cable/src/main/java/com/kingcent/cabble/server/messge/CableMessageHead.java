@@ -56,6 +56,7 @@ public class CableMessageHead {
             case "0" -> CableMessageType.HELLO;
             case "1" -> CableMessageType.FORWARD;
             case "2" -> CableMessageType.OUTER_CLOSE;
+            case "3" -> CableMessageType.PING_PONG;
             default -> throw new CableMessageException("Unknown message type "+val);
         };
     }
