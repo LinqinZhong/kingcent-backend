@@ -6,6 +6,7 @@ import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.plant.entity.TaskEntity;
 import com.kingcent.plant.service.TaskService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.ibatis.annotations.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,5 +48,15 @@ public class TaskController {
     @ResponseBody
     public Result<TaskEntity> detail(@PathVariable Long taskId){
         return Result.success(taskService.getById(taskId));
+    }
+
+    @PutMapping("/status/{taskId}")
+    public Result<?> setStatus(@PathVariable Long taskId, @RequestBody TaskEntity task){
+        System.out.println(task);
+        TaskEntity taskEntity = new TaskEntity();
+        taskEntity.setStatus(task.getStatus());
+        taskEntity.setId(taskId);
+        taskService.updateById(taskEntity);
+        return Result.success();
     }
 }
