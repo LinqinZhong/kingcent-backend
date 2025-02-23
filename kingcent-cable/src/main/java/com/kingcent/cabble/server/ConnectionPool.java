@@ -1,7 +1,5 @@
 package com.kingcent.cabble.server;
 
-import com.kingcent.cabble.server.messge.CableMessage;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
@@ -16,8 +14,8 @@ public class ConnectionPool {
 
     private static ConnectionPool instance;
 
-    // P2是否在范围时间内有心跳
-    private final Map<Socket,Boolean> isPinged = new ConcurrentHashMap<>();
+    // P2是否在范围时间内存活
+    private final Map<Socket,Boolean> isAlive = new ConcurrentHashMap<>();
 
     // P2列表列表
     private final List<Socket> p2List = new CopyOnWriteArrayList<>();
@@ -49,6 +47,7 @@ public class ConnectionPool {
             p2s = new LinkedBlockingQueue<>();
             p2OfServices.put(serviceName, p2s);
         }
+        onAlive(p2);
         p2List.add(p2);
         queueOfP2.put(p2, p2s);
         p2s.add(p2);
@@ -68,6 +67,9 @@ public class ConnectionPool {
         }
         // 取出一个P2
         Socket p2 = p2s.peek();
+        if(p2 == null){
+            p2Handler.onServiceBusy();
+        }
         // 记录client绑定的p2
         String clientName = clientHost+":"+clientPort;
         handlerOfClient.put(clientName, p2Handler);
@@ -94,7 +96,7 @@ public class ConnectionPool {
         new Thread(() -> {
             while (true){
                 for (Socket p2: p2List) {
-                    Boolean isPing = isPinged.get(p2);
+                    Boolean isPing = isAlive.get(p2);
                     if(isPing == null || !isPing){
                         System.out.println("P2 is dead");
                         if(!p2.isClosed()){
@@ -107,7 +109,7 @@ public class ConnectionPool {
                         removeP2(p2);
                     }
                 }
-                isPinged.clear();   // 重置
+                isAlive.clear();   // 重置
                 try {
                     Thread.sleep(Config.PING_PONG_TIME*2);
                 } catch (InterruptedException e) {
@@ -117,7 +119,7 @@ public class ConnectionPool {
         }).start();
     }
 
-    public void onPing(Socket p2) {
-        isPinged.put(p2,true);
+    public void onAlive(Socket p2) {
+        isAlive.put(p2,true);
     }
 }

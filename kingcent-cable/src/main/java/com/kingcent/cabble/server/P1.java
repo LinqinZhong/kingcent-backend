@@ -46,6 +46,7 @@ public class P1 {
                 listen(p2, new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
+                        connectionPool.onAlive(p2);
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
                         if (handlerOfClient != null) {
                             handlerOfClient.onReply(data);
@@ -54,6 +55,7 @@ public class P1 {
 
                     @Override
                     public void onOuterClose(CableMessageHead head) {
+                        connectionPool.onAlive(p2);
                         P2Handler handlerOfClient = connectionPool.getHandlerOfClient(head.getClientHost(), head.getClientPort());
                         if (handlerOfClient != null) {
                             handlerOfClient.onServerClosed();
@@ -62,6 +64,7 @@ public class P1 {
 
                     @Override
                     public void onForwardCompleted(CableMessageHead head) {
+                        connectionPool.onAlive(p2);
                         Logger.info("转发完成");
                     }
 
@@ -72,7 +75,7 @@ public class P1 {
 
                     @Override
                     public void onPingPong() {
-                        connectionPool.onPing(p2);
+                        connectionPool.onAlive(p2);
                         try {
                             p2.getOutputStream().write(CableMessage.pingPong().getBytes());
                         } catch (IOException e) {

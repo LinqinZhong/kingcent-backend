@@ -1,6 +1,7 @@
 package com.kingcent.cabble.server;
 
 import com.kingcent.cabble.server.exception.CableMessageException;
+import com.kingcent.cabble.server.http.HttpHeader;
 import com.kingcent.cabble.server.messge.*;
 import com.kingcent.cabble.server.utils.SocketUtil;
 
@@ -23,6 +24,12 @@ public class P2 {
     private int retryTimes = 0;
 
     private final ServerRequester serverRequester = new ServerRequester();
+
+    // Count of ping unponged.
+    private int unpongPing = 0;
+
+    // Whether the p2 has communicated with p1 in current ping-pong time.
+    private boolean isCommunicated = false;
 
     public static void main(String[] args)  {
         new P2("shop","119.29.76.76",8889,"11223344").start();
@@ -55,7 +62,15 @@ public class P2 {
     }
 
     private void handleStart() {
+        if(p1 != null && !p1.isClosed()) {
+            try {
+                p1.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         try {
+            Logger.info("Trying connecting to p1.");
             p1 = new Socket(serverAddress,serverPort);
             retryTimes  = 0;
             Logger.info("Connected to p1.");
@@ -65,20 +80,31 @@ public class P2 {
                 listen(new CableMessageListener() {
                     @Override
                     public void onForward(CableMessageHead head, byte[] data) {
+
+                        long a = System.currentTimeMillis();
+                        HttpHeader httpHeader = new HttpHeader().init(data);
+                        if(httpHeader.isHttpRequestHeader()){
+                            System.out.println("dasasssssssssssss");
+                            data = httpHeader.setHost(head.getServerHost()).getBytes();
+                        }
+
+                        System.out.println("-----"+(System.currentTimeMillis() - a));
+
                         Logger.info("\n=======================================");
                         Logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                         Logger.info(new String(data, StandardCharsets.UTF_8));;
                         Logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                         Logger.info("=======================================\n");
                         String clientName = head.getClientHost() + ":" + head.getClientPort();
+
                         serverRequester.send(clientName, "localhost", head.getServerPort(), data, new ServerRequestHandler() {
                             @Override
                             public void onReply(byte[] data) {
-                                Logger.info("\n=======================================");
-                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
-                                Logger.info(new String(data, StandardCharsets.UTF_8));
-                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
-                                Logger.info("=======================================\n");
+//                                Logger.info("\n=======================================");
+//                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
+//                                Logger.info(new String(data, StandardCharsets.UTF_8));
+//                                Logger.info("+++++++++++++++++++++++++++++++++++++++");
+//                                Logger.info("=======================================\n");
                                 // 向p1转发回复的消息
                                 try {
                                     p1.getOutputStream().write(
@@ -86,6 +112,7 @@ public class P2 {
                                                    CableMessageHead.reply(head,data.length),data
                                             ).getBytes()
                                     );
+                                    isCommunicated = true;
                                 } catch (IOException e) {
                                     e.printStackTrace(System.out);
                                 }
@@ -97,6 +124,7 @@ public class P2 {
                                 // 通知p1关闭
                                 try {
                                     p1.getOutputStream().write(CableMessage.outerClose(head).getBytes());
+                                    isCommunicated = true;
                                 } catch (IOException e) {
                                     e.printStackTrace(System.out);
                                 }
@@ -122,6 +150,7 @@ public class P2 {
                     @Override
                     public void onPingPong() {
                         System.out.println("pong");
+                        unpongPing--;
                     }
                 });
             }
@@ -129,7 +158,7 @@ public class P2 {
             try {
                 Thread.sleep(Math.max(retryTimes++* 1000L,20000L));
             } catch (InterruptedException ignored) {}
-            Logger.info(p1 == null ? "Cannot access to p1, retrying("+retryTimes+")..." : "Disconnect from p1, try to reconnect("+retryTimes+")...");
+            Logger.info("Cannot access to p1, retrying("+retryTimes+")...");
             handleStart();
         }
     }
@@ -213,21 +242,34 @@ public class P2 {
 
     private void startPingTask() {
         if(pingTask != null){
-            pingTask.interrupt();
+            pingTask.stop();
         }
+        unpongPing = 0;
         pingTask = new Thread(() -> {
             while (!p1.isClosed()){
                 try {
                     Thread.sleep(Config.PING_PONG_TIME);
                 } catch (InterruptedException ignored) {}
-                System.out.println("ping");
+                if(unpongPing > 10){
+                    // Too much fail ping, close p1 and the program will try reconnecting.
+                    try {
+                        p1.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return;
+                }
                 try {
-                    p1.getOutputStream().write(
-                            CableMessage.pingPong().getBytes()
-                    );
+                    // If it didn't communicate with P1 with an unclosed state,send a ping message to P1.
+                    if(!isCommunicated && !p1.isClosed()) {
+                        System.out.println("ping");
+                        p1.getOutputStream().write(
+                                CableMessage.pingPong().getBytes()
+                        );
+                        unpongPing++;
+                    }
+                    isCommunicated = false;
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    handleStart();
                     return;
                 }
             }

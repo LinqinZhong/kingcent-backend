@@ -42,4 +42,10 @@ public class TaskController {
     public Result<?> delete(@PathVariable Long taskId){
         return taskService.delete(taskId);
     }
+
+    @GetMapping("/detail/{taskId}")
+    @ResponseBody
+    public Result<TaskEntity> detail(@PathVariable Long taskId){
+        return Result.success(taskService.getById(taskId));
+    }
 }
