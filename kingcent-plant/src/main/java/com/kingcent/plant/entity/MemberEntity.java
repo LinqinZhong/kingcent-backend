@@ -1,6 +1,7 @@
 package com.kingcent.plant.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("kc_agrc_member")
 public class MemberEntity {
+    @TableId
     private Long id;
     private Long userId;
     private String name;

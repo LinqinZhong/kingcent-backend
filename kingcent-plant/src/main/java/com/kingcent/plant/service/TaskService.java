@@ -13,4 +13,6 @@ public interface TaskService extends IService<TaskEntity> {
     Page<TaskEntity> getPage(Integer pageNum, Integer pageSize);
     Result<?> addOrUpdate(Long userId, TaskEntity taskEntity);
     Result<?> delete(Long id);
+
+    Result<?> setStatus(Long userId, Long taskId, Integer status);
 }

@@ -40,6 +40,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private TaskCommentService taskCommentService;
+
     @Override
     public Page<TaskEntity> getPage(Integer pageNum, Integer pageSize){
         Page<TaskEntity> page = page(new Page<>(pageNum, pageSize));
@@ -246,6 +249,35 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
     @Override
     public Result<?> delete(Long id) {
         removeById(id);
+        return Result.success();
+    }
+
+    @Override
+    @Transactional
+    public Result<?> setStatus(Long userId, Long taskId, Integer status) {
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            return memberResult;
+        }
+        TaskEntity taskEntity = new TaskEntity();
+        taskEntity.setStatus(status);
+        taskEntity.setId(taskId);
+        updateById(taskEntity);
+        TaskCommentEntity taskCommentEntity = new TaskCommentEntity();
+        taskCommentEntity.setTaskId(taskId);
+        taskCommentEntity.setMemberId(memberResult.getData().getId());
+        String content = null;
+        switch (status){
+            case 1 -> content = "开启了任务";
+            case 2 -> content = "任务已交付，请验收！";
+            case 3 -> content = "任务未通过";
+            case 4 -> content = "任务已完成";
+            case -1 -> content = "暂停了任务";
+        };
+        if(content != null){
+            taskCommentEntity.setContent(content);
+            taskCommentService.addOrUpdate(userId,taskCommentEntity);
+        }
         return Result.success();
     }
 }

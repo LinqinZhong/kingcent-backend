@@ -51,12 +51,8 @@ public class TaskController {
     }
 
     @PutMapping("/status/{taskId}")
-    public Result<?> setStatus(@PathVariable Long taskId, @RequestBody TaskEntity task){
-        System.out.println(task);
-        TaskEntity taskEntity = new TaskEntity();
-        taskEntity.setStatus(task.getStatus());
-        taskEntity.setId(taskId);
-        taskService.updateById(taskEntity);
-        return Result.success();
+    public Result<?> setStatus(HttpServletRequest request, @PathVariable Long taskId, @RequestBody TaskEntity task){
+        Long userId = RequestUtil.getUserId(request);
+        return taskService.setStatus(userId, taskId, task.getStatus());
     }
 }

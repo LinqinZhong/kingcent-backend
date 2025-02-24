@@ -11,7 +11,7 @@ import com.kingcent.plant.entity.PlanEntity;
  */
 public interface PlanService extends IService<PlanEntity> {
     Page<PlanEntity> getPage(Integer pageNum, Integer pageSize);
-    Result<?> addOrUpdate(PlanEntity planEntity);
+    Result<?> addOrUpdate(Long userId, PlanEntity planEntity);
 
     Result<?> delete(Long planId);
 }

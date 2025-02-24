@@ -1,5 +1,6 @@
 package com.kingcent.plant.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -20,4 +21,9 @@ public class PlanEntity {
     private LocalDateTime updateTime;
     private LocalDateTime endTime;
     private Integer status;
+
+    private Long reviewerId;
+
+    @TableField(exist = false)
+    private String reviewerName;
 }

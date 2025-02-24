@@ -3,6 +3,7 @@ package com.kingcent.plant.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.user.entity.UserEntity;
 import com.kingcent.plant.entity.LandEntity;
@@ -36,7 +37,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, MemberEntity> i
 
     @Override
     @Transactional
-    public Result<?> addOrUpdate(MemberEntity memberEntity) {
+    public Result<?> addOrUpdate(MemberEntity memberEntity) throws KingcentSystemException {
         boolean isUpdate = memberEntity.getId() != null;
         if(!isUpdate){
             memberEntity.setCreateTime(LocalDateTime.now());

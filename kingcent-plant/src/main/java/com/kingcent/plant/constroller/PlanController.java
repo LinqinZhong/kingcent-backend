@@ -2,8 +2,10 @@ package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.result.Result;
+import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.plant.entity.PlanEntity;
 import com.kingcent.plant.service.PlanService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,8 +32,9 @@ public class PlanController {
     };
 
     @PostMapping
-    public Result<?> add(@RequestBody PlanEntity planEntity){
-        return planService.addOrUpdate(planEntity);
+    public Result<?> add(HttpServletRequest request, @RequestBody PlanEntity planEntity){
+        Long userId = RequestUtil.getUserId(request);
+        return planService.addOrUpdate(userId, planEntity);
     }
 
 

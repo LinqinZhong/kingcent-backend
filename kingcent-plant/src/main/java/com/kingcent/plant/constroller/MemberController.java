@@ -1,6 +1,7 @@
 package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
 import com.kingcent.plant.entity.LandEntity;
 import com.kingcent.plant.entity.MemberEntity;
@@ -32,7 +33,7 @@ public class MemberController {
     };
 
     @PostMapping
-    public Result<?> addOrUpdate(@RequestBody MemberEntity memberEntity){
+    public Result<?> addOrUpdate(@RequestBody MemberEntity memberEntity) throws KingcentSystemException {
         return memberService.addOrUpdate(memberEntity);
     }
 
