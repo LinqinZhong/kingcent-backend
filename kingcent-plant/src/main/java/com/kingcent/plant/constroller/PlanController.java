@@ -1,5 +1,6 @@
 package com.kingcent.plant.constroller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
@@ -47,5 +48,11 @@ public class PlanController {
     public Result<PlanEntity> detail(HttpServletRequest request, @PathVariable Long planId){
         Long userId = RequestUtil.getUserId(request);
         return Result.success(planService.detail(userId, planId));
+    }
+
+    @PostMapping("/reject/{planId}")
+    public Result<?> reject(HttpServletRequest request, @PathVariable Long planId, @RequestBody JSONObject data){
+        Long userId = RequestUtil.getUserId(request);
+        return planService.reject(userId, planId, data);
     }
 }

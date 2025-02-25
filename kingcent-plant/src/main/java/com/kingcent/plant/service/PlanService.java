@@ -1,5 +1,6 @@
 package com.kingcent.plant.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kingcent.common.result.Result;
@@ -16,4 +17,6 @@ public interface PlanService extends IService<PlanEntity> {
     Result<?> delete(Long planId);
 
     PlanEntity detail(Long userId, Long planId);
+
+    Result<?> reject(Long userId, Long planId, JSONObject data);
 }

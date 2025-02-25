@@ -1,19 +1,14 @@
 package com.kingcent.plant.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.result.Result;
-import com.kingcent.plant.entity.LandEntity;
-import com.kingcent.plant.entity.MemberEntity;
-import com.kingcent.plant.entity.PlanEntity;
-import com.kingcent.plant.entity.TaskEntity;
+import com.kingcent.plant.entity.*;
 import com.kingcent.plant.mapper.LandMapper;
 import com.kingcent.plant.mapper.PlanMapper;
-import com.kingcent.plant.service.LandService;
-import com.kingcent.plant.service.MemberService;
-import com.kingcent.plant.service.PlanService;
-import com.kingcent.plant.service.TaskService;
+import com.kingcent.plant.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -36,6 +31,9 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
 
     @Autowired
     private MemberService memberService;
+
+    @Autowired
+    private TaskMemberService taskMemberService;
 
     @Override
     public Page<PlanEntity> getPage(Integer pageNum, Integer pageSize){
@@ -118,5 +116,47 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         PlanEntity plan = getById(planId);
         if(plan == null) return null;
         return plan;
+    }
+
+    @Transactional
+    @Override
+    public Result<?> reject(Long userId, Long planId, JSONObject data) {
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            return memberResult;
+        }
+        PlanEntity plan = getById(planId);
+        if(!plan.getReviewerId().equals(memberResult.getData().getId())){
+            return Result.fail("没有权限对此计划进行审批");
+        }
+        Boolean resubmit = data.getBoolean("resubmit");
+        String reason = data.getString("reason");
+        String suggestion = data.getString("suggestion");
+        if(resubmit == null){
+            return Result.fail("缺少字段resubmit");
+        }
+        if(reason == null || reason.trim().length() == 0){
+            return Result.fail("请填写拒绝原因");
+        }
+        plan.setStatus(-2);
+        updateById(plan);
+        TaskEntity taskEntity = new TaskEntity();
+        taskEntity.setCreatorMemberId(memberResult.getData().getId());
+        taskEntity.setName("对计划["+plan.getNo()+"]进行修改");
+        taskEntity.setType(9);
+        taskEntity.setContent("拒绝原因：\n"
+                +reason
+                +"\n\n修改意见：\n"
+                +(suggestion != null && suggestion.trim().length() > 0
+                ? suggestion
+                : "无"
+        ));
+        taskEntity.setCreateTime(LocalDateTime.now());
+        taskEntity.setUpdateTime(LocalDateTime.now());
+        taskEntity.setPlanId(planId);
+        taskService.save(taskEntity);
+        TaskMemberEntity taskMemberEntity = new TaskMemberEntity(taskEntity.getId(),plan.getCreatorId());
+        taskMemberService.save(taskMemberEntity);
+        return Result.success();
     }
 }
