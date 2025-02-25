@@ -21,6 +21,11 @@ public class PlanEntity {
     private LocalDateTime updateTime;
     private LocalDateTime endTime;
     private Integer status;
+    
+    private Long creatorId;
+
+    @TableField(exist = false)
+    private String creatorName;
 
     private Long reviewerId;
 

@@ -42,4 +42,10 @@ public class PlanController {
     public Result<?> delete(@PathVariable Long planId){
         return planService.delete(planId);
     }
+
+    @GetMapping("/detail/{planId}")
+    public Result<PlanEntity> detail(HttpServletRequest request, @PathVariable Long planId){
+        Long userId = RequestUtil.getUserId(request);
+        return Result.success(planService.detail(userId, planId));
+    }
 }

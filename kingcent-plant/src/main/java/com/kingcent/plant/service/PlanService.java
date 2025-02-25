@@ -14,4 +14,6 @@ public interface PlanService extends IService<PlanEntity> {
     Result<?> addOrUpdate(Long userId, PlanEntity planEntity);
 
     Result<?> delete(Long planId);
+
+    PlanEntity detail(Long userId, Long planId);
 }

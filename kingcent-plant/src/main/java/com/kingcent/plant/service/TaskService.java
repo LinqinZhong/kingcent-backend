@@ -15,4 +15,6 @@ public interface TaskService extends IService<TaskEntity> {
     Result<?> delete(Long id);
 
     Result<?> setStatus(Long userId, Long taskId, Integer status);
+
+    TaskEntity detail(Long userId, Long taskId);
 }

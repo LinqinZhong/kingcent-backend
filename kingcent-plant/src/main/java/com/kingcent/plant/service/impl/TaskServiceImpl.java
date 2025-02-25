@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Stream;
+
+import static cn.hutool.poi.excel.sax.AttributeName.s;
 
 /**
  * @author rainkyzhong
@@ -58,6 +61,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
             if (!landOfTaskList.isEmpty()) {
                 Set<Long> totalLandIds = new HashSet<>();
                 Map<Long, List<Long>> landOfTaskMap = new HashMap<>();
+
+
+                Set<Long> totalMemberIds = new HashSet<>();
+
                 for (TaskLandEntity taskLandEntity : landOfTaskList) {
                     List<Long> landIds = landOfTaskMap.computeIfAbsent(taskLandEntity.getTaskId(), (r) -> new ArrayList<>());
                     totalLandIds.add(taskLandEntity.getLandId());
@@ -81,15 +88,20 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
                             }
                         }
                     }
-
+                    totalMemberIds.add(task.getCreatorMemberId());
                     task.setLandNames(String.join(",", landNames));
                     task.setLandIds(String.join(",", landIds));
 
                 });
 
-                List<TaskMemberEntity> memberOfTask = taskMemberService.list(new LambdaQueryWrapper<TaskMemberEntity>().in(TaskMemberEntity::getTaskId, taskIds));
+                List<TaskMemberEntity> memberOfTask = taskMemberService.list(
+                        new LambdaQueryWrapper<TaskMemberEntity>().in(
+                                TaskMemberEntity::getTaskId,
+                                taskIds
+                        )
+                );
+
                 if (!memberOfTask.isEmpty()) {
-                    Set<Long> totalMemberIds = new HashSet<>();
                     Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
                     for (TaskMemberEntity taskMemberEntity : memberOfTask) {
                         List<Long> landIds = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
@@ -114,7 +126,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
                                 }
                             }
                         }
-
+                        MemberEntity memberEntity = memberEntityMap.get(task.getCreatorMemberId());
+                        if(memberEntity != null){
+                            task.setCreatorMemberName(memberEntity.getName());
+                        }
                         task.setMemberNames(String.join(",", memberNames));
                         task.setMemberIds(String.join(",", memberIds));
 
@@ -150,7 +165,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
         boolean isUpdate = taskEntity.getId() != null;
         if(!isUpdate) {
-            taskEntity.setStatus(0);
+            if(taskEntity.getStatus() == null) taskEntity.setStatus(0);
             taskEntity.setCreateTime(LocalDateTime.now());
             taskEntity.setCreatorMemberId(memberResult.getData().getId());
         }
@@ -167,7 +182,6 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
         LambdaQueryWrapper<TaskMemberEntity> currentMemberWrapper = new LambdaQueryWrapper<TaskMemberEntity>()
                 .eq(TaskMemberEntity::getTaskId, taskEntity.getId());
-
 
         if(isUpdate) {
             List<TaskLandEntity> currentLands = taskLandService.list(currentLandsWrapper);
@@ -279,5 +293,50 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
             taskCommentService.addOrUpdate(userId,taskCommentEntity);
         }
         return Result.success();
+    }
+
+    @Override
+    public TaskEntity detail(Long userId, Long taskId) {
+        TaskEntity task = getById(taskId);
+        Map<Long,MemberEntity> memberEntityMap = new HashMap<>();
+        Set<Long> totalMemberIds = new HashSet<>();
+        totalMemberIds.add(task.getCreatorMemberId());
+        List<TaskMemberEntity> list = taskMemberService.list(new LambdaQueryWrapper<TaskMemberEntity>().eq(TaskMemberEntity::getTaskId, task.getId()));
+        List<Long> memberIds = list.stream().map(TaskMemberEntity::getMemberId).toList();
+        totalMemberIds.addAll(memberIds);
+        System.out.println(memberIds);
+        if(!totalMemberIds.isEmpty()){
+            List<MemberEntity> memberEntities = memberService.listByIds(totalMemberIds);
+            for (MemberEntity memberEntity : memberEntities) {
+                memberEntityMap.put(memberEntity.getId(), memberEntity);
+            }
+            List<String> memberNames = new ArrayList<>();
+            for (Long memberId : memberIds) {
+                MemberEntity member = memberEntityMap.get(memberId);
+                if(member != null) memberNames.add(member.getName());
+            }
+            task.setMemberNames(String.join(",",memberNames));
+            MemberEntity creator = memberEntityMap.get(task.getCreatorMemberId());
+            if(creator != null){
+                task.setCreatorMemberName(creator.getName());
+            }
+        }
+        if(task.getPlanId() != null) {
+            PlanEntity plan = planService.getOne(new LambdaQueryWrapper<PlanEntity>().eq(PlanEntity::getId, task.getPlanId()));
+            task.setPlanName(plan.getName());
+        }
+        List<Long> landIds = taskLandService.list(
+                new LambdaQueryWrapper<TaskLandEntity>()
+                        .eq(TaskLandEntity::getTaskId, task.getId()
+                        )
+                )
+                .stream()
+                .map(TaskLandEntity::getLandId)
+                .toList();
+        if(!landIds.isEmpty()) {
+            List<String> landNames = landService.listByIds(landIds).stream().map(LandEntity::getName).toList();
+            task.setLandNames(String.join(",",landNames));
+        }
+        return task;
     }
 }

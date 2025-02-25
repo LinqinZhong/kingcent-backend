@@ -44,6 +44,7 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         if (!page.getRecords().isEmpty()) {
             for (PlanEntity record : page.getRecords()) {
                 memberIds.add(record.getReviewerId());
+                memberIds.add(record.getCreatorId());
             }
         }
 
@@ -56,6 +57,8 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
             for (PlanEntity record : page.getRecords()) {
                 MemberEntity reviewer = memberEntityMap.get(record.getReviewerId());
                 if(reviewer != null) record.setReviewerName(reviewer.getName());
+                MemberEntity creator = memberEntityMap.get(record.getCreatorId());
+                if(creator != null) record.setCreatorName(creator.getName());
             }
         }
         return page;
@@ -64,6 +67,14 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
     @Override
     @Transactional
     public Result<?> addOrUpdate(Long userId, PlanEntity planEntity){
+
+
+
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            return memberResult;
+        }
+
         if(planEntity.getStartTime() == null || planEntity.getEndTime() == null){
             return Result.fail("开始时间和结束时间不能为空");
         }
@@ -75,8 +86,9 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         }
         boolean isUpdate = planEntity.getId() != null;
         if(!isUpdate) {
-            planEntity.setStatus(1);
+            planEntity.setStatus(0);
             planEntity.setCreateTime(LocalDateTime.now());
+            planEntity.setCreatorId(memberResult.getData().getId());
         }
         planEntity.setUpdateTime(LocalDateTime.now());
         saveOrUpdate(planEntity);
@@ -87,6 +99,7 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         taskEntity.setName("对计划["+planEntity.getNo()+"]进行审批");
         taskEntity.setPlanId(planEntity.getId());
         taskEntity.setType(8);
+        taskEntity.setStatus(0);
         taskEntity.setStartTime(LocalDateTime.now());
         taskEntity.setEndTime(planEntity.getStartTime().plusDays(-3));
         taskService.addOrUpdate(userId, taskEntity);
@@ -98,5 +111,12 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
     public Result<?> delete(Long planId) {
         removeById(planId);
         return Result.success();
+    }
+
+    @Override
+    public PlanEntity detail(Long userId, Long planId) {
+        PlanEntity plan = getById(planId);
+        if(plan == null) return null;
+        return plan;
     }
 }

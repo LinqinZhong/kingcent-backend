@@ -46,8 +46,9 @@ public class TaskController {
 
     @GetMapping("/detail/{taskId}")
     @ResponseBody
-    public Result<TaskEntity> detail(@PathVariable Long taskId){
-        return Result.success(taskService.getById(taskId));
+    public Result<TaskEntity> detail(HttpServletRequest request,@PathVariable Long taskId){
+        Long userId = RequestUtil.getUserId(request);
+        return Result.success(taskService.detail(userId, taskId));
     }
 
     @PutMapping("/status/{taskId}")
