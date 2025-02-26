@@ -1,6 +1,7 @@
 package com.kingcent.plant.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kingcent.common.result.Result;
@@ -102,6 +103,9 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         taskEntity.setEndTime(planEntity.getStartTime().plusDays(-3));
         taskService.addOrUpdate(userId, taskEntity);
 
+        TaskMemberEntity taskMemberEntity = new TaskMemberEntity(taskEntity.getId(),memberResult.getData().getId());
+        taskMemberService.save(taskMemberEntity);
+
         return Result.success();
     }
 
@@ -135,14 +139,32 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         if(resubmit == null){
             return Result.fail("缺少字段resubmit");
         }
-        if(reason == null || reason.trim().length() == 0){
+        if(reason == null || reason.trim().isEmpty()){
             return Result.fail("请填写拒绝原因");
         }
+        Long taskId = data.getLong("taskId");
+        TaskEntity reviewTask = taskService.getById(taskId);
+        if(!Objects.equals(reviewTask.getPlanId(), planId)){
+            return Result.fail("计划不存在");
+        }
+        long count = taskMemberService.count(new LambdaQueryWrapper<TaskMemberEntity>()
+                .eq(TaskMemberEntity::getMemberId, memberResult.getData().getId())
+                .eq(TaskMemberEntity::getTaskId, taskId)
+        );
+        if(count == 0){
+            return Result.fail("无权限");
+        }
+
+        // 更新任务状态为已经完成
+        reviewTask.setStatus(4);
+        taskService.updateById(reviewTask);
+
         plan.setStatus(-2);
         updateById(plan);
         TaskEntity taskEntity = new TaskEntity();
         taskEntity.setCreatorMemberId(memberResult.getData().getId());
         taskEntity.setName("对计划["+plan.getNo()+"]进行修改");
+        taskEntity.setStatus(0);
         taskEntity.setType(9);
         taskEntity.setContent("拒绝原因：\n"
                 +reason
@@ -157,6 +179,8 @@ public class PlanServiceImpl extends ServiceImpl<PlanMapper, PlanEntity> impleme
         taskService.save(taskEntity);
         TaskMemberEntity taskMemberEntity = new TaskMemberEntity(taskEntity.getId(),plan.getCreatorId());
         taskMemberService.save(taskMemberEntity);
+
+
         return Result.success();
     }
 }

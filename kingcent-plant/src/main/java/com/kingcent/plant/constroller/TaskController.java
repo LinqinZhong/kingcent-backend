@@ -1,6 +1,7 @@
 package com.kingcent.plant.constroller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.plant.entity.TaskEntity;
@@ -23,12 +24,34 @@ public class TaskController {
 
     @GetMapping("/{pageNum}/{pageSize}")
     public Result<Page<TaskEntity>> list(
+            HttpServletRequest request,
             @PathVariable
             Integer pageNum,
             @PathVariable
-            Integer pageSize
-    ){
-        Page<TaskEntity> page = taskService.getPage(pageNum, pageSize);
+            Integer pageSize,
+            @RequestParam(required = false)
+            String memberIds,
+            @RequestParam(required = false)
+            String landIds,
+            @RequestParam(required = false)
+            Long planId,
+            @RequestParam(required = false)
+            String name,
+            @RequestParam(required = false)
+            Integer status,
+            @RequestParam(required = false)
+            Integer type,
+            @RequestParam(required = false)
+            String startTimeFrom,
+            @RequestParam(required = false)
+            String startTimeEnd,
+            @RequestParam(required = false)
+            String endTimeFrom,
+            @RequestParam(required = false)
+            String endTimeEnd
+    ) throws KingcentSystemException {
+        Long userId = RequestUtil.getUserId(request);
+        Page<TaskEntity> page = taskService.getPage(userId,pageNum, pageSize,planId,memberIds,landIds,name,status,type,startTimeFrom,startTimeEnd,endTimeFrom,endTimeEnd);
         return Result.success(page);
     };
 

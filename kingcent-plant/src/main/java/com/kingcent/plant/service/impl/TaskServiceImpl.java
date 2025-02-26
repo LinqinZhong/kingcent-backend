@@ -1,15 +1,12 @@
 package com.kingcent.plant.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
-import com.kingcent.common.user.entity.UserEntity;
 import com.kingcent.plant.entity.*;
-import com.kingcent.plant.mapper.PlanMapper;
 import com.kingcent.plant.mapper.TaskMapper;
-import com.kingcent.plant.mapper.TaskMemberMapper;
 import com.kingcent.plant.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,9 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Stream;
-
-import static cn.hutool.poi.excel.sax.AttributeName.s;
 
 /**
  * @author rainkyzhong
@@ -47,95 +41,167 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
     private TaskCommentService taskCommentService;
 
     @Override
-    public Page<TaskEntity> getPage(Integer pageNum, Integer pageSize){
-        Page<TaskEntity> page = page(new Page<>(pageNum, pageSize));
-        if(page.getSize() == 0) return  page;
+    public Page<TaskEntity> getPage(
+            Long userId,
+                                    Integer pageNum,
+                                    Integer pageSize,
+                                    Long planId,
+                                    String memberIds0,
+                                    String landIds0,
+                                    String nameLike,
+                                    Integer status,
+                                    Integer type,
+                                    String startTimeFrom0,
+                                    String startTimeEnd0,
+                                    String endTimeFrom0,
+                                    String endTimeEnd0
+    ) throws KingcentSystemException {
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            throw new KingcentSystemException(memberResult.getMessage());
+        }
+        List<Long> memberIdList = null;
+        if(memberIds0 != null) {
+            try {
+                memberIdList = memberIds0.equals("current")
+                        ? List.of(memberResult.getData().getId())
+                        : Arrays.stream(memberIds0.split(",")).map(Long::parseLong).toList();
+            } catch (Exception ignored) {}
+        }
+        List<Long> landIdList = null;
+        if(memberIds0 != null) {
+            try {
+                landIdList = Arrays.stream(landIds0.split(",")).map(Long::parseLong).toList();
+            } catch (Exception ignored) {}
+        }
+        LocalDateTime startTimeFrom = null;
+        LocalDateTime startTimeEnd = null;
+        LocalDateTime endTimeFrom = null;
+        LocalDateTime endTimeEnd = null;
+
+
+
+        if(pageNum == null || pageNum <= 0) pageNum = 1;
+        if(pageSize == null || pageSize <= 0) pageSize = 10;
+        Integer count = baseMapper.selectCount(pageNum,
+                pageSize,
+                planId,
+                memberIdList,
+                landIdList,
+                nameLike,
+                status,
+                type,
+                startTimeFrom,
+                startTimeEnd,
+                endTimeFrom,
+                endTimeEnd
+        );
+        Page<TaskEntity> taskPage = new Page<>(0, 0);
+        if(count == null || count == 0) return taskPage;
+        List<TaskEntity> taskEntityList = baseMapper.selectPage(
+                pageNum,
+                pageSize,
+                planId,
+                memberIdList,
+                landIdList,
+                nameLike,
+                status,
+                type,
+                startTimeFrom,
+                startTimeEnd,
+                endTimeFrom,
+                endTimeEnd
+        );
+        taskPage.setTotal(count);
+        taskPage.setRecords(taskEntityList);
+        if(taskEntityList.isEmpty()) return taskPage;
+
+        List<Long> taskIds = new ArrayList<>();
         Set<Long> planIds = new HashSet<>();
-        Set<Long> taskIds = new HashSet<>();
-        page.getRecords().forEach(r -> {
-            taskIds.add(r.getId());
-            planIds.add(r.getPlanId());
-        });
-        if(!taskIds.isEmpty()) {
-            List<TaskLandEntity> landOfTaskList = taskLandService.list(new LambdaQueryWrapper<TaskLandEntity>().in(TaskLandEntity::getTaskId, taskIds));
-            if (!landOfTaskList.isEmpty()) {
-                Set<Long> totalLandIds = new HashSet<>();
-                Map<Long, List<Long>> landOfTaskMap = new HashMap<>();
+        for (TaskEntity taskEntity : taskEntityList) {
+            taskIds.add(taskEntity.getId());
+            planIds.add(taskEntity.getPlanId());
+        }
 
 
-                Set<Long> totalMemberIds = new HashSet<>();
+        List<TaskLandEntity> landOfTaskList = taskLandService.list(new LambdaQueryWrapper<TaskLandEntity>().in(TaskLandEntity::getTaskId, taskIds));
+        if (!landOfTaskList.isEmpty()) {
+            Set<Long> totalLandIds = new HashSet<>();
+            Map<Long, List<Long>> landOfTaskMap = new HashMap<>();
 
-                for (TaskLandEntity taskLandEntity : landOfTaskList) {
-                    List<Long> landIds = landOfTaskMap.computeIfAbsent(taskLandEntity.getTaskId(), (r) -> new ArrayList<>());
-                    totalLandIds.add(taskLandEntity.getLandId());
-                    landIds.add(taskLandEntity.getLandId());
+
+            Set<Long> totalMemberIds = new HashSet<>();
+
+            for (TaskLandEntity taskLandEntity : landOfTaskList) {
+                List<Long> landIdsOfTask = landOfTaskMap.computeIfAbsent(taskLandEntity.getTaskId(), (r) -> new ArrayList<>());
+                totalLandIds.add(taskLandEntity.getLandId());
+                landIdsOfTask.add(taskLandEntity.getLandId());
+            }
+            Map<Long, LandEntity> landEntityMap = new HashMap<>();
+            List<LandEntity> landList = landService.list(new LambdaQueryWrapper<LandEntity>().in(LandEntity::getId, totalLandIds));
+            for (LandEntity landEntity : landList) {
+                landEntityMap.put(landEntity.getId(), landEntity);
+            }
+            taskEntityList.forEach(task -> {
+                List<String> landNames = new ArrayList<>();
+                List<String> landIdsOfTask = new ArrayList<>();
+                List<Long> landIdListOfTask = landOfTaskMap.get(task.getId());
+                if (landIdListOfTask != null) {
+                    for (Long landId : landIdListOfTask) {
+                        LandEntity landEntity = landEntityMap.get(landId);
+                        if (landEntity != null) {
+                            landNames.add(landEntity.getName());
+                            landIdsOfTask.add(landId + "");
+                        }
+                    }
                 }
-                Map<Long, LandEntity> landEntityMap = new HashMap<>();
-                List<LandEntity> landList = landService.list(new LambdaQueryWrapper<LandEntity>().in(LandEntity::getId, totalLandIds));
-                for (LandEntity landEntity : landList) {
-                    landEntityMap.put(landEntity.getId(), landEntity);
+                totalMemberIds.add(task.getCreatorMemberId());
+                task.setLandNames(String.join(",", landNames));
+                task.setLandIds(String.join(",", landIdsOfTask));
+
+            });
+
+            List<TaskMemberEntity> memberOfTask = taskMemberService.list(
+                    new LambdaQueryWrapper<TaskMemberEntity>().in(
+                            TaskMemberEntity::getTaskId,
+                            taskIds
+                    )
+            );
+
+            if (!memberOfTask.isEmpty()) {
+                Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
+                for (TaskMemberEntity taskMemberEntity : memberOfTask) {
+                    List<Long> landIdsOfTask = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
+                    totalMemberIds.add(taskMemberEntity.getMemberId());
+                    landIdsOfTask.add(taskMemberEntity.getMemberId());
                 }
-                page.getRecords().forEach(task -> {
-                    List<String> landNames = new ArrayList<>();
-                    List<String> landIds = new ArrayList<>();
-                    List<Long> landIdList = landOfTaskMap.get(task.getId());
-                    if (landIdList != null) {
-                        for (Long landId : landIdList) {
-                            LandEntity landEntity = landEntityMap.get(landId);
-                            if (landEntity != null) {
-                                landNames.add(landEntity.getName());
-                                landIds.add(landId + "");
+                Map<Long, MemberEntity> memberEntityMap = new HashMap<>();
+                List<MemberEntity> memberList = memberService.list(new LambdaQueryWrapper<MemberEntity>().in(MemberEntity::getId, totalMemberIds));
+                for (MemberEntity member : memberList) {
+                    memberEntityMap.put(member.getId(), member);
+                }
+                taskEntityList.forEach(task -> {
+                    List<String> memberNames = new ArrayList<>();
+                    List<String> memberIds = new ArrayList<>();
+                    List<Long> memberIdListOfTask = memberOfTaskMap.get(task.getId());
+                    if (memberIdListOfTask != null) {
+                        for (Long memberId : memberIdListOfTask) {
+                            MemberEntity member = memberEntityMap.get(memberId);
+                            if (member != null) {
+                                memberNames.add(member.getName());
+                                memberIds.add(memberId + "");
                             }
                         }
                     }
-                    totalMemberIds.add(task.getCreatorMemberId());
-                    task.setLandNames(String.join(",", landNames));
-                    task.setLandIds(String.join(",", landIds));
+                    MemberEntity memberEntity = memberEntityMap.get(task.getCreatorMemberId());
+                    if(memberEntity != null){
+                        task.setCreatorMemberName(memberEntity.getName());
+                    }
+                    task.setMemberNames(String.join(",", memberNames));
+                    task.setMemberIds(String.join(",", memberIds));
 
                 });
 
-                List<TaskMemberEntity> memberOfTask = taskMemberService.list(
-                        new LambdaQueryWrapper<TaskMemberEntity>().in(
-                                TaskMemberEntity::getTaskId,
-                                taskIds
-                        )
-                );
-
-                if (!memberOfTask.isEmpty()) {
-                    Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
-                    for (TaskMemberEntity taskMemberEntity : memberOfTask) {
-                        List<Long> landIds = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
-                        totalMemberIds.add(taskMemberEntity.getMemberId());
-                        landIds.add(taskMemberEntity.getMemberId());
-                    }
-                    Map<Long, MemberEntity> memberEntityMap = new HashMap<>();
-                    List<MemberEntity> memberList = memberService.list(new LambdaQueryWrapper<MemberEntity>().in(MemberEntity::getId, totalMemberIds));
-                    for (MemberEntity member : memberList) {
-                        memberEntityMap.put(member.getId(), member);
-                    }
-                    page.getRecords().forEach(task -> {
-                        List<String> memberNames = new ArrayList<>();
-                        List<String> memberIds = new ArrayList<>();
-                        List<Long> memberIdList = memberOfTaskMap.get(task.getId());
-                        if (memberIdList != null) {
-                            for (Long memberId : memberIdList) {
-                                MemberEntity member = memberEntityMap.get(memberId);
-                                if (member != null) {
-                                    memberNames.add(member.getName());
-                                    memberIds.add(memberId + "");
-                                }
-                            }
-                        }
-                        MemberEntity memberEntity = memberEntityMap.get(task.getCreatorMemberId());
-                        if(memberEntity != null){
-                            task.setCreatorMemberName(memberEntity.getName());
-                        }
-                        task.setMemberNames(String.join(",", memberNames));
-                        task.setMemberIds(String.join(",", memberIds));
-
-                    });
-
-                }
             }
         }
 
@@ -146,12 +212,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
             planEntities.forEach((p -> {
                 planEntityMap.put(p.getId(), p);
             }));
-            page.getRecords().forEach(r -> {
+            taskEntityList.forEach(r -> {
                 PlanEntity planEntity = planEntityMap.get(r.getPlanId());
                 if (planEntity != null) r.setPlanName(planEntity.getName());
             });
         }
-        return page;
+        return taskPage;
     }
 
     @Override
