@@ -117,9 +117,15 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
         List<Long> taskIds = new ArrayList<>();
         Set<Long> planIds = new HashSet<>();
+
+
+        Set<Long> totalMemberIds = new HashSet<>();
+
+
         for (TaskEntity taskEntity : taskEntityList) {
             taskIds.add(taskEntity.getId());
             planIds.add(taskEntity.getPlanId());
+            totalMemberIds.add(taskEntity.getCreatorMemberId());
         }
 
 
@@ -127,9 +133,6 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         if (!landOfTaskList.isEmpty()) {
             Set<Long> totalLandIds = new HashSet<>();
             Map<Long, List<Long>> landOfTaskMap = new HashMap<>();
-
-
-            Set<Long> totalMemberIds = new HashSet<>();
 
             for (TaskLandEntity taskLandEntity : landOfTaskList) {
                 List<Long> landIdsOfTask = landOfTaskMap.computeIfAbsent(taskLandEntity.getTaskId(), (r) -> new ArrayList<>());
@@ -154,54 +157,56 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
                         }
                     }
                 }
-                totalMemberIds.add(task.getCreatorMemberId());
                 task.setLandNames(String.join(",", landNames));
                 task.setLandIds(String.join(",", landIdsOfTask));
 
             });
 
-            List<TaskMemberEntity> memberOfTask = taskMemberService.list(
-                    new LambdaQueryWrapper<TaskMemberEntity>().in(
-                            TaskMemberEntity::getTaskId,
-                            taskIds
-                    )
-            );
 
-            if (!memberOfTask.isEmpty()) {
-                Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
-                for (TaskMemberEntity taskMemberEntity : memberOfTask) {
-                    List<Long> landIdsOfTask = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
-                    totalMemberIds.add(taskMemberEntity.getMemberId());
-                    landIdsOfTask.add(taskMemberEntity.getMemberId());
-                }
-                Map<Long, MemberEntity> memberEntityMap = new HashMap<>();
-                List<MemberEntity> memberList = memberService.list(new LambdaQueryWrapper<MemberEntity>().in(MemberEntity::getId, totalMemberIds));
-                for (MemberEntity member : memberList) {
-                    memberEntityMap.put(member.getId(), member);
-                }
-                taskEntityList.forEach(task -> {
-                    List<String> memberNames = new ArrayList<>();
-                    List<String> memberIds = new ArrayList<>();
-                    List<Long> memberIdListOfTask = memberOfTaskMap.get(task.getId());
-                    if (memberIdListOfTask != null) {
-                        for (Long memberId : memberIdListOfTask) {
-                            MemberEntity member = memberEntityMap.get(memberId);
-                            if (member != null) {
-                                memberNames.add(member.getName());
-                                memberIds.add(memberId + "");
-                            }
+        }
+
+        List<TaskMemberEntity> memberOfTask = taskMemberService.list(
+                new LambdaQueryWrapper<TaskMemberEntity>().in(
+                        TaskMemberEntity::getTaskId,
+                        taskIds
+                )
+        );
+
+
+        if (!memberOfTask.isEmpty()) {
+            Map<Long, List<Long>> memberOfTaskMap = new HashMap<>();
+            for (TaskMemberEntity taskMemberEntity : memberOfTask) {
+                List<Long> landIdsOfTask = memberOfTaskMap.computeIfAbsent(taskMemberEntity.getTaskId(), (r) -> new ArrayList<>());
+                totalMemberIds.add(taskMemberEntity.getMemberId());
+                landIdsOfTask.add(taskMemberEntity.getMemberId());
+            }
+            Map<Long, MemberEntity> memberEntityMap = new HashMap<>();
+            List<MemberEntity> memberList = memberService.list(new LambdaQueryWrapper<MemberEntity>().in(MemberEntity::getId, totalMemberIds));
+            for (MemberEntity member : memberList) {
+                memberEntityMap.put(member.getId(), member);
+            }
+            taskEntityList.forEach(task -> {
+                List<String> memberNames = new ArrayList<>();
+                List<String> memberIds = new ArrayList<>();
+                List<Long> memberIdListOfTask = memberOfTaskMap.get(task.getId());
+                if (memberIdListOfTask != null) {
+                    for (Long memberId : memberIdListOfTask) {
+                        MemberEntity member = memberEntityMap.get(memberId);
+                        if (member != null) {
+                            memberNames.add(member.getName());
+                            memberIds.add(memberId + "");
                         }
                     }
-                    MemberEntity memberEntity = memberEntityMap.get(task.getCreatorMemberId());
-                    if(memberEntity != null){
-                        task.setCreatorMemberName(memberEntity.getName());
-                    }
-                    task.setMemberNames(String.join(",", memberNames));
-                    task.setMemberIds(String.join(",", memberIds));
+                }
+                MemberEntity memberEntity = memberEntityMap.get(task.getCreatorMemberId());
+                if(memberEntity != null){
+                    task.setCreatorMemberName(memberEntity.getName());
+                }
+                task.setMemberNames(String.join(",", memberNames));
+                task.setMemberIds(String.join(",", memberIds));
 
-                });
+            });
 
-            }
         }
 
 
