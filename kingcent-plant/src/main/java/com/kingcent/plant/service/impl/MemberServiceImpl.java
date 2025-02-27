@@ -30,10 +30,36 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, MemberEntity> i
     private UserService userService;
 
     @Override
-    public Page<MemberEntity> getPage(Integer pageNum, Integer pageSize) {
-        Page<MemberEntity> page = page(new Page<>(pageNum, pageSize));
+    public Page<MemberEntity> getPage(Integer pageNum, Integer pageSize, String nickname, String no, String username, String email, String mobile) {
+        // 创建分页对象
+        Page<MemberEntity> page = new Page<>(pageNum, pageSize);
+
+        // 创建 Lambda 查询条件包装器
+        LambdaQueryWrapper<MemberEntity> lambdaWrapper = new LambdaQueryWrapper<>();
+
+        // 添加模糊查询条件
+        if (nickname != null && !nickname.isEmpty()) {
+            lambdaWrapper.like(MemberEntity::getName, nickname);
+        }
+        if (no != null && !no.isEmpty()) {
+            lambdaWrapper.like(MemberEntity::getNo, no);
+        }
+        if (username != null && !username.isEmpty()) {
+            lambdaWrapper.like(MemberEntity::getUsername, username);
+        }
+        if (email != null && !email.isEmpty()) {
+            lambdaWrapper.like(MemberEntity::getEmail, email);
+        }
+        if (mobile != null && !mobile.isEmpty()) {
+            lambdaWrapper.like(MemberEntity::getMobile, mobile);
+        }
+
+        // 执行分页查询
+        page(page, lambdaWrapper);
+
         return page;
     }
+
 
     @Override
     @Transactional

@@ -36,4 +36,6 @@ public class MemberEntity {
     @TableField(exist = false)
     private String passwordSalt;
 
+    private String avatar;
+
 }

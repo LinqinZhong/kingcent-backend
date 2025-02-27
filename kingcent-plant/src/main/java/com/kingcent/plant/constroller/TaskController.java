@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
+import com.kingcent.common.utils.NumberUtils;
 import com.kingcent.plant.entity.TaskEntity;
 import com.kingcent.plant.service.TaskService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.ibatis.annotations.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,9 +38,9 @@ public class TaskController {
             @RequestParam(required = false)
             String name,
             @RequestParam(required = false)
-            Integer status,
+            String status,
             @RequestParam(required = false)
-            Integer type,
+            String type,
             @RequestParam(required = false)
             String startTimeFrom,
             @RequestParam(required = false)
@@ -51,7 +51,21 @@ public class TaskController {
             String endTimeEnd
     ) throws KingcentSystemException {
         Long userId = RequestUtil.getUserId(request);
-        Page<TaskEntity> page = taskService.getPage(userId,pageNum, pageSize,planId,memberIds,landIds,name,status,type,startTimeFrom,startTimeEnd,endTimeFrom,endTimeEnd);
+        Page<TaskEntity> page = taskService.getPage(
+                userId,
+                pageNum,
+                pageSize,
+                planId,
+                memberIds,
+                landIds,
+                name,
+                NumberUtils.splitInt(status,",",true),
+                NumberUtils.splitInt(type,",",true),
+                startTimeFrom,
+                startTimeEnd,
+                endTimeFrom,
+                endTimeEnd
+        );
         return Result.success(page);
     };
 

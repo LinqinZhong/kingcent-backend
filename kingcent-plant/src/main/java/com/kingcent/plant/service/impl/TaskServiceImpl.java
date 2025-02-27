@@ -49,8 +49,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
                                     String memberIds0,
                                     String landIds0,
                                     String nameLike,
-                                    Integer status,
-                                    Integer type,
+            List<Integer> status,
+            List<Integer> type,
                                     String startTimeFrom0,
                                     String startTimeEnd0,
                                     String endTimeFrom0,
@@ -83,8 +83,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
 
         if(pageNum == null || pageNum <= 0) pageNum = 1;
         if(pageSize == null || pageSize <= 0) pageSize = 10;
-        Integer count = baseMapper.selectCount(pageNum,
-                pageSize,
+        Integer count = baseMapper.selectCount(
                 planId,
                 memberIdList,
                 landIdList,
@@ -99,7 +98,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         Page<TaskEntity> taskPage = new Page<>(0, 0);
         if(count == null || count == 0) return taskPage;
         List<TaskEntity> taskEntityList = baseMapper.selectPage(
-                pageNum,
+                pageSize*(pageNum-1),
                 pageSize,
                 planId,
                 memberIdList,

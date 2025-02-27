@@ -3,12 +3,15 @@ package com.kingcent.plant.constroller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
+import com.kingcent.common.utils.NumberUtils;
 import com.kingcent.plant.entity.LandEntity;
 import com.kingcent.plant.entity.MemberEntity;
 import com.kingcent.plant.service.LandService;
 import com.kingcent.plant.service.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author rainkyzhong
@@ -26,10 +29,27 @@ public class MemberController {
             @PathVariable
             Integer pageNum,
             @PathVariable
-            Integer pageSize
+            Integer pageSize,
+            @RequestParam(required = false)
+            String name,
+            @RequestParam(required = false)
+            String no,
+            @RequestParam(required = false)
+            String username,
+            @RequestParam(required = false)
+            String email,
+            @RequestParam(required = false)
+            String mobile
     ){
-        Page<MemberEntity> page = memberService.getPage(pageNum, pageSize);
+        Page<MemberEntity> page = memberService.getPage(pageNum, pageSize,name, no, username, email, mobile);
         return Result.success(page);
+    };
+
+    @GetMapping("/listByIds")
+    public Result<List<MemberEntity>> list(@RequestParam String memberIds){
+        List<Long> ids = NumberUtils.splitLong(memberIds,",",true);
+        if(ids == null) return Result.fail("请指定ID");
+        return Result.success(memberService.listByIds(ids));
     };
 
     @PostMapping

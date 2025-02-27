@@ -12,7 +12,7 @@ import com.kingcent.plant.entity.VarietyEntity;
  * @date 2025/2/5 23:06
  */
 public interface MemberService extends IService<MemberEntity> {
-    Page<MemberEntity> getPage(Integer pageNum, Integer pageSize);
+    Page<MemberEntity> getPage(Integer pageNum, Integer pageSize, String nickname, String no, String username, String email, String mobile);
 
     Result<?> addOrUpdate(MemberEntity memberEntity) throws KingcentSystemException;
     Result<?> delete(Long id);

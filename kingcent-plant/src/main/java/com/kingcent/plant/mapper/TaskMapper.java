@@ -21,7 +21,7 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
 
 
     @Select("<script>" +
-            "SELECT COUNT(t.id) FROM kc_agrc_task t " +
+            "SELECT COUNT(DISTINCT t.id) FROM kc_agrc_task t " +
             "LEFT JOIN kc_agrc_task_member tm ON t.id = tm.task_id " +
             "LEFT JOIN kc_agrc_task_land tl ON t.id = tl.task_id " +
             "WHERE 1 = 1 " +
@@ -43,11 +43,17 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
             "<if test='nameLike != null and nameLike != \"\"'>" +
             "AND t.name LIKE CONCAT('%', #{nameLike}, '%') " +
             "</if>" +
-            "<if test='status != null'>" +
-            "AND t.status = #{status} " +
+            "<if test='statuses != null'>" +
+            "AND t.status IN " +
+            "<foreach item='item' index='index' collection='statuses' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach> " +
             "</if>" +
-            "<if test='type != null'>" +
-            "AND t.type = #{type} " +
+            "<if test='types != null'>" +
+            "AND t.type IN " +
+            "<foreach item='item' index='index' collection='types' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach> " +
             "</if>" +
             "<if test='startTimeFrom != null'>" +
             "AND t.start_time &gt;= #{startTimeFrom} " +
@@ -60,17 +66,15 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
             "</if>" +
             "<if test='endTimeEnd != null'>" +
             "AND t.end_time &lt;= #{endTimeEnd} " +
-            "</if>" +
+            "</if> "+
             "</script>")
     Integer selectCount(
-            @Param("pageNum") Integer pageNum,
-            @Param("pageSize") Integer pageSize,
             @Param("planId") Long planId,
             @Param("memberIds") Collection<Long> memberIds,
             @Param("landIds") Collection<Long> landIds,
             @Param("nameLike") String nameLike,
-            @Param("status") Integer status,
-            @Param("type") Integer type,
+            @Param("statuses") Collection<Integer> statuses,
+            @Param("types") Collection<Integer> types,
             @Param("startTimeFrom") LocalDateTime startTimeFrom,
             @Param("startTimeEnd") LocalDateTime startTimeEnd,
             @Param("endTimeFrom") LocalDateTime endTimeFrom,
@@ -100,11 +104,17 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
             "<if test='nameLike != null and nameLike != \"\"'>" +
             "AND t.name LIKE CONCAT('%', #{nameLike}, '%') " +
             "</if>" +
-            "<if test='status != null'>" +
-            "AND t.status = #{status} " +
+            "<if test='statuses != null'>" +
+            "AND t.status IN " +
+            "<foreach item='item' index='index' collection='statuses' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach> " +
             "</if>" +
-            "<if test='type != null'>" +
-            "AND t.type = #{type} " +
+            "<if test='types != null'>" +
+            "AND t.type IN " +
+            "<foreach item='item' index='index' collection='types' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach> " +
             "</if>" +
             "<if test='startTimeFrom != null'>" +
             "AND t.start_time &gt;= #{startTimeFrom} " +
@@ -118,6 +128,7 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
             "<if test='endTimeEnd != null'>" +
             "AND t.end_time &lt;= #{endTimeEnd} " +
             "</if>" +
+            "GROUP BY t.id "+
             "LIMIT #{pageNum}, #{pageSize}" +
             "</script>")
     List<TaskEntity> selectPage(
@@ -127,8 +138,8 @@ public interface TaskMapper extends BaseMapper<TaskEntity> {
             @Param("memberIds") Collection<Long> memberIds,
             @Param("landIds") Collection<Long> landIds,
             @Param("nameLike") String nameLike,
-            @Param("status") Integer status,
-            @Param("type") Integer type,
+            @Param("statuses") Collection<Integer> statuses,
+            @Param("types") Collection<Integer> types,
             @Param("startTimeFrom") LocalDateTime startTimeFrom,
             @Param("startTimeEnd") LocalDateTime startTimeEnd,
             @Param("endTimeFrom") LocalDateTime endTimeFrom,
