@@ -20,6 +20,7 @@ public class PlanEntity {
     private LocalDateTime startTime;
     private LocalDateTime updateTime;
     private LocalDateTime endTime;
+    private String content;
     private Integer status;
     
     private Long creatorId;

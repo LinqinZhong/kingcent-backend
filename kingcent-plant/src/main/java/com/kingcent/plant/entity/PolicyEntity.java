@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("kc_agrc_variety")
-public class VarietyEntity {
+@TableName("kc_agrc_policy")
+public class PolicyEntity {
     private Long id;
     private String name;
     private String description;
