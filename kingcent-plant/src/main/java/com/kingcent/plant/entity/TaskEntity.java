@@ -52,4 +52,15 @@ public class TaskEntity {
     @TableField(exist = false)
     private String memberNames;
 
+
+    // 是否是负责人
+    @TableField(exist = false)
+    private Boolean isMember;
+
+    @TableField(exist = false)
+    private Boolean stoppable;
+
+    @TableField(exist = false)
+    private Boolean reviewable;
+
 }

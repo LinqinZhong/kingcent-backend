@@ -40,6 +40,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
     @Autowired
     private TaskCommentService taskCommentService;
 
+
     @Override
     public Page<TaskEntity> getPage(
             Long userId,
@@ -60,6 +61,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         if(!memberResult.getSuccess()){
             throw new KingcentSystemException(memberResult.getMessage());
         }
+
+        MemberEntity currentMember = memberResult.getData();
+
         List<Long> memberIdList = null;
         if(memberIds0 != null) {
             try {
@@ -186,11 +190,16 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
                 memberEntityMap.put(member.getId(), member);
             }
             taskEntityList.forEach(task -> {
+
                 List<String> memberNames = new ArrayList<>();
                 List<String> memberIds = new ArrayList<>();
                 List<Long> memberIdListOfTask = memberOfTaskMap.get(task.getId());
                 if (memberIdListOfTask != null) {
                     for (Long memberId : memberIdListOfTask) {
+                        // 是成员
+                        if(memberId.equals(currentMember.getId())){
+                            task.setIsMember(true);
+                        }
                         MemberEntity member = memberEntityMap.get(memberId);
                         if (member != null) {
                             memberNames.add(member.getName());
@@ -343,9 +352,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         if(!memberResult.getSuccess()){
             return memberResult;
         }
-        TaskEntity taskEntity = new TaskEntity();
+        TaskEntity taskEntity = getById(taskId);
         taskEntity.setStatus(status);
-        taskEntity.setId(taskId);
         updateById(taskEntity);
         TaskCommentEntity taskCommentEntity = new TaskCommentEntity();
         taskCommentEntity.setTaskId(taskId);
@@ -362,11 +370,40 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
             taskCommentEntity.setContent(content);
             taskCommentService.addOrUpdate(userId,taskCommentEntity);
         }
+
+        // 修改任务完成，重新发起审批
+        if (9 == taskEntity.getType() && 4 == taskEntity.getStatus()){
+            PlanEntity plan = planService.getById(taskEntity.getPlanId());
+            plan.setStatus(0);
+            planService.updateById(plan);
+            // 创建审批任务
+            TaskEntity reviewTask = new TaskEntity();
+            reviewTask.setStatus(1);
+            reviewTask.setName("对计划["+plan.getNo()+"]进行审批");
+            reviewTask.setPlanId(taskEntity.getPlanId());
+            reviewTask.setType(8);
+            reviewTask.setStatus(0);
+            reviewTask.setStartTime(LocalDateTime.now());
+            reviewTask.setEndTime(taskEntity.getEndTime());
+            save(reviewTask);
+
+            TaskMemberEntity taskMemberEntity = new TaskMemberEntity(reviewTask.getId(),plan.getReviewerId());
+            taskMemberService.save(taskMemberEntity);
+        }
+
         return Result.success();
     }
 
     @Override
-    public TaskEntity detail(Long userId, Long taskId) {
+    public TaskEntity detail(Long userId, Long taskId) throws KingcentSystemException {
+
+        Result<MemberEntity> memberResult = memberService.getByUserId(userId);
+        if(!memberResult.getSuccess()){
+            throw new KingcentSystemException(memberResult.getMessage());
+        }
+
+        MemberEntity currentMember = memberResult.getData();
+
         TaskEntity task = getById(taskId);
         Map<Long,MemberEntity> memberEntityMap = new HashMap<>();
         Set<Long> totalMemberIds = new HashSet<>();
@@ -374,7 +411,19 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, TaskEntity> impleme
         List<TaskMemberEntity> list = taskMemberService.list(new LambdaQueryWrapper<TaskMemberEntity>().eq(TaskMemberEntity::getTaskId, task.getId()));
         List<Long> memberIds = list.stream().map(TaskMemberEntity::getMemberId).toList();
         totalMemberIds.addAll(memberIds);
-        System.out.println(memberIds);
+        // 是成员
+        if(memberIds.contains(currentMember.getId())){
+            task.setIsMember(true);
+        }
+        // 审批任务
+        if(task.getType() == 8){
+            task.setReviewable(task.getIsMember());
+        }
+        // 普通任务暂停和验收
+        else if(currentMember.getId().equals(task.getCreatorMemberId())){
+            task.setStoppable(true);
+            task.setReviewable(true);
+        }
         if(!totalMemberIds.isEmpty()){
             List<MemberEntity> memberEntities = memberService.listByIds(totalMemberIds);
             for (MemberEntity memberEntity : memberEntities) {

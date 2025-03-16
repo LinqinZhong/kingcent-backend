@@ -22,8 +22,17 @@ public class PlanEntity {
     private LocalDateTime endTime;
     private String content;
     private Integer status;
+
+    @TableField(exist = false)
+    private String reason;
     
     private Long creatorId;
+
+    @TableField(exist = false)
+    private Boolean reviewable;
+
+    @TableField(exist = false)
+    private Boolean editable;
 
     @TableField(exist = false)
     private String creatorName;

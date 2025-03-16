@@ -18,7 +18,7 @@ public interface TaskService extends IService<TaskEntity> {
 
     Result<?> setStatus(Long userId, Long taskId, Integer status);
 
-    TaskEntity detail(Long userId, Long taskId);
+    TaskEntity detail(Long userId, Long taskId) throws KingcentSystemException;
 
     Page<TaskEntity> getPage(Long userId, Integer pageNum, Integer pageSize, Long planId, String memberIds, String landIds, String nameLike, List<Integer> status, List<Integer> type, String startTimeFrom, String startTimeEnd, String endTimeFrom, String endTimeEnd) throws KingcentSystemException;
 }

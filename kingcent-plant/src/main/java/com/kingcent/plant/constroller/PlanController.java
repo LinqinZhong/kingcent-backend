@@ -2,6 +2,7 @@ package com.kingcent.plant.constroller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
 import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.plant.entity.PlanEntity;
@@ -23,12 +24,14 @@ public class PlanController {
 
     @GetMapping("/{pageNum}/{pageSize}")
     public Result<Page<PlanEntity>> list(
+            HttpServletRequest request,
             @PathVariable
             Integer pageNum,
             @PathVariable
             Integer pageSize
-    ){
-        Page<PlanEntity> page = planService.getPage(pageNum, pageSize);
+    ) throws KingcentSystemException {
+        Long userId = RequestUtil.getUserId(request);
+        Page<PlanEntity> page = planService.getPage(userId, pageNum, pageSize);
         return Result.success(page);
     };
 
@@ -45,7 +48,7 @@ public class PlanController {
     }
 
     @GetMapping("/detail/{planId}")
-    public Result<PlanEntity> detail(HttpServletRequest request, @PathVariable Long planId){
+    public Result<PlanEntity> detail(HttpServletRequest request, @PathVariable Long planId) throws KingcentSystemException {
         Long userId = RequestUtil.getUserId(request);
         return Result.success(planService.detail(userId, planId));
     }
@@ -54,5 +57,11 @@ public class PlanController {
     public Result<?> reject(HttpServletRequest request, @PathVariable Long planId, @RequestBody JSONObject data){
         Long userId = RequestUtil.getUserId(request);
         return planService.reject(userId, planId, data);
+    }
+
+    @PostMapping("/approve/{planId}")
+    public Result<?> approve(HttpServletRequest request, @PathVariable Long planId, @RequestBody JSONObject data){
+        Long userId = RequestUtil.getUserId(request);
+        return planService.approve(userId, planId, data);
     }
 }

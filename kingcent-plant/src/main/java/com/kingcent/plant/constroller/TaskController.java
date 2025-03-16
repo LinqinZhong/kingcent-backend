@@ -83,7 +83,7 @@ public class TaskController {
 
     @GetMapping("/detail/{taskId}")
     @ResponseBody
-    public Result<TaskEntity> detail(HttpServletRequest request,@PathVariable Long taskId){
+    public Result<TaskEntity> detail(HttpServletRequest request,@PathVariable Long taskId) throws KingcentSystemException {
         Long userId = RequestUtil.getUserId(request);
         return Result.success(taskService.detail(userId, taskId));
     }

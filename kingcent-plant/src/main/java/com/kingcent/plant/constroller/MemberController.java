@@ -3,11 +3,13 @@ package com.kingcent.plant.constroller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kingcent.common.exception.KingcentSystemException;
 import com.kingcent.common.result.Result;
+import com.kingcent.common.user.utils.RequestUtil;
 import com.kingcent.common.utils.NumberUtils;
 import com.kingcent.plant.entity.LandEntity;
 import com.kingcent.plant.entity.MemberEntity;
 import com.kingcent.plant.service.LandService;
 import com.kingcent.plant.service.MemberService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,6 +57,12 @@ public class MemberController {
     @PostMapping
     public Result<?> addOrUpdate(@RequestBody MemberEntity memberEntity) throws KingcentSystemException {
         return memberService.addOrUpdate(memberEntity);
+    }
+
+    @GetMapping("/current")
+    public Result<MemberEntity> getCurrent(HttpServletRequest request){
+        Long userId = RequestUtil.getUserId(request);
+        return memberService.getByUserId(userId);
     }
 
     @DeleteMapping("/{memberId}")
