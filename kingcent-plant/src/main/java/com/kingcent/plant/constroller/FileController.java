@@ -1,7 +1,15 @@
 package com.kingcent.plant.constroller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.shaded.com.google.gson.Gson;
 import com.kingcent.common.result.Result;
+import com.qiniu.common.QiniuException;
+import com.qiniu.http.Response;
+import com.qiniu.storage.Configuration;
+import com.qiniu.storage.Region;
+import com.qiniu.storage.UploadManager;
+import com.qiniu.storage.model.DefaultPutRet;
+import com.qiniu.util.Auth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 文件控制器
@@ -32,20 +41,40 @@ public class FileController {
 
     @PostMapping("/upload")
     public Result<JSONObject> upload(@RequestParam("file") MultipartFile uploadFile, String name) {
-        File dir = new File(BASE_UPLOAD_PATH);
-        if(!dir.exists() && !dir.mkdirs()){
-            return Result.fail("文件创建失败");
-        }
-        String fName = uploadFile.getOriginalFilename();
-        assert fName != null;
-        File file = new File(dir,name+"."+fName.substring(fName.lastIndexOf(".")+1));
+        Configuration cfg = new Configuration(Region.autoRegion());
+        cfg.resumableUploadAPIVersion = Configuration.ResumableUploadAPIVersion.V2;// 指定分片上传版本
+        UploadManager uploadManager = new UploadManager(cfg);
+        String accessKey = "lei-3-pMikOTUW1wpJguGxeIZjlT1qBKBBLAxUvh";
+        String secretKey = "8FHY3P63s40sIaz8C6D71F-w-c4OGNx-Frqw5UP5";
+        String bucket = "ssm2018";
+
+        Auth auth = Auth.create(accessKey, secretKey);
+        String upToken = auth.uploadToken(bucket);
+
         try {
+            File file = File.createTempFile("temp", null);
             uploadFile.transferTo(file);
+            if(file.length() == 0) return Result.fail("文件不能为空");
+            Response response = uploadManager.put(file, null, upToken);
+            //解析上传成功的结果
+            DefaultPutRet putRet = new Gson().fromJson(response.bodyString(), DefaultPutRet.class);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("url","http://source.intapter.cn/"+putRet.key);
+            return Result.success(jsonObject);
+        } catch (QiniuException ex) {
+            ex.printStackTrace(System.out);
+            if (ex.response != null) {
+                System.err.println(ex.response);
+
+                try {
+                    String body = ex.response.toString();
+                    System.err.println(body);
+                } catch (Exception ignored) {
+                }
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        JSONObject res = new JSONObject();
-        res.put("url", VISIT_PATH +"/"+file.getName());
-        return Result.success("文件上传成功",res);
+        return Result.fail("上传失败");
     }
 }

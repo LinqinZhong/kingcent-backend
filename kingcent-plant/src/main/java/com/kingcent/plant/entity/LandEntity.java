@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class LandEntity {
     private Long id;
     private String name;
+    private String pic;
     private String no;
     private BigDecimal area;
     private Integer status;

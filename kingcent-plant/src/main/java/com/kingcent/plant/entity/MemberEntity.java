@@ -31,6 +31,8 @@ public class MemberEntity {
 
     private String no;
 
+    private Integer position;
+
     @TableField(exist = false)
     private String password;
     @TableField(exist = false)
