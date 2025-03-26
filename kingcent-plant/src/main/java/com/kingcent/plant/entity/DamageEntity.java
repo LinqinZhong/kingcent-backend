@@ -9,4 +9,7 @@ public class DamageEntity {
     private Long id;
     private String name;
     private String description;
+    private String thumb;
+    private Integer type;
+    private Integer dangerLevel;
 }

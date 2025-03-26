@@ -9,4 +9,5 @@ public class ProducingEntity {
     private Long id;
     private String name;
     private String description;
+    private String thumb;
 }

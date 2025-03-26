@@ -9,4 +9,5 @@ public class FertilizerEntity {
     private Long id;
     private String name;
     private String description;
+    private String thumb;
 }
