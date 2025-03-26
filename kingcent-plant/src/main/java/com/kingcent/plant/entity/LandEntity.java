@@ -18,6 +18,7 @@ public class LandEntity {
     private String pic;
     private String no;
     private BigDecimal area;
+    private BigDecimal usedArea;
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
