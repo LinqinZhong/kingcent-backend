@@ -2,6 +2,9 @@ package com.kingcent.plant.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.springframework.data.neo4j.core.schema.Id;
+import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Property;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

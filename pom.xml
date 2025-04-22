@@ -33,6 +33,7 @@
     <module>kingcent-common/kingcent-common-shop</module>
     <module>kingcent-common/kingcent-common-framework</module>
     <module>kingcent-common/kingcent-common-wx</module>
+    <module>kingcent-common/kingcent-common-qiniu</module>
     <module>kingcent-community</module>
     <module>kingcent-user</module>
     <module>kingcent-afast</module>

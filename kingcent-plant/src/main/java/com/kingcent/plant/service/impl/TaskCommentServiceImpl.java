@@ -46,6 +46,7 @@ public class TaskCommentServiceImpl extends ServiceImpl<TaskCommentMapper, TaskC
                 MemberEntity memberEntity = memberMap.get(record.getMemberId());
                 if(memberEntity != null){
                     record.setNickname(memberEntity.getName());
+                    record.setAvatar(memberEntity.getAvatar());
                 }
             }
         }

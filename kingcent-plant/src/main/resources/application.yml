@@ -38,6 +38,18 @@ spring:
         #        username: nacos
         #        password: nacos
         server-addr: localhost:8848
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: 11223344
+
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          neo4j=DEBUG:
 
 mybatis-plus:
   configuration:
