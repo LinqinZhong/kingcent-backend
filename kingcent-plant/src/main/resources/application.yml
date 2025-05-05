@@ -1,11 +1,15 @@
 server:
   port: 6637
-
 spring:
   application:
     name: kingcent-plant
   jackson:
     default-property-inclusion: non_null #为空的json字段不返回
+  mvc:
+  servlet:
+    multipart:
+      max-file-size: 10MB        # 设置单个文件最大大小为10MB
+      max-request-size: 100MB    # 设置多个文件大小为100MB
   data:
     redis:
       timeout: 300s

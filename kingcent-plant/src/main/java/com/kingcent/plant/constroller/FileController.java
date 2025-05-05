@@ -10,7 +10,6 @@ import com.qiniu.storage.Region;
 import com.qiniu.storage.UploadManager;
 import com.qiniu.storage.model.DefaultPutRet;
 import com.qiniu.util.Auth;
-import com.qiniu.util.StringMap;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,9 +49,7 @@ public class FileController {
         String bucket = "ssm2018";
 
         Auth auth = Auth.create(accessKey, secretKey);
-        StringMap putPolicy = new StringMap();
-        putPolicy.put("returnBody", "{\"key\":\"$(key)\",\"hash\":\"$(etag)\",\"bucket\":\"$(bucket)\",\"fsize\":$(fsize)}");
-        String upToken = auth.uploadToken(bucket,null,86400000,putPolicy);
+        String upToken = auth.uploadToken(bucket);
 
         try {
             File file = File.createTempFile("temp", null);

@@ -7,8 +7,10 @@ import com.kingcent.plant.entity.PlanEntity;
 import com.kingcent.plant.entity.VarietyEntity;
 import com.kingcent.plant.mapper.PlanMapper;
 import com.kingcent.plant.mapper.VarietyMapper;
+import com.kingcent.plant.repository.VarietyRepository;
 import com.kingcent.plant.service.PlanService;
 import com.kingcent.plant.service.VarietyService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,10 @@ import java.time.LocalDateTime;
 @Service
 public class VarietyServiceImpl extends ServiceImpl<VarietyMapper, VarietyEntity> implements VarietyService {
 
+
+    @Autowired
+    private VarietyRepository varietyRepository;
+
     @Override
     public Page<VarietyEntity> getPage(Integer pageNum, Integer pageSize){
         Page<VarietyEntity> page = page(new Page<>(pageNum, pageSize));
@@ -31,6 +37,7 @@ public class VarietyServiceImpl extends ServiceImpl<VarietyMapper, VarietyEntity
     @Transactional
     public Result<?> addOrUpdate(VarietyEntity varietyEntity){
         saveOrUpdate(varietyEntity);
+        varietyRepository.save(varietyEntity);
         return Result.success();
     }
 

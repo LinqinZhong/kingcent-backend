@@ -10,4 +10,6 @@ public class PlantBaseEntity {
     private String name;
     private String description;
     private String thumb;
+    private String concat;
+    private String address;
 }
